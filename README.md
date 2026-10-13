@@ -1,3 +1,16 @@
+# xteam
+
+xteam is an independently maintained derivative of [Multica](https://github.com/multica-ai/multica), intended to become a self-hosted team AI context server. It is not an official Multica product and is not endorsed by Multica.
+
+- **Pinned upstream baseline:** [`b115ec80f1748d8d2766481706b0ecb830389286`](https://github.com/multica-ai/multica/commit/b115ec80f1748d8d2766481706b0ecb830389286) (2026-10-12). Upstream history is retained; upstream `main` is not automatically tracked for updates.
+- **License:** the complete [Multica License](LICENSE) and [NOTICE](NOTICE) remain applicable. This repository is not licensed as a whole under MIT. Internal self-hosting is permitted; hosted access for third parties, including free access, requires a commercial license.
+- **Branding:** the derived application UI retains Multica's name, logo, copyright, and attribution. Rebranding requires a written branding waiver, separate from any commercial license; none has been obtained.
+- **Status:** repository initialization only. The application remains upstream Multica; the xteam context-server changes have not been implemented. See [self-hosting](SELF_HOSTING.md) and [contributing](CONTRIBUTING.md) for the existing upstream setup.
+
+**Modified by xteam on 2026-10-13:** added this provenance and licensing notice. The upstream README below is retained for reference; its features and release links describe Multica, not a separate xteam release.
+
+---
+
 <div align="center">
 
 <picture>

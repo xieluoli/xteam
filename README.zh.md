@@ -1,3 +1,16 @@
+# xteam
+
+xteam 是基于 [Multica](https://github.com/multica-ai/multica) 独立维护的衍生项目，目标是可自托管的团队 AI 上下文服务器。本项目并非 Multica 官方产品，也不代表其背书。
+
+- **固定上游基线：** [`b115ec80f1748d8d2766481706b0ecb830389286`](https://github.com/multica-ai/multica/commit/b115ec80f1748d8d2766481706b0ecb830389286)（2026-10-12）。保留上游历史，不自动跟进上游 `main`。
+- **许可：** 完整保留并遵守 [Multica License](LICENSE) 和 [NOTICE](NOTICE)，全仓不改为 MIT。各团队可自行部署供各自组织内部使用；向组织外第三方提供托管访问，即使免费，也需商业许可。
+- **品牌：** 派生应用 UI 暂留 Multica 名称、logo、版权与署名。换牌需书面品牌豁免，与商业许可分别授权；目前尚未取得。
+- **进度：** 仅完成仓库初始化，应用仍为上游 Multica，尚未实现 xteam 上下文服务器改造。现有启动与开发入口见 [自托管](SELF_HOSTING.md) 和 [贡献指南](CONTRIBUTING.md)。
+
+**xteam 修改说明（2026-10-13）：** 本文件新增来源与许可说明。下方保留上游 README，其功能介绍与发布链接属于 Multica，并非 xteam 独立版本。
+
+---
+
 <div align="center">
 
 <picture>
