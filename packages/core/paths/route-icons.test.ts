@@ -16,7 +16,17 @@ import {
 describe("workspace page coverage", () => {
   // `root` aliases `issues` (same segment) and is never rendered as its own
   // nav item; the parameterized detail routes are resources, not pages.
-  const EXCLUDED_METHODS = new Set(["root"]);
+  //
+  // The removed surfaces (chat, autopilots, squads, runtimes) keep their path
+  // builders because the modules behind them still exist, but they are no
+  // longer nav destinations and so deliberately have no WORKSPACE_PAGES entry.
+  const EXCLUDED_METHODS = new Set([
+    "root",
+    "chat",
+    "autopilots",
+    "squads",
+    "runtimes",
+  ]);
   const KNOWN_SEGMENTS = new Set(
     (Object.keys(WORKSPACE_PAGES) as WorkspacePageKey[]).map(
       (k) => WORKSPACE_PAGES[k].segment,
@@ -57,11 +67,15 @@ describe("pageForSegment", () => {
 describe("resolveRouteIconName", () => {
   it("resolves a page path to its page icon", () => {
     expect(resolveRouteIconName("/acme/projects")).toBe("FolderKanban");
-    expect(resolveRouteIconName("/acme/autopilots")).toBe("Zap");
-    expect(resolveRouteIconName("/acme/chat")).toBe("MessageSquare");
-    expect(resolveRouteIconName("/acme/squads")).toBe("Users");
     expect(resolveRouteIconName("/acme/usage")).toBe("BarChart3");
     expect(resolveRouteIconName("/acme/my-issues")).toBe("CircleUser");
+  });
+
+  it("falls back to the default for paths whose surface was removed", () => {
+    expect(resolveRouteIconName("/acme/autopilots")).toBe(DEFAULT_ROUTE_ICON_NAME);
+    expect(resolveRouteIconName("/acme/chat")).toBe(DEFAULT_ROUTE_ICON_NAME);
+    expect(resolveRouteIconName("/acme/squads")).toBe(DEFAULT_ROUTE_ICON_NAME);
+    expect(resolveRouteIconName("/acme/runtimes")).toBe(DEFAULT_ROUTE_ICON_NAME);
   });
 
   it("gives sub-routes their parent page icon (sidebar semantics)", () => {

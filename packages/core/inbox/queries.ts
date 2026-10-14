@@ -1,5 +1,5 @@
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
-import type { ArchivedInboxPage } from "../types/inbox";
+import { isSupportedInboxType, type ArchivedInboxPage } from "../types/inbox";
 import { EMPTY_INBOX_FILTERS, type InboxFilters } from "./filter-store";
 import { infiniteQueryOptions, queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "../api";
@@ -142,10 +142,9 @@ export function unreadCountForWorkspace(
  * its own; deriving it from `listInbox()` instead downloaded the entire
  * unbounded inbox on every app start just to render a number (MUL-6967).
  *
- * `GET /api/inbox/unread-count` is deliberately not the source: it counts raw
- * notification rows, while the inbox renders one row per issue. The summary
- * endpoint applies the same newest-per-issue rule `deduplicateInboxItems`
- * applies client-side, so this number matches the list the user sees.
+ * Both count endpoints apply the same newest-supported-per-issue rule as
+ * `deduplicateInboxItems`. The cross-workspace summary is already needed by
+ * the switcher, so reusing it keeps badge consumers on one cache entry.
  */
 export function useInboxUnreadCount(wsId: string | null | undefined): number {
   const { data } = useQuery({
@@ -163,7 +162,7 @@ export function useInboxUnreadCount(wsId: string | null | undefined): number {
  * (to avoid new array references on every cache update).
  */
 export function deduplicateInboxItems(items: InboxItem[]): InboxItem[] {
-  return groupInboxItemsByIssue(items.filter((i) => !i.archived));
+  return groupInboxItemsByIssue(items.filter((i) => !i.archived && isSupportedInboxType(i.type)));
 }
 
 /**
@@ -173,7 +172,7 @@ export function deduplicateInboxItems(items: InboxItem[]): InboxItem[] {
  * archived row out of the main list.
  */
 export function deduplicateArchivedInboxItems(items: InboxItem[]): InboxItem[] {
-  return groupInboxItemsByIssue(items.filter((i) => i.archived));
+  return groupInboxItemsByIssue(items.filter((i) => i.archived && isSupportedInboxType(i.type)));
 }
 
 function groupInboxItemsByIssue(items: InboxItem[]): InboxItem[] {
@@ -188,7 +187,7 @@ function groupInboxItemsByIssue(items: InboxItem[]): InboxItem[] {
   for (const group of groups.values()) {
     group.sort(
       (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime() || b.id.localeCompare(a.id),
     );
     const newest = group[0];
     if (!newest) continue;
@@ -209,6 +208,6 @@ function groupInboxItemsByIssue(items: InboxItem[]): InboxItem[] {
   }
   return merged.sort(
     (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime() || b.id.localeCompare(a.id),
   );
 }

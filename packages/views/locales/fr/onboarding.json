@@ -7,20 +7,14 @@
     },
     "workspace": {
       "label": "Espace de travail"
-    },
-    "runtime": {
-      "label": "Rencontrez Mika"
     }
   },
   "welcome": {
     "wordmark": "Bienvenue sur Multica",
-    "headline_line1": "Vos coéquipiers IA,",
+    "headline_line1": "Le travail de votre équipe,",
     "headline_line2": "dans",
     "headline_emphasis": "un seul espace de travail.",
-    "lede": "Confiez-leur du travail comme à un collègue — ils s'en saisissent, mettent à jour le statut et commentent une fois terminé.",
-    "lede_web": "L'application de bureau embarque le runtime — rien à installer. Continuez sur le web pour connecter votre propre CLI.",
-    "download_desktop": "Télécharger l'application de bureau",
-    "continue_on_web": "Continuer sur le web",
+    "lede": "Organisez les tâches, suivez leur progression et regroupez les décisions.",
     "start_exploring": "Commencer l'exploration",
     "skip_existing": "Je l'ai déjà fait",
     "illustration": {

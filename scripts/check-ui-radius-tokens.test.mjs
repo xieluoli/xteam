@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, rmSync, realpathSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 
 import {
-  radiusScaleViolations,
   radiusViolations,
 } from "./check-ui-radius-tokens.mjs";
 
@@ -48,22 +51,22 @@ test("accepts named, computed, and explicitly allowlisted micro-geometry", () =>
   );
 });
 
-test("keeps the mobile radius scale aligned with resolved web tokens", () => {
-  const webTokens = `
-    --radius-xs: calc(var(--radius) * 0.375);
-    --radius-sm: calc(var(--radius) * 0.5);
-    --radius-md: calc(var(--radius) * 0.75);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.5);
-    --radius-2xl: calc(var(--radius) * 2);
-    --radius-3xl: calc(var(--radius) * 2.5);
-    --radius-4xl: calc(var(--radius) * 3);
-    --radius: 0.5rem;
-  `;
-  const aligned = { xs: 3, sm: 4, md: 6, lg: 8, xl: 12, "2xl": 16, "3xl": 20, "4xl": 24 };
-  assert.deepEqual(radiusScaleViolations(webTokens, aligned), []);
-  assert.deepEqual(
-    radiusScaleViolations(webTokens, { ...aligned, xl: 10 }),
-    ["xl: web=12px mobile=10px"],
-  );
+test("the CLI checks web surfaces without native apps and still rejects radius drift", (t) => {
+  const fixture = realpathSync(mkdtempSync(join(tmpdir(), "web-radius-")));
+  t.after(() => rmSync(fixture, { recursive: true, force: true }));
+  for (const directory of ["scripts", "apps/web", "packages/ui", "packages/views"]) {
+    mkdirSync(join(fixture, directory), { recursive: true });
+  }
+  symlinkSync(resolve("node_modules"), join(fixture, "node_modules"), "dir");
+  const script = join(fixture, "scripts/check-ui-radius-tokens.mjs");
+  writeFileSync(script, readFileSync(new URL("./check-ui-radius-tokens.mjs", import.meta.url)));
+  const probe = join(fixture, "apps/web/probe.tsx");
+  writeFileSync(probe, 'const classes = "rounded-lg";');
+  const clean = spawnSync(process.execPath, [script], { encoding: "utf8" });
+  assert.equal(clean.status, 0, clean.stderr);
+  writeFileSync(probe, 'const classes = "rounded";');
+  const drift = spawnSync(process.execPath, [script], { encoding: "utf8" });
+  assert.equal(drift.status, 1);
+  assert.match(drift.stderr, /Un-tokenized product radius/);
+  assert.match(drift.stderr, /apps\/web\/probe.tsx/);
 });

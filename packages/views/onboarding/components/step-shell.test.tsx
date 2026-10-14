@@ -62,7 +62,7 @@ describe("onboarding step shell", () => {
   // is only safe because the compact bar carries the same jobs.
   it("keeps a compact progress bar for widths where the rail is hidden", () => {
     const { container } = renderShell({
-      currentStep: "runtime",
+      currentStep: "workspace",
       onBack: () => {},
     });
 
@@ -70,7 +70,7 @@ describe("onboarding step shell", () => {
 
     const compact = container.querySelector("main .md\\:hidden")!;
     expect(compact).not.toBeNull();
-    expect(compact.textContent).toContain("Meet Mika");
+    expect(compact.textContent).toContain("Workspace");
     expect(compact.querySelector("button")).not.toBeNull();
   });
 
@@ -78,7 +78,7 @@ describe("onboarding step shell", () => {
   // every step but Welcome with no way to log out on a narrow screen.
   it("renders the escape hatch in whichever chrome is visible", () => {
     const { container } = renderShell({
-      currentStep: "runtime",
+      currentStep: "workspace",
       chromeFooter: <button type="button">Log out</button>,
     });
 
@@ -102,6 +102,8 @@ describe("onboarding progress rail", () => {
     const current = container.querySelector('[aria-current="step"]')!;
     expect(current).toBeInTheDocument();
     expect(current.textContent).toContain("Workspace");
+    expect(container.querySelectorAll('[data-slot="stepper-item"]')).toHaveLength(2);
+    expect(screen.queryByText("Meet Mika")).not.toBeInTheDocument();
   });
 
   // Forward navigation has to run the current step's validation and submit, so
@@ -114,12 +116,12 @@ describe("onboarding progress rail", () => {
     await userEvent.click(back);
     expect(onStepChange).toHaveBeenCalledWith("about_you");
 
-    expect(screen.queryByRole("button", { name: /meet mika/i })).toBeNull();
+    expect(screen.queryByText("Meet Mika")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^workspace/i })).toBeNull();
   });
 
   it("is display-only when the flow supplies no step handler", () => {
-    renderShell({ currentStep: "runtime" });
+    renderShell({ currentStep: "workspace" });
 
     expect(screen.queryByRole("button", { name: /about you/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /^workspace/i })).toBeNull();

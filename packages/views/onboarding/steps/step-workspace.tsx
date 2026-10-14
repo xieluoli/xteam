@@ -110,7 +110,19 @@ export function StepWorkspace({
   const workspaceCreationAllowed = !workspaceCreationDisabled;
   const logout = useLogout();
 
-  const reusing = existing ?? null;
+  // Retain a successful create when completion fails, so Retry cannot create
+  // another workspace. Both paths stay here until completion succeeds.
+  const [createdWorkspace, setCreatedWorkspace] = useState<Workspace | null>(null);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const reusing = createdWorkspace ?? existing ?? null;
+  const finishWorkspace = async (workspace: Workspace) => {
+    setIsCompleting(true);
+    try {
+      await onCreated(workspace);
+    } finally {
+      setIsCompleting(false);
+    }
+  };
   // Resume path only: user picks which card. `null` = neither yet, so
   // the footer CTA stays disabled. Clicking either card toggles — a
   // second click on the same card deselects it. No-existing path
@@ -198,7 +210,7 @@ export function StepWorkspace({
   const createWorkspace = useCreateWorkspace();
 
   const handleCreate = () => {
-    if (!canCreate || createWorkspace.isPending) return;
+    if (!canCreate || createWorkspace.isPending || isCompleting) return;
     createWorkspace.mutate(
       {
         name: name.trim(),
@@ -210,7 +222,11 @@ export function StepWorkspace({
         issue_prefix: effectivePrefix,
       },
       {
-        onSuccess: onCreated,
+        onSuccess: async (workspace) => {
+          setCreatedWorkspace(workspace);
+          setMode("existing");
+          await finishWorkspace(workspace);
+        },
         onError: (error) => {
           if (isWorkspaceSlugConflict(error)) {
             setSlugServerError(t(($) => $.step_workspace.slug_taken_error));
@@ -234,7 +250,7 @@ export function StepWorkspace({
   // when this instance has DISABLE_WORKSPACE_CREATION=true, in which
   // case the create path is unreachable and a no-reusing user falls
   // through to the disabled notice (rendered separately below).
-  const isCreating = createWorkspace.isPending;
+  const isCreating = createWorkspace.isPending || isCompleting;
   useEffect(() => {
     onBusyChange?.(isCreating);
     // Clear on unmount: a successful create advances the flow immediately, so
@@ -242,7 +258,7 @@ export function StepWorkspace({
     return () => onBusyChange?.(false);
   }, [isCreating, onBusyChange]);
   const creatingActive =
-    workspaceCreationAllowed && (!reusing || mode === "create");
+    workspaceCreationAllowed && !createdWorkspace && (!reusing || mode === "create");
   const existingActive = Boolean(reusing) && mode === "existing";
 
   let hint: string;
@@ -254,7 +270,7 @@ export function StepWorkspace({
     hint = t(($) => $.step_workspace.hint_opening, { name: reusing.name });
     continueLabel = t(($) => $.step_workspace.cta_open, { name: reusing.name });
     continueDisabled = isCreating;
-    onContinue = () => onCreated(reusing);
+    onContinue = () => { void finishWorkspace(reusing); };
   } else if (creatingActive) {
     if (isCreating) {
       hint = t(($) => $.step_workspace.hint_creating_pending, {
@@ -428,7 +444,7 @@ export function StepWorkspace({
                   gate (DISABLE_WORKSPACE_CREATION) is on (#3433) — the
                   backend would 403 the POST and the user would be stuck
                   with a useless form. */}
-              {!workspaceCreationDisabled && (
+              {!workspaceCreationDisabled && !createdWorkspace && (
                 <CreateNewWorkspaceCard
                   selected={mode === "create"}
                   onSelect={pickCreate}
@@ -451,6 +467,7 @@ export function StepWorkspace({
           <Button
             className="w-full"
             disabled={continueDisabled}
+            aria-busy={isCreating}
             onClick={onContinue}
           >
             {continueLabel}

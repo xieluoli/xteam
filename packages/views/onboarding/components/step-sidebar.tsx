@@ -2,10 +2,6 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { ArrowLeft, Check } from "lucide-react";
-import {
-  ONBOARDING_STEP_ORDER,
-  type OnboardingStep,
-} from "@multica/core/onboarding";
 import { cn } from "@multica/ui/lib/utils";
 import { Button } from "@multica/ui/components/ui/button";
 import { MulticaIcon } from "@multica/ui/components/common/multica-icon";
@@ -19,6 +15,9 @@ import {
   StepperTitle,
 } from "@multica/ui/components/ui/stepper";
 import { useT } from "../../i18n";
+
+export const ONBOARDING_STEPS = ["about_you", "workspace"] as const;
+export type OnboardingRailStep = (typeof ONBOARDING_STEPS)[number];
 
 /**
  * The persistent rail: where the member is in onboarding, and how to go back.
@@ -64,7 +63,7 @@ export function StepProgressBar({
   backDisabled,
   footer,
 }: {
-  currentStep: OnboardingStep;
+  currentStep: OnboardingRailStep;
   onBack?: () => void;
   backDisabled?: boolean;
   /** Same slot the rail's footer takes — the Log out escape hatch. It has to
@@ -73,11 +72,8 @@ export function StepProgressBar({
   footer?: ReactNode;
 }) {
   const { t } = useT("onboarding");
-  const currentIndex = Math.max(0, ONBOARDING_STEP_ORDER.indexOf(currentStep));
-  const key = ONBOARDING_STEP_ORDER[currentIndex] as Exclude<
-    OnboardingStep,
-    "welcome"
-  >;
+  const currentIndex = Math.max(0, ONBOARDING_STEPS.indexOf(currentStep));
+  const key = ONBOARDING_STEPS[currentIndex]!;
 
   return (
     <div className="mb-6 flex items-center gap-3 md:hidden">
@@ -99,7 +95,7 @@ export function StepProgressBar({
         aria-hidden
         className="flex flex-1 items-center gap-1.5"
       >
-        {ONBOARDING_STEP_ORDER.map((stepId, index) => (
+        {ONBOARDING_STEPS.map((stepId, index) => (
           <span
             key={stepId}
             className={cn(
@@ -124,20 +120,20 @@ export function StepSidebar({
   onStepChange,
   footer,
 }: {
-  currentStep: OnboardingStep;
+  currentStep: OnboardingRailStep;
   onBack?: () => void;
   /** Workspace step disables Back while its create request is in flight. */
   backDisabled?: boolean;
   /** Return to an already-completed step. Injected by the flow, which owns
    *  step order; absent means the rail is display-only. */
-  onStepChange?: (step: OnboardingStep) => void;
+  onStepChange?: (step: OnboardingRailStep) => void;
   /** Injected by the flow — the Log out escape hatch. A slot rather than a
    *  direct render so this stays presentational: rendering the logout
    *  mutation inline forced a QueryClient into five step test files. */
   footer?: ReactNode;
 }) {
   const { t } = useT("onboarding");
-  const currentIndex = Math.max(0, ONBOARDING_STEP_ORDER.indexOf(currentStep));
+  const currentIndex = Math.max(0, ONBOARDING_STEPS.indexOf(currentStep));
 
   return (
     // Hidden below `md`, where it does not fit: the panel never went under
@@ -193,12 +189,12 @@ export function StepSidebar({
               className="flex w-full flex-col items-start justify-center gap-0"
             >
               <StepperNav className="w-full">
-                {ONBOARDING_STEP_ORDER.map((stepId, index) => {
+                {ONBOARDING_STEPS.map((stepId, index) => {
                   const isDone = index < currentIndex;
                   const isCurrent = index === currentIndex;
-                  const isLast = index === ONBOARDING_STEP_ORDER.length - 1;
+                  const isLast = index === ONBOARDING_STEPS.length - 1;
                   const canReturn = isDone && !!onStepChange && !backDisabled;
-                  const key = stepId as Exclude<OnboardingStep, "welcome">;
+                  const key = stepId;
 
                   const body = (
                     <>

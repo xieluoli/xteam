@@ -141,18 +141,16 @@ export function ActorAvatar({
     !profileRequiresDirectoryEntry || hasActor(actorType, actorId) !== false;
   const shouldLinkToProfile =
     profileAvailable &&
+    actorType !== "squad" &&
     (profileLink ??
       (actorType === "member" ||
-        actorType === "agent" ||
-        actorType === "squad"));
+        actorType === "agent"));
   const profileHref = shouldLinkToProfile
     ? actorType === "member"
       ? paths.memberDetail(actorId)
       : actorType === "agent"
         ? paths.agentDetail(actorId)
-        : actorType === "squad"
-          ? paths.squadDetail(actorId)
-          : null
+        : null
     : null;
   const content = profileHref ? (
     <ActorAvatarProfileLink href={profileHref}>{dotted}</ActorAvatarProfileLink>

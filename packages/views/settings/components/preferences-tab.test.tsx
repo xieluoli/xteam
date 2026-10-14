@@ -31,13 +31,14 @@ const mockToastWarning = vi.hoisted(() => vi.fn());
 const mockToastError = vi.hoisted(() => vi.fn());
 const mockToastSuccess = vi.hoisted(() => vi.fn());
 const mockSetTheme = vi.hoisted(() => vi.fn());
+const themeState = vi.hoisted(() => ({ theme: "light", themes: ["light", "dark", "system"] }));
 const mockSetUser = vi.hoisted(() => vi.fn());
 const userRef = vi.hoisted(() => ({
   current: null as { id: string; timezone?: string | null } | null,
 }));
 
 vi.mock("@multica/ui/components/common/theme-provider", () => ({
-  useTheme: () => ({ theme: "light", setTheme: mockSetTheme }),
+  useTheme: () => ({ ...themeState, setTheme: mockSetTheme }),
 }));
 
 vi.mock("@multica/core/i18n/react", async () => {
@@ -53,19 +54,6 @@ vi.mock("@multica/core/i18n/react", async () => {
     }),
   };
 });
-
-// The chat store is registered by the app shell; a callable stand-in with the
-// Zustand shape is enough for the one toggle this page owns.
-const chatState = vi.hoisted(() => ({
-  floatingChatEnabled: true,
-  setFloatingChatEnabled: vi.fn(),
-}));
-vi.mock("@multica/core/chat", () => ({
-  useChatStore: Object.assign(
-    (selector: (state: typeof chatState) => unknown) => selector(chatState),
-    { getState: () => chatState },
-  ),
-}));
 
 vi.mock("@multica/core/paths", () => ({
   useCurrentWorkspace: () => ({ id: "ws-1", name: "Acme" }),
@@ -330,34 +318,23 @@ describe("PreferencesTab — Time zone", () => {
   });
 });
 
-describe("PreferencesTab — Comments & chat", () => {
+describe("PreferencesTab — Comments", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     userRef.current = null;
-    useCommentComposerStore.setState({ runningAgentReply: "steer", sticky: true });
-    chatState.floatingChatEnabled = true;
+    useCommentComposerStore.setState({ sticky: true });
   });
 
   afterEach(() => {
     cleanup();
   });
 
-  it("defaults to adding the reply to the current run and saves starting after it", async () => {
-    const user = userEvent.setup();
+  it("does not offer a running-agent reply preference", () => {
     render(<PreferencesTab />, { wrapper: I18nWrapper });
-
-    const select = screen.getByRole("combobox", { name: "When replying to a running agent" });
-    expect(select).toHaveTextContent("Add to current run");
-
-    await user.click(select);
-    await user.click(await screen.findByRole("option", { name: "Start after this run" }));
-
-    expect(useCommentComposerStore.getState().runningAgentReply).toBe("after_run");
-    expect(select).toHaveTextContent("Start after this run");
-    expect(mockToastSuccess).not.toHaveBeenCalled();
+    expect(screen.queryByRole("combobox", { name: "When replying to a running agent" })).not.toBeInTheDocument();
   });
 
-  it("toggles the sticky comment bar and the floating chat silently", async () => {
+  it("toggles the sticky comment bar silently", async () => {
     const user = userEvent.setup();
     render(<PreferencesTab />, { wrapper: I18nWrapper });
 
@@ -365,9 +342,6 @@ describe("PreferencesTab — Comments & chat", () => {
     expect(sticky).toHaveAttribute("aria-checked", "true");
     await user.click(sticky);
     expect(useCommentComposerStore.getState().sticky).toBe(false);
-
-    await user.click(screen.getByRole("switch", { name: enSettings.chat.floating_label }));
-    expect(chatState.setFloatingChatEnabled).toHaveBeenCalledWith(false);
     expect(mockToastSuccess).not.toHaveBeenCalled();
   });
 });
@@ -447,5 +421,31 @@ describe("PreferencesTab — Scope", () => {
     await user.click(preview);
     expect(useIssueOpeningStore.getState().openMode).toBe("peek");
     expect(preview).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+
+describe("PreferencesTab — optional palette", () => {
+  afterEach(() => {
+    cleanup();
+    themeState.theme = "light";
+    themeState.themes = ["light", "dark", "system"];
+  });
+
+  it("selects and shows Japan Blues when the platform offers it", async () => {
+    themeState.themes = ["light", "dark", "japan-blues", "system"];
+    themeState.theme = "light";
+    const view = render(<PreferencesTab />, { wrapper: I18nWrapper });
+    const button = screen.getByRole("button", { name: "Japan Blues" });
+    await userEvent.setup().click(button);
+    expect(mockSetTheme).toHaveBeenCalledWith("japan-blues");
+    themeState.theme = "japan-blues";
+    view.rerender(<PreferencesTab />);
+    expect(button).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("does not offer the web palette on platforms without it", () => {
+    render(<PreferencesTab />, { wrapper: I18nWrapper });
+    expect(screen.queryByRole("button", { name: "Japan Blues" })).not.toBeInTheDocument();
   });
 });

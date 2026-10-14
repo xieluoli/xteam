@@ -42,6 +42,7 @@ type IssueResponse struct {
 	Identifier  string  `json:"identifier"`
 	Title       string  `json:"title"`
 	Description *string `json:"description"`
+	Conclusion  string  `json:"conclusion"`
 	Status      string  `json:"status"`
 	// StatusCategory encodes lifecycle using the legacy seven-value wire enum. It is
 	// omitted when an endpoint cannot resolve a custom status, so consumers must
@@ -490,6 +491,7 @@ func issueToResponse(i db.Issue, issuePrefix string) IssueResponse {
 		Identifier:         identifier,
 		Title:              i.Title,
 		Description:        textToPtr(i.Description),
+		Conclusion:         i.Conclusion,
 		Status:             i.Status,
 		StatusCategory:     statusCategory,
 		Priority:           i.Priority,
@@ -528,6 +530,7 @@ func issueListRowToResponse(i db.ListIssuesRow, issuePrefix string) IssueRespons
 		Identifier:         identifier,
 		Title:              i.Title,
 		Description:        textToPtr(i.Description),
+		Conclusion:         i.Conclusion,
 		Status:             i.Status,
 		StatusCategory:     statusCategory,
 		Priority:           i.Priority,
@@ -598,6 +601,7 @@ func openIssueRowToResponse(i db.ListOpenIssuesRow, issuePrefix string) IssueRes
 		Identifier:         identifier,
 		Title:              i.Title,
 		Description:        textToPtr(i.Description),
+		Conclusion:         i.Conclusion,
 		Status:             i.Status,
 		StatusCategory:     statusCategory,
 		Priority:           i.Priority,
@@ -3503,6 +3507,7 @@ type UpdateIssueRequest struct {
 	// protects title edits without coupling them to unrelated issue mutations.
 	TitleBase   *string `json:"title_base,omitempty"`
 	Description *string `json:"description"`
+	Conclusion  *string `json:"conclusion"`
 	// DescriptionBase is the authoritative Markdown the editor had adopted
 	// before producing Description. It lets the server preserve channel media
 	// that landed asynchronously after that base without making media already
@@ -3799,6 +3804,9 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Description != nil {
 		params.Description = pgtype.Text{String: *req.Description, Valid: true}
+	}
+	if req.Conclusion != nil {
+		params.Conclusion = pgtype.Text{String: *req.Conclusion, Valid: true}
 	}
 	// statusKeyForGuard is the resolved key when this request sets a status, and
 	// empty otherwise. Empty means "this write does not touch status", which the
@@ -4528,6 +4536,7 @@ func (h *Handler) BatchUpdateIssues(w http.ResponseWriter, r *http.Request) {
 	// count match reality. See multica-ai/multica#1660.
 	hasMutation := req.Updates.Title != nil ||
 		req.Updates.Description != nil ||
+		req.Updates.Conclusion != nil ||
 		req.Updates.Status != nil ||
 		req.Updates.Priority != nil ||
 		req.Updates.Position != nil
@@ -4631,6 +4640,9 @@ func (h *Handler) BatchUpdateIssues(w http.ResponseWriter, r *http.Request) {
 		}
 		if req.Updates.Description != nil {
 			params.Description = pgtype.Text{String: *req.Updates.Description, Valid: true}
+		}
+		if req.Updates.Conclusion != nil {
+			params.Conclusion = pgtype.Text{String: *req.Updates.Conclusion, Valid: true}
 		}
 		if req.Updates.Status != nil {
 			params.Status = pgtype.Text{String: batchStatusKey, Valid: true}

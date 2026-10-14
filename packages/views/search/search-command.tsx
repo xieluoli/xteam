@@ -91,15 +91,11 @@ import { useSearchStore } from "./search-store";
 // keywords are filled in.
 const PAGE_KEYWORDS: Record<WorkspacePageKey, string[]> = {
   inbox: ["inbox", "notifications", "收件箱", "通知"],
-  chat: ["chat", "messages", "conversation", "聊天", "消息", "对话"],
   myIssues: ["my", "issues", "assigned", "mine", "我的", "任务"],
   issues: ["issues", "tasks", "bugs", "任务"],
   projects: ["projects", "kanban", "项目"],
-  autopilots: ["autopilot", "autopilots", "automation", "schedule", "cron", "webhook", "自动化", "定时"],
   agents: ["agents", "bots", "ai", "智能体"],
-  squads: ["squads", "teams", "小队", "团队"],
   usage: ["usage", "analytics", "stats", "metrics", "统计", "分析", "用量"],
-  runtimes: ["runtimes", "environments", "machines", "运行时"],
   skills: ["skills", "library", "技能"],
   settings: ["settings", "config", "preferences", "设置", "配置"],
 };
@@ -115,7 +111,7 @@ interface NavPage {
   keywords: string[];
 }
 
-type ThemeValue = "light" | "dark" | "system";
+type ThemeValue = "light" | "dark" | "system" | "japan-blues";
 
 function memberInitials(name: string) {
   return name
@@ -351,7 +347,7 @@ export function SearchCommand() {
   const { colorOf, iconOf } = useIssueStatuses(wsId);
   const recentItems = useRecentIssuesStore(selectRecentIssues(wsId));
   const p: WorkspacePaths = useWorkspacePaths();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, themes } = useTheme();
   const { data: members = [] } = useQuery(memberListOptions(wsId));
 
   // Resolve each recent issue via its cached detail entry. Recent items are
@@ -535,8 +531,22 @@ export function SearchCommand() {
       },
     );
 
+    if (themes.includes("japan-blues")) {
+      items.push({
+        key: "theme-japan-blues",
+        label: t(($) => $.commands.switch_to_japan_blues),
+        icon: Sun,
+        keywords: ["japan", "blues", "theme", "appearance", "soft"],
+        trailing: activeThemeCheck("japan-blues"),
+        onSelect: () => {
+          setTheme("japan-blues");
+          setOpen(false);
+        },
+      });
+    }
+
     return items;
-  }, [currentIssue, currentIssueId, getShareableUrl, pathname, queryClient, setOpen, setTheme, theme, t]);
+  }, [currentIssue, currentIssueId, getShareableUrl, pathname, queryClient, setOpen, setTheme, theme, themes, t]);
 
   const filteredCommands = useMemo(() => {
     const q = query.trim().toLowerCase();

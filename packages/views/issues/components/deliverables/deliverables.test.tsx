@@ -276,6 +276,22 @@ describe("DeliverablesOverview focus", () => {
 });
 
 describe("useDeliverableDetails", () => {
+  it("keeps historical comment provenance without a fake locate action", () => {
+    function Harness() {
+      const describe = useDeliverableDetails({
+        files: FILES, commentById: new Map(TIMELINE.map((entry) => [entry.id, entry])),
+        onLocate: vi.fn(), canLocateComments: false,
+      });
+      const item = { key: "csv", url: CSV.url, filename: CSV.filename, attachment: CSV, imageByConstruction: false, blockId: "c-2" };
+      const details = describe(item, { items: [item], goTo: () => true, close: vi.fn() });
+      expect(details.locate).toBeUndefined();
+      return <>{details.info}</>;
+    }
+    renderWithI18n(withQuery(<Harness />));
+    expect(screen.queryByRole("button", { name: "Show in comments" })).not.toBeInTheDocument();
+    expect(screen.getByText("Lambda")).toBeInTheDocument();
+  });
+
   // The viewer covers the page, so "Show in comments" in the info panel has
   // to close it first, exactly like the same action in the top bar.
   it("closes the viewer before locating, from the info panel and the top bar", () => {

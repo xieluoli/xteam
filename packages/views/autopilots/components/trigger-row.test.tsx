@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { AutopilotTrigger } from "@multica/core/types";
 import { renderWithI18n } from "../../test/i18n";
 
-// The detail page's trigger row: what a schedule row says about itself, and
+// The reusable trigger row: what a schedule row says about itself, and
 // the edit entry it grew in MUL-7478.
 
 vi.mock("@multica/core/hooks", () => ({ useWorkspaceId: () => "ws-test" }));
@@ -48,7 +48,7 @@ vi.mock("./pickers/timezone-picker", () => ({
   TimezonePicker: ({ value }: { value: string }) => <div data-testid="timezone-picker">{value}</div>,
 }));
 
-import { TriggerRow } from "./autopilot-detail-page";
+import { TriggerRow } from "./trigger-row";
 
 const AUTOPILOT_ID = "ap-1";
 

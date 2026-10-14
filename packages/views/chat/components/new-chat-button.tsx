@@ -1,9 +1,6 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@multica/ui/components/ui/button";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
 import { ActorAvatar } from "../../common/actor-avatar";
 import {
   PickerEmpty,
@@ -14,7 +11,6 @@ import {
 import { matchesPinyin } from "../../editor/extensions/pinyin-match";
 import type { Agent } from "@multica/core/types";
 import { isAgentRuntimeBound } from "@multica/core/agents";
-import { toast } from "sonner";
 import { useT } from "../../i18n";
 
 /**
@@ -147,75 +143,5 @@ function AgentPickerItem({
         </span>
       )}
     </PickerItem>
-  );
-}
-
-/**
- * "New chat" ⊕ button. Per the Chat V2 design, starting a new chat is where the
- * agent is chosen — so this opens an AgentPicker and reports the pick via
- * `onStart`. No agent is pre-checked: a new chat has no "current" agent yet.
- * Shortcuts: with a single available agent it starts immediately (no point
- * showing a one-item menu); with none it still fires `onStart(null)` so the
- * surface shows its no-agent empty state.
- */
-export function NewChatButton({
-  agents,
-  userId,
-  onStart,
-  side = "bottom",
-}: {
-  agents: Agent[];
-  userId: string | undefined;
-  onStart: (agent: Agent | null) => void;
-  side?: "top" | "bottom";
-}) {
-  const { t } = useT("chat");
-  const label = t(($) => $.window.new_chat_tooltip);
-
-  if (agents.length <= 1) {
-    const only = agents[0] ?? null;
-    return (
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="rounded-full text-muted-foreground"
-              aria-label={label}
-              onClick={() => {
-                if (only && !isAgentRuntimeBound(only)) {
-                  toast.error(t(($) => $.input.runtime_required_toast));
-                  return;
-                }
-                onStart(only);
-              }}
-            />
-          }
-        >
-          <Plus />
-        </TooltipTrigger>
-        <TooltipContent side={side === "top" ? "top" : "bottom"}>{label}</TooltipContent>
-      </Tooltip>
-    );
-  }
-
-  return (
-    <AgentPicker
-      agents={agents}
-      userId={userId}
-      onSelect={(agent) => onStart(agent)}
-      side={side}
-      align="start"
-      triggerRender={
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="rounded-full text-muted-foreground"
-          aria-label={label}
-        />
-      }
-      trigger={<Plus />}
-    />
   );
 }

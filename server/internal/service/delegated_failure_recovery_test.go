@@ -946,8 +946,8 @@ func TestDelegatedFailureRecoveryStopsAfterBoundedUndeliveredAttempts(t *testing
 		Scan(&inboxItems, &inboxSeverity, &inboxBody); err != nil {
 		t.Fatalf("read exhaustion inbox item: %v", err)
 	}
-	if inboxItems != 1 || inboxSeverity != "action_required" || inboxBody != exhaustionContent {
-		t.Fatalf("exhaustion inbox = count %d severity %q body %q, want one action-required copy of explanation", inboxItems, inboxSeverity, inboxBody)
+	if inboxItems != 0 || inboxSeverity != "" || inboxBody != "" {
+		t.Fatalf("exhaustion inbox = count %d severity %q body %q, want suppressed notice with execution explanation retained", inboxItems, inboxSeverity, inboxBody)
 	}
 	if result, err := svc.RecoverPendingDelegatedFailures(ctx, 100); err != nil || result != (DelegatedFailureRecoverySweepResult{}) {
 		t.Fatalf("post-exhaustion recovery sweep = %+v, %v; want zero result, nil", result, err)
@@ -958,8 +958,8 @@ func TestDelegatedFailureRecoveryStopsAfterBoundedUndeliveredAttempts(t *testing
 		  AND type = 'task_failed'`, f.workspaceID, f.userID, f.issueID).Scan(&inboxItems); err != nil {
 		t.Fatalf("recount exhaustion inbox items: %v", err)
 	}
-	if inboxItems != 1 {
-		t.Fatalf("post-exhaustion inbox count = %d, want 1", inboxItems)
+	if inboxItems != 0 {
+		t.Fatalf("post-exhaustion inbox count = %d, want 0", inboxItems)
 	}
 	var finalTasks int
 	if err := f.pool.QueryRow(ctx, `

@@ -104,7 +104,7 @@ describe("shortcut store", () => {
 
     const custom = createShortcutChord("G", { primary: true });
     useShortcutStore.getState().setShortcut("goInbox", custom);
-    expect(findShortcutConflict("goChat", custom)).toBe("goInbox");
+    expect(findShortcutConflict("goSkills", custom)).toBe("goInbox");
   });
 
   it("migrates v1 string overrides without losing disabled actions", () => {
@@ -127,7 +127,7 @@ describe("shortcut store", () => {
         findInIssue: createShortcutChord("J"),
         send: createShortcutChord("Enter"),
         goInbox: null,
-        goChat: createShortcutChord("Meta"),
+        goSkills: createShortcutChord("Meta"),
         unknownAction: createShortcutChord("X"),
       }),
     ).toEqual({

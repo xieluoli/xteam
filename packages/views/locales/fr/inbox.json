@@ -51,11 +51,6 @@
   "detail": {
     "select_prompt": "Sélectionnez une notification pour afficher les détails",
     "empty": "Votre boîte de réception est vide",
-    "original_input": "Saisie d'origine",
-    "retry_with_context": "Réessayer avec le contexte",
-    "edit_advanced": "Modifier en mode avancé",
-    "autopilot_quota_exceeded_body": "Cet espace de travail a atteint sa limite de {{limit}} exécutions d'automatisation pour la période actuelle. Les prochaines exécutions d'automatisation ne démarreront qu'après la réinitialisation du quota {{resetAt}}.",
-    "autopilot_quota_upgrade": "Voir les options de mise à niveau",
     "archive": "Archiver",
     "unarchive": "Désarchiver"
   },
@@ -99,14 +94,11 @@
     "children_done_stage": "Sous-tâches de l’étape {{stage}} terminées"
   },
   "toasts": {
-    "source_context_retry_started": "Nouvelle tentative démarrée avec le contexte d'origine",
     "archived": "Notification archivée",
     "unarchived": "Notification restaurée"
   },
   "errors": {
     "archived_lookup_failed": "Échec du chargement de la notification liée",
-    "source_context_retry_failed": "Impossible de réessayer avec le contexte d'origine",
-    "source_context_retry_unavailable": "Ce contexte ne peut plus être réutilisé pour une nouvelle tentative. Recommencez depuis le point de branchement.",
     "mark_read_failed": "Échec du marquage comme lu",
     "mark_unread_failed": "Échec du marquage comme non lu",
     "archive_failed": "Échec de l'archivage",

@@ -93,7 +93,12 @@ describe("ApiClient agent conversation-starter compatibility", () => {
 describe("ApiClient edit guards", () => {
   it("serializes field baselines for issue and comment writes", async () => {
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(
-      new Response("{}", {
+      new Response(JSON.stringify({
+        id: "issue-1", workspace_id: "ws-1", number: 1, identifier: "MUL-1", title: "Latest", description: null,
+        status: "todo", priority: "none", assignee_type: null, assignee_id: null, creator_type: "member", creator_id: "user-1",
+        parent_issue_id: null, project_id: null, position: 0, start_date: null, due_date: null,
+        created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z",
+      }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }),
@@ -3139,5 +3144,18 @@ describe("ApiClient shared credential across windows", () => {
     await expect(client.markOnboardingComplete()).rejects.toBeInstanceOf(ApiError);
 
     expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+});
+
+
+describe("ApiClient conclusion writes", () => {
+  it("sends the conclusion and rejects a malformed issue response", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 42 }), {
+      status: 200, headers: { "Content-Type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new ApiClient("https://api.example.test");
+    await expect(client.updateIssue("issue-1", { conclusion: "已验收" })).rejects.toThrow(/malformed issue/);
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({ conclusion: "已验收" });
   });
 });

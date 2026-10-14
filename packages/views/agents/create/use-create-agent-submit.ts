@@ -114,9 +114,7 @@ export function useCreateAgentSubmit(options: {
           name: agent.name || draft.name.trim(),
         }),
       );
-      navigation.push(
-        squadId ? paths.squadDetail(squadId) : paths.agentDetail(agent.id),
-      );
+      navigation.push(paths.agentDetail(agent.id));
     } catch (error) {
       const nextErrors = classifyAgentCreateError(
         error,

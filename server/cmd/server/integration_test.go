@@ -1110,7 +1110,7 @@ func TestArchivedInboxThroughRouter(t *testing.T) {
 	issueID := seedArchivedFixtureIssue(t, "Archived fixture")
 	if _, err := testPool.Exec(context.Background(), `
 		INSERT INTO inbox_item (workspace_id, recipient_type, recipient_id, type, title, issue_id, archived)
-		VALUES ($1, 'member', $2, 'new_comment', 'archived one', $3, true)
+		VALUES ($1, 'member', $2, 'issue_assigned', 'archived one', $3, true)
 	`, testWorkspaceID, testUserID, issueID); err != nil {
 		t.Fatalf("failed to seed inbox item: %v", err)
 	}
@@ -1143,10 +1143,10 @@ func TestArchivedInboxExcludesIssuesWithActiveItems(t *testing.T) {
 		VALUES
 			-- Archived a while ago, then a new notification arrived: back in the
 			-- main inbox, so it must NOT appear in the archive.
-			($1, 'member', $2, 'new_comment',    'revived-old', $3, true,  now() - interval '2 hours'),
+			($1, 'member', $2, 'issue_assigned',    'revived-old', $3, true,  now() - interval '2 hours'),
 			($1, 'member', $2, 'status_changed', 'revived-new', $3, false, now()),
 			-- Archived with no follow-up: belongs in the archive.
-			($1, 'member', $2, 'new_comment',    'quiet-old',   $4, true,  now() - interval '2 hours')
+			($1, 'member', $2, 'issue_assigned',    'quiet-old',   $4, true,  now() - interval '2 hours')
 	`, testWorkspaceID, testUserID, revivedIssue, quietIssue); err != nil {
 		t.Fatalf("failed to seed inbox items: %v", err)
 	}
@@ -1182,7 +1182,7 @@ func TestUnarchiveInboxPreservesUnread(t *testing.T) {
 	var unreadItemID string
 	if err := testPool.QueryRow(ctx, `
 		INSERT INTO inbox_item (workspace_id, recipient_type, recipient_id, type, title, issue_id, read, archived, created_at)
-		VALUES ($1, 'member', $2, 'new_comment', 'archived unread', $3, false, true, now())
+		VALUES ($1, 'member', $2, 'issue_assigned', 'archived unread', $3, false, true, now())
 		RETURNING id
 	`, testWorkspaceID, testUserID, issueID).Scan(&unreadItemID); err != nil {
 		t.Fatalf("failed to seed inbox item: %v", err)
@@ -1263,7 +1263,7 @@ func TestMarkInboxUnreadIsItemScoped(t *testing.T) {
 	var newestID string
 	if err := testPool.QueryRow(ctx, `
 		INSERT INTO inbox_item (workspace_id, recipient_type, recipient_id, type, title, issue_id, read, archived, created_at)
-		VALUES ($1, 'member', $2, 'new_comment', 'newest', $3, true, false, now())
+		VALUES ($1, 'member', $2, 'issue_assigned', 'newest', $3, true, false, now())
 		RETURNING id
 	`, testWorkspaceID, testUserID, issueID).Scan(&newestID); err != nil {
 		t.Fatalf("failed to seed inbox item: %v", err)
@@ -1398,7 +1398,7 @@ func TestInboxUnreadSummaryDedupesByIssue(t *testing.T) {
 	if _, err := testPool.Exec(ctx, `
 		INSERT INTO inbox_item (workspace_id, recipient_type, recipient_id, type, title, issue_id, read, created_at)
 		VALUES
-			($1, 'member', $2, 'new_comment',    'older', $3, false, now() - interval '1 hour'),
+			($1, 'member', $2, 'issue_assigned',    'older', $3, false, now() - interval '1 hour'),
 			($1, 'member', $2, 'status_changed', 'newer', $3, true,  now())
 	`, testWorkspaceID, testUserID, issueID); err != nil {
 		t.Fatalf("failed to seed inbox items: %v", err)

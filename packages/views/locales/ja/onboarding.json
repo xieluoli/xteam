@@ -7,20 +7,14 @@
     },
     "workspace": {
       "label": "ワークスペース"
-    },
-    "runtime": {
-      "label": "Mika を知る"
     }
   },
   "welcome": {
     "wordmark": "Multica へようこそ",
-    "headline_line1": "あなたの AI チームメイトを、",
+    "headline_line1": "チームの仕事を、",
     "headline_line2": "ひとつの",
     "headline_emphasis": "ワークスペースに。",
-    "lede": "同僚に仕事を任せるようにタスクを割り当てるだけ。エージェントが引き受け、ステータスを更新し、完了したらコメントします。",
-    "lede_web": "デスクトップ版にはランタイムが同梱されており、何もインストールする必要はありません。ご自身の CLI を接続するには、ウェブで続けてください。",
-    "download_desktop": "デスクトップ版をダウンロード",
-    "continue_on_web": "ウェブで続ける",
+    "lede": "タスクを整理し、進捗とチームの決定を一か所で管理します。",
     "start_exploring": "探索を始める",
     "skip_existing": "以前にやったことがあります",
     "illustration": {

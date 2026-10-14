@@ -1,17 +1,5 @@
-import type {
-  AgentRuntime,
-  RuntimeUsage,
-  RuntimeUsageByAgent,
-} from "@multica/core/types";
+import type { RuntimeUsage } from "@multica/core/types";
 import { getCustomPricing } from "@multica/core/runtimes/custom-pricing-store";
-
-// A live local daemon re-registers itself within seconds of a server-side
-// delete (daemon self-heal, #2404), so deleting an online local runtime from
-// the UI has no lasting effect. Both the detail page and the list row menu
-// gate their Delete affordance on this same predicate.
-export function isSelfHealingRuntime(runtime: AgentRuntime): boolean {
-  return runtime.runtime_mode === "local" && runtime.status === "online";
-}
 
 // ---------------------------------------------------------------------------
 // Formatting helpers
@@ -138,27 +126,6 @@ export function formatTokens(n: number): string {
   }
 
   return `${Number(scaled.toFixed(1))}${unit.suffix}`;
-}
-
-/**
- * Whole-number prompt-cache hit rate across mutually exclusive input buckets.
- * Callers must sum each bucket before calling so the result is a ratio of sums,
- * never an average of per-row percentages. Output tokens are not input-side
- * traffic and therefore do not belong in the denominator.
- *
- * Returns null when no input-side usage was reported. Round ordinary values to
- * the nearest percent, but reserve 100% for a genuinely complete cache hit.
- */
-export function cacheHitRatePercent(
-  inputTokens: number,
-  cacheReadTokens: number,
-  cacheWriteTokens: number,
-): number | null {
-  const inputSideTokens = inputTokens + cacheReadTokens + cacheWriteTokens;
-  if (inputSideTokens <= 0) return null;
-
-  const percent = (cacheReadTokens / inputSideTokens) * 100;
-  return percent === 100 ? 100 : Math.min(Math.round(percent), 99);
 }
 
 // Cents below $100, whole dollars above — two decimals on a four-figure spend
@@ -473,41 +440,6 @@ function pricingCandidates(model: string, provider?: string): string[] {
   return [...base.map((c) => qualify(p, c)), ...base];
 }
 
-// The canonical storage/diagnostic key for a (model, provider) pair: the
-// provider-qualified form when a provider is known, else the bare model.
-// `collectUnmappedModels` returns these, and the custom-pricing dialog keys
-// overrides by them, so a user-entered rate for `cursor/auto` resolves only
-// for Cursor rows — not for another provider that also reports `auto`.
-// Provider is lowercased so lookups tolerate case drift in the stored value.
-export function pricingKey(model: string, provider?: string): string {
-  const p = normalizeProvider(provider);
-  return p ? qualify(p, model) : model;
-}
-
-// Display/grouping key for a usage row's model. Self-resolving ids
-// (vendor-prefixed SKUs like `claude-opus-4-7`, and the legacy `cursor`
-// fallback whose key equals the provider name) stay bare; a generic id that
-// only prices under a provider (`auto`, `composer-*`) is provider-qualified
-// so two providers reporting the same bare id don't merge into one mislabelled
-// row, and the label matches what `collectUnmappedModels` / the pricing dialog
-// surface.
-export function modelGroupingKey(model: string, provider?: string): string {
-  if (!model) return normalizeProvider(provider) || "unknown";
-  return isSelfResolvingId(model) ? model : pricingKey(model, provider);
-}
-
-// Whether a model id prices on its own without a provider qualifier (a
-// vendor-prefixed SKU, or the legacy `cursor` fallback). Such ids keep a bare
-// grouping key; generic ids (`auto`, `composer-*`) stay provider-qualified.
-//
-// Probes the BARE model on purpose: forwarding a provider would let a
-// qualified row report as self-resolving and collapse back to a bare key,
-// re-merging the cross-provider collision this scheme prevents. Keep the
-// argument list provider-free so that stays true.
-function isSelfResolvingId(model: string): boolean {
-  return isModelPriced(model);
-}
-
 // Generate the lookup candidates for a model string, in priority order:
 // the raw string first (preserves explicit user / catalog spellings),
 // then the canonicalized forms. Deduped so we don't repeat lookups.
@@ -575,38 +507,6 @@ function canonicalCandidates(model: string): string[] {
   push(stripDate(noTag));
   canonicalCandidatesCache.set(model, out);
   return out;
-}
-
-// Cheap predicate for the empty-state diagnostic: which model strings in a
-// usage batch failed pricing resolution. Useful when the user is staring at
-// "$0.00 / 2M tokens" and wants to know why.
-export function isModelPriced(model: string, provider?: string): boolean {
-  return resolvePricing(model, provider) !== undefined;
-}
-
-// Returns the unique, sorted list of pricing keys present in `rows` that
-// don't resolve to a price. Keys are provider-qualified (`cursor/auto`) when
-// the row carries a provider, so the same bare model id reported by two
-// providers surfaces as two distinct entries the user can price separately.
-// Empty when everything's priced or there are no rows.
-// A row the provider priced in full needs no rate-table entry, so it must not
-// raise the "we can't price this model" warning — its cost is already exact,
-// and asking the user to supply a rate for it would be asking them to override
-// a real bill with a guess.
-export function collectUnmappedModels(rows: readonly Priceable[]): string[] {
-  const set = new Set<string>();
-  for (const r of rows) {
-    if (!r.model || isModelPriced(r.model, r.provider)) continue;
-    const uncosted = uncostedTokens(r);
-    const needsEstimate =
-      uncosted.input > 0 ||
-      uncosted.output > 0 ||
-      uncosted.cacheRead > 0 ||
-      uncosted.cacheWrite > 0;
-    if (!needsEstimate && (r.cost_usd_ticks ?? 0) > 0) continue;
-    set.add(pricingKey(r.model, r.provider));
-  }
-  return Array.from(set).toSorted();
 }
 
 // Anything carrying per-model token totals can be priced — RuntimeUsage,
@@ -857,12 +757,6 @@ export interface DailyTokenData {
   cacheWrite: number;
 }
 
-export interface DailyCostData {
-  date: string;
-  label: string;
-  cost: number;
-}
-
 // Stacked variant — splits the daily $ figure into the four components that
 // drive billing. Every component `estimateCost` charges for has to be here:
 // `total` is what the tooltip and the empty-state check read, so a component
@@ -884,12 +778,6 @@ export interface DailyCostStackData {
   cacheRead: number;
   cacheWrite: number;
   total: number;
-}
-
-export interface ModelDistribution {
-  model: string;
-  tokens: number;
-  cost: number;
 }
 
 export interface WeeklyTokenData {
@@ -922,104 +810,6 @@ export interface WeeklyCostStackData {
   cacheRead: number;
   cacheWrite: number;
   total: number;
-}
-
-export function aggregateByDate(usage: RuntimeUsage[]): {
-  dailyTokens: DailyTokenData[];
-  dailyCost: DailyCostData[];
-  dailyCostStack: DailyCostStackData[];
-  modelDist: ModelDistribution[];
-} {
-  const dateMap = new Map<string, Omit<DailyTokenData, "label">>();
-  const costMap = new Map<string, number>();
-  const stackMap = new Map<
-    string,
-    { input: number; output: number; cacheRead: number; cacheWrite: number }
-  >();
-  const modelMap = new Map<string, { tokens: number; cost: number }>();
-
-  for (const u of usage) {
-    const existing = dateMap.get(u.date) ?? {
-      date: u.date,
-      input: 0,
-      output: 0,
-      cacheRead: 0,
-      cacheWrite: 0,
-    };
-    existing.input += u.input_tokens;
-    existing.output += u.output_tokens;
-    existing.cacheRead += u.cache_read_tokens;
-    existing.cacheWrite += u.cache_write_tokens;
-    dateMap.set(u.date, existing);
-
-    const dayCost = (costMap.get(u.date) ?? 0) + estimateCost(u);
-    costMap.set(u.date, dayCost);
-
-    const breakdown = estimateCostBreakdown(u);
-    const stack = stackMap.get(u.date) ?? {
-      input: 0,
-      output: 0,
-      cacheRead: 0,
-      cacheWrite: 0,
-    };
-    stack.input += breakdown.input;
-    stack.output += breakdown.output;
-    stack.cacheRead += breakdown.cacheRead;
-    stack.cacheWrite += breakdown.cacheWrite;
-    stackMap.set(u.date, stack);
-
-    const modelName = modelGroupingKey(u.model, u.provider);
-    const m = modelMap.get(modelName) ?? { tokens: 0, cost: 0 };
-    m.tokens +=
-      u.input_tokens + u.output_tokens + u.cache_read_tokens + u.cache_write_tokens;
-    m.cost += estimateCost(u);
-    modelMap.set(modelName, m);
-  }
-
-  const formatLabel = (d: string) => {
-    const date = new Date(d + "T00:00:00");
-    return `${date.getMonth() + 1}/${date.getDate()}`;
-  };
-
-  const dailyTokens = Array.from(dateMap.values())
-    .toSorted((a, b) => a.date.localeCompare(b.date))
-    .map((d) => ({ ...d, label: formatLabel(d.date) }));
-
-  const dailyCost = Array.from(costMap.entries())
-    .toSorted(([a], [b]) => a.localeCompare(b))
-    .map(([date, cost]) => ({
-      date,
-      label: formatLabel(date),
-      cost: Math.round(cost * 100) / 100,
-    }));
-
-  const dailyCostStack = Array.from(stackMap.entries())
-    .toSorted(([a], [b]) => a.localeCompare(b))
-    .map(([date, s]) => {
-      const round = (n: number) => Math.round(n * 100) / 100;
-      const input = round(s.input);
-      const output = round(s.output);
-      const cacheRead = round(s.cacheRead);
-      const cacheWrite = round(s.cacheWrite);
-      return {
-        date,
-        label: formatLabel(date),
-        input,
-        output,
-        cacheRead,
-        cacheWrite,
-        // Rounded components, not round(sum) — the tooltip's Total is the sum
-        // of the segments it draws, so totalling the rounded parts is what
-        // keeps the footer agreeing with the bars it sits under.
-        total: round(input + output + cacheRead + cacheWrite),
-      };
-    });
-
-  const modelDist = [...modelMap.entries()]
-    .map(([model, data]) => ({ model, ...data }))
-    .sort((a, b) => b.tokens - a.tokens);
-
-  return { dailyTokens, dailyCost, dailyCostStack, modelDist };
 }
 
 // Fold daily-grain rows into ISO calendar weeks (Mon–Sun). Reuses the same
@@ -1150,27 +940,6 @@ export function aggregateByWeek(
   return { weeklyTokens, weeklyCostStack };
 }
 
-// Slice a daily-grain usage series into the user's selected window AND the
-// immediately prior window of equal length. "Today" is read in the runtime's
-// timezone so the cutoff lands on the same calendar boundary the backend
-// used when bucketing rows — without this the browser/runtime tz gap could
-// shift the boundary by a day at the edges (#MUL-2382 sliceWindow tz bug).
-export function sliceWindow(
-  usage: readonly RuntimeUsage[],
-  days: number,
-  tz: string,
-): { filtered: RuntimeUsage[]; prevFiltered: RuntimeUsage[] } {
-  const today = todayIso(tz);
-  const isoCurrent = addDaysIso(today, -days);
-  const isoPrev = addDaysIso(today, -days * 2);
-  return {
-    filtered: usage.filter((u) => u.date >= isoCurrent),
-    prevFiltered: usage.filter(
-      (u) => u.date >= isoPrev && u.date < isoCurrent,
-    ),
-  };
-}
-
 function diffDaysIso(from: string, to: string): number {
   const [y1, m1, d1] = from.split("-").map(Number);
   const [y2, m2, d2] = to.split("-").map(Number);
@@ -1230,91 +999,4 @@ export function formatShortDate(iso: string): string {
     day: "numeric",
     timeZone: "UTC",
   });
-}
-
-// ---------------------------------------------------------------------------
-// Cost-by-X aggregations
-//
-// All three "Cost by …" tabs share the same shape: a sorted list of rows
-// where each row carries a key (agent name, model name, or hour-of-day),
-// total tokens and total cost. The chart / list components are oblivious
-// to which axis they're rendering — they just see {key, tokens, cost}.
-// ---------------------------------------------------------------------------
-
-export interface CostByKey {
-  key: string;
-  tokens: number;
-  cost: number;
-  taskCount: number;
-}
-
-// Per-(agent, model) rows → per-agent totals. Cost is summed across all
-// models for that agent, then the list is sorted by cost desc so the
-// heaviest-spending agent appears first.
-export function aggregateCostByAgent(rows: RuntimeUsageByAgent[]): CostByKey[] {
-  const map = new Map<string, CostByKey>();
-  for (const r of rows) {
-    const entry = map.get(r.agent_id) ?? {
-      key: r.agent_id,
-      tokens: 0,
-      cost: 0,
-      taskCount: 0,
-    };
-    entry.tokens +=
-      r.input_tokens + r.output_tokens + r.cache_read_tokens + r.cache_write_tokens;
-    entry.cost += estimateCost(r);
-    entry.taskCount += r.task_count;
-    map.set(r.agent_id, entry);
-  }
-  return Array.from(map.values()).toSorted((a, b) => b.cost - a.cost);
-}
-
-// Per-(date, model) rows → per-model totals (the "By model" tab reuses the
-// daily-grain data we already cache, so no extra request is needed).
-export function aggregateCostByModel(rows: RuntimeUsage[]): CostByKey[] {
-  const map = new Map<string, CostByKey>();
-  for (const r of rows) {
-    const key = modelGroupingKey(r.model, r.provider);
-    const entry = map.get(key) ?? { key, tokens: 0, cost: 0, taskCount: 0 };
-    entry.tokens +=
-      r.input_tokens + r.output_tokens + r.cache_read_tokens + r.cache_write_tokens;
-    entry.cost += estimateCost(r);
-    map.set(key, entry);
-  }
-  return Array.from(map.values()).toSorted((a, b) => b.cost - a.cost);
-}
-
-// Sum of estimated cost over the trailing window
-//   [today − offsetDays − daysBack, today − offsetDays).
-// `offsetDays = 0, daysBack = 7` → last 7 days.
-// `offsetDays = 7, daysBack = 7` → the 7 days *before* the last 7 (the
-// "previous" window for the runtime-list ↑/↓ delta).
-//
-// "Today" is read in `tz` (the viewer's timezone) so the cutoff lands on
-// the same calendar boundary the backend used when bucketing rows — the
-// rows arrive bucketed in the viewer's tz, so slicing them with the JS
-// engine's local tz would shift the window by a day at the edges.
-//
-// Walks the same daily-grain `RuntimeUsage` rows that `aggregateByDate` uses,
-// so the runtime-list cost stays consistent with the runtime-detail KPIs
-// (and crucially, hits the same TanStack Query cache key).
-export function computeCostInWindow(
-  rows: readonly RuntimeUsage[],
-  daysBack: number,
-  tz: string,
-  offsetDays: number = 0,
-): number {
-  const today = todayIso(tz);
-  const isoEnd = addDaysIso(today, -offsetDays);
-  const isoStart = addDaysIso(today, -offsetDays - daysBack);
-  let total = 0;
-  for (const r of rows) {
-    if (r.date >= isoStart && r.date < isoEnd) total += estimateCost(r);
-  }
-  return total;
-}
-
-export function pctChange(current: number, previous: number): number | null {
-  if (previous <= 0) return null;
-  return Math.round(((current - previous) / previous) * 100);
 }

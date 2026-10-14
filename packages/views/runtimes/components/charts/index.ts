@@ -17,4 +17,3 @@ export {
   type FailureBucketTotals,
   type FailureClassCounts,
 } from "./failure-class-visuals";
-export { ActivityHeatmap } from "./activity-heatmap";

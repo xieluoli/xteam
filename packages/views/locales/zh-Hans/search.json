@@ -21,7 +21,8 @@
     "unfold_all_comments": "展开全部评论",
     "switch_to_light": "切换到浅色主题",
     "switch_to_dark": "切换到深色主题",
-    "use_system_theme": "跟随系统主题"
+    "use_system_theme": "跟随系统主题",
+    "switch_to_japan_blues": "切换到 Japan Blues"
   },
   "toast": {
     "link_copied": "已复制链接",

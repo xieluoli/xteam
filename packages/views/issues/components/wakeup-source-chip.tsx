@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, type ReactNode } from "react";
+import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import { issueTasksOptions, issueWakeupsOptions } from "@multica/core/issues";
@@ -43,24 +43,4 @@ function WakeupSourceChipLabel({ issueId, wakeupId }: { issueId: string; wakeupI
       <span className="truncate">{label}</span>
     </span>
   );
-}
-
-/**
- * A wakeup run's trigger label with the rule's condition, e.g. "Wakeup · When
- * a linked PR's CI finishes". Mounted only for wakeup runs, so other run
- * lists never load the issue's rules.
- */
-export function WakeupRunLabel({
-  task,
-  fallback,
-  render,
-}: {
-  task: AgentTask;
-  fallback: string;
-  render: (label: string) => ReactNode;
-}) {
-  const { t } = useT("issues");
-  const text = useWakeupText();
-  const rule = useRunWakeup(task.issue_id, task.wakeup_id);
-  return render(rule ? t(($) => $.execution_log.trigger_wakeup, { condition: text.trigger(rule) }) : fallback);
 }

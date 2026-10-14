@@ -17,7 +17,7 @@ function item(overrides: Partial<InboxItem>): InboxItem {
     recipient_id: "member-1",
     actor_type: "agent",
     actor_id: "agent-1",
-    type: "new_comment",
+    type: "issue_assigned",
     severity: "info",
     issue_id: "issue-1",
     title: "Issue title",
@@ -36,7 +36,7 @@ describe("deduplicateInboxItems", () => {
     const merged = deduplicateInboxItems([
       item({
         id: "comment-notification",
-        type: "new_comment",
+        type: "issue_assigned",
         created_at: "2026-06-15T08:00:00Z",
         details: { comment_id: "comment-1" },
       }),
@@ -242,5 +242,22 @@ describe("unreadCountForWorkspace", () => {
 
   it("returns zero for an empty summary", () => {
     expect(unreadCountForWorkspace([], "ws-1")).toBe(0);
+  });
+});
+
+describe("Step 3 inbox projection", () => {
+  it("filters historical execution/comment/review notices before picking the newest issue row", () => {
+    const supported = item({ id: "assignment", type: "issue_assigned", created_at: "2026-06-15T08:00:00Z" });
+    const historical = ["new_comment", "review_requested", "task_failed", "mentioned", "quick_create_done", "autopilot_paused", "children_done"] as InboxItem["type"][];
+    const rows = [supported, ...historical.map((type, index) => item({ id: `hidden-${index}`, type, created_at: "2026-06-15T09:00:00Z" }))];
+    expect(deduplicateInboxItems(rows)).toEqual([supported]);
+    expect(deduplicateArchivedInboxItems(rows.map((row) => ({ ...row, archived: true })))).toEqual([{ ...supported, archived: true }]);
+  });
+
+  it("keeps each existing status and assignment kind, including unknown-enum safety", () => {
+    const types = ["status_changed", "issue_assigned", "unassigned", "assignee_changed"] as const;
+    const rows = types.map((type) => item({ type, id: type, issue_id: type }));
+    expect(deduplicateInboxItems(rows)).toHaveLength(4);
+    expect(deduplicateInboxItems([item({ type: "learning_reviewed" as InboxItem["type"] })])).toEqual([]);
   });
 });

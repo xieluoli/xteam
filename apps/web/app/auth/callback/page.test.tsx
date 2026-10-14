@@ -140,6 +140,16 @@ describe("CallbackPage", () => {
     mockListMyInvitations.mockResolvedValue([]);
   });
 
+  it.each(["en", "zh-Hans", "ko", "ja", "fr"] as const)("does not ship native-only auth and help copy for %s", (locale) => {
+    const resources = RESOURCES[locale];
+    expect(resources).toHaveProperty("auth.web.callback");
+    expect(resources).toHaveProperty("layout.help.docs");
+    expect(resources).not.toHaveProperty("auth.web.desktop_handoff");
+    expect(resources).not.toHaveProperty("auth.web.prefer_desktop");
+    expect(resources).not.toHaveProperty("auth.desktop");
+    expect(resources).not.toHaveProperty("layout.help.download_desktop");
+  });
+
   it("renders callback errors in the selected locale", async () => {
     mockSearchParams.delete("code");
 
@@ -239,7 +249,6 @@ describe("CallbackPage", () => {
   });
 
   it.each([
-    ["Desktop", "platform:desktop"],
     ["CLI", "cli_callback:http://127.0.0.1:46233/callback,cli_state:test"],
   ])("uses the same localized error handling for the %s callback", async (_flow, state) => {
     const { api: mockedApi } = await import("@multica/core/api");
@@ -254,6 +263,17 @@ describe("CallbackPage", () => {
     expect(mockedApi.googleLogin).toHaveBeenCalledTimes(1);
     expect(mockLoginWithGoogle).not.toHaveBeenCalled();
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("treats legacy desktop OAuth state as a normal web login", async () => {
+    mockSearchParams.set("state", "platform:desktop,next:/invite/abc");
+    const { api: mockedApi } = await import("@multica/core/api");
+    vi.mocked(mockedApi.googleLogin).mockResolvedValue({ token: "unused" } as never);
+    renderCallback();
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/invite/abc"));
+    expect(mockLoginWithGoogle).toHaveBeenCalledWith("test-code", `${window.location.origin}/auth/callback`);
+    expect(mockedApi.googleLogin).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Open Multica Desktop" })).not.toBeInTheDocument();
   });
 
   it("unonboarded user honors a safe next= (e.g. /invite/{id}) so invitees aren't trapped", async () => {

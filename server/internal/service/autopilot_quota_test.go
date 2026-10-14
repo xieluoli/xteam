@@ -249,11 +249,11 @@ func TestAutopilotQuotaEnforcesBoundaryAndFinalizesIdempotently(t *testing.T) {
 	}
 }
 
-func TestAutopilotQuotaFirstRejectionNotifiesBillingManagersOncePerWorkspacePeriod(t *testing.T) {
+func TestAutopilotQuotaRejectionPersistsWithoutRemovedInboxNotice(t *testing.T) {
 	const attempts = 10
 	fixture := newAutopilotQuotaFixture(t, entitlement.ActionEnforce, 2)
 	fixture.setNotificationPolicy(2)
-	adminID := addAutopilotQuotaMember(t, fixture, "admin")
+	addAutopilotQuotaMember(t, fixture, "admin")
 	ordinaryMemberID := addAutopilotQuotaMember(t, fixture, "member")
 	ctx := context.Background()
 
@@ -329,17 +329,8 @@ func TestAutopilotQuotaFirstRejectionNotifiesBillingManagersOncePerWorkspacePeri
 	if err := rows.Err(); err != nil {
 		t.Fatalf("iterate quota rejection recipients: %v", err)
 	}
-	wantRecipients := []pgtype.UUID{fixture.publisherID, adminID}
-	if len(recipients) != len(wantRecipients) {
-		t.Fatalf("quota rejection recipients = %v, want owner and admin", recipients)
-	}
-	for _, recipientID := range wantRecipients {
-		if got := recipients[util.UUIDToString(recipientID)]; got != 1 {
-			t.Fatalf("quota rejection recipient %s notices = %d, want one", util.UUIDToString(recipientID), got)
-		}
-	}
-	if got := recipients[util.UUIDToString(ordinaryMemberID)]; got != 0 {
-		t.Fatalf("ordinary member received %d quota rejection notices, want none", got)
+	if len(recipients) != 0 {
+		t.Fatalf("removed quota notifications persisted: %v", recipients)
 	}
 
 	period, err := fixture.queries.GetAutopilotQuotaPeriod(ctx, db.GetAutopilotQuotaPeriodParams{
@@ -350,33 +341,8 @@ func TestAutopilotQuotaFirstRejectionNotifiesBillingManagersOncePerWorkspacePeri
 	if err != nil {
 		t.Fatalf("load quota period: %v", err)
 	}
-	if !period.RejectionNotifiedAt.Valid {
-		t.Fatal("first rejection notification marker was not persisted")
-	}
-
-	var title, noticeKey, severity, body string
-	var hasThresholdPercent bool
-	if err := fixture.pool.QueryRow(ctx, `
-		SELECT details->>'autopilot_title', details->>'notice_key',
-		       details ? 'threshold_percent', severity, body
-		FROM inbox_item
-		WHERE workspace_id = $1 AND type = 'autopilot_quota_exceeded'
-		LIMIT 1`, fixture.workspaceID,
-	).Scan(&title, &noticeKey, &hasThresholdPercent, &severity, &body); err != nil {
-		t.Fatalf("load first rejection details: %v", err)
-	}
-	if title == "" || noticeKey != autopilotQuotaFirstRejectionNoticeKey || hasThresholdPercent {
-		t.Fatalf("first rejection details = title %q, key %q, threshold field %v", title, noticeKey, hasThresholdPercent)
-	}
-	if severity != "attention" {
-		t.Fatalf("quota rejection severity = %q, want attention", severity)
-	}
-	if strings.Contains(body, title) {
-		t.Fatalf("workspace-level quota rejection body names one autopilot: %q", body)
-	}
-	if strings.Contains(body, fixture.resetAt.UTC().Format(time.RFC3339)) ||
-		!strings.Contains(body, fixture.resetAt.UTC().Format("January 2, 2006 at 15:04 UTC")) {
-		t.Fatalf("quota rejection body reset time is not human-readable: %q", body)
+	if period.RejectionNotifiedAt.Valid {
+		t.Fatal("suppressed notification must not be marked delivered")
 	}
 
 	usage, err := fixture.service.AutopilotQuotaUsage(ctx, fixture.workspaceID)

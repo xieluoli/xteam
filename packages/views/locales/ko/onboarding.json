@@ -7,20 +7,14 @@
     },
     "workspace": {
       "label": "워크스페이스"
-    },
-    "runtime": {
-      "label": "Mika 소개"
     }
   },
   "welcome": {
     "wordmark": "Multica에 오신 것을 환영합니다",
-    "headline_line1": "AI 팀원과",
+    "headline_line1": "팀의 업무를",
     "headline_line2": "하나의",
-    "headline_emphasis": "워크스페이스에서.",
-    "lede": "동료에게 일을 맡기듯 태스크를 할당하세요. 에이전트가 이를 맡고, 상태를 업데이트하고, 끝나면 댓글을 남깁니다.",
-    "lede_web": "데스크톱에는 런타임이 포함되어 있어 따로 설치할 게 없습니다. 웹에서 계속하려면 내 CLI를 연결하세요.",
-    "download_desktop": "데스크톱 다운로드",
-    "continue_on_web": "웹에서 계속",
+    "headline_emphasis": "워크스페이스에.",
+    "lede": "태스크를 정리하고 진행 상황과 팀의 결정을 한곳에서 관리하세요.",
     "start_exploring": "둘러보기 시작",
     "skip_existing": "이미 해봤습니다",
     "illustration": {

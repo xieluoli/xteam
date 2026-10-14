@@ -6,7 +6,8 @@ WITH newest AS MATERIALIZED (
            CASE WHEN i.actor_type = 'system' THEN 'system'
                 ELSE i.actor_type || ':' || i.actor_id::text END AS actor
     FROM inbox_item i
-    WHERE i.workspace_id = sqlc.arg(workspace_id)::uuid
+    WHERE i.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+      AND i.workspace_id = sqlc.arg(workspace_id)::uuid
       AND i.recipient_type = 'member'
       AND i.recipient_id = sqlc.arg(recipient_id)::uuid
       AND i.archived = true
@@ -14,7 +15,8 @@ WITH newest AS MATERIALIZED (
            OR (i.issue_id IS NULL AND i.id = sqlc.narg(group_id)::uuid))
       AND (i.issue_id IS NULL OR NOT EXISTS (
           SELECT 1 FROM inbox_item active
-          WHERE active.workspace_id = i.workspace_id
+          WHERE active.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+            AND active.workspace_id = i.workspace_id
             AND active.recipient_type = i.recipient_type
             AND active.recipient_id = i.recipient_id
             AND active.issue_id = i.issue_id AND active.archived = false
@@ -48,7 +50,8 @@ JOIN inbox_item i ON i.id = selected.id
 LEFT JOIN LATERAL (
     SELECT a.details->>'comment_id' AS comment_id
     FROM inbox_item a
-    WHERE i.issue_id IS NOT NULL AND a.issue_id = i.issue_id
+    WHERE a.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+      AND i.issue_id IS NOT NULL AND a.issue_id = i.issue_id
       AND a.workspace_id = i.workspace_id AND a.recipient_type = i.recipient_type
       AND a.recipient_id = i.recipient_id AND a.archived = true
       AND NULLIF(a.details->>'comment_id', '') IS NOT NULL
@@ -64,13 +67,15 @@ WITH newest AS MATERIALIZED (
            CASE WHEN i.actor_type = 'system' THEN 'system'
                 ELSE i.actor_type || ':' || i.actor_id::text END AS actor
     FROM inbox_item i
-    WHERE i.workspace_id = sqlc.arg(workspace_id)::uuid
+    WHERE i.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+      AND i.workspace_id = sqlc.arg(workspace_id)::uuid
       AND i.recipient_type = 'member'
       AND i.recipient_id = sqlc.arg(recipient_id)::uuid
       AND i.archived = true
       AND (i.issue_id IS NULL OR NOT EXISTS (
           SELECT 1 FROM inbox_item active
-          WHERE active.workspace_id = i.workspace_id
+          WHERE active.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+            AND active.workspace_id = i.workspace_id
             AND active.recipient_type = i.recipient_type
             AND active.recipient_id = i.recipient_id
             AND active.issue_id = i.issue_id AND active.archived = false

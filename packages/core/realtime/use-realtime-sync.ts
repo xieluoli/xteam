@@ -46,6 +46,7 @@ import {
   invalidateLastActivitySortedIssueLists,
   invalidateUpdatedAtSortedIssueLists,
 } from "../issues/cache-coordinator";
+import { isSupportedInboxType } from "../types/inbox";
 import { onInboxNew, onInboxInvalidate, onInboxIssueStatusChanged, onInboxIssueDeleted, onInboxSummaryInvalidate } from "../inbox/ws-updaters";
 import {
   notificationPreferenceOptions,
@@ -565,6 +566,7 @@ export async function handleInboxNew(
   qc: QueryClient,
   item: InboxItem,
 ): Promise<void> {
+  if (!isSupportedInboxType(item.type)) return;
   const sourceWsId = item.workspace_id;
   if (sourceWsId) void onInboxNew(qc, sourceWsId, item);
   // A new item in ANY workspace can light the workspace-switcher dot, so

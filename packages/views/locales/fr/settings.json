@@ -157,7 +157,8 @@
       "title": "Thème",
       "light": "Clair",
       "dark": "Sombre",
-      "system": "Système"
+      "system": "Système",
+      "japan_blues": "Japan Blues"
     },
     "language": {
       "title": "Langue",
@@ -179,13 +180,7 @@
     "sticky_comment_bar": {
       "title": "Épingler la barre de commentaire en bas"
     },
-    "running_agent_reply": {
-      "title": "En répondant à un agent en cours d'exécution",
-      "steer": "Ajouter à l'exécution en cours",
-      "after_run": "Démarrer après cette exécution",
-      "hint": "Définit seulement le choix par défaut. Vous pouvez le modifier pour chaque message avant l'envoi."
-    },
-    "comments_title": "Commentaires et discussion",
+    "comments_title": "Commentaires",
     "region_title": "Langue et région",
     "appearance_title": "Apparence",
     "issue_fields_title": "Champs affichés à la création de tâches",
@@ -242,10 +237,6 @@
         "label": "Afficher ou masquer la barre latérale droite",
         "description": "Disponible sur les pages avec une barre latérale droite."
       },
-      "toggleChat": {
-        "label": "Afficher ou masquer la fenêtre de discussion",
-        "description": "Ouvrir ou fermer la fenêtre de discussion flottante. À l'ouverture, le champ de message reçoit le focus."
-      },
       "findInIssue": {
         "label": "Rechercher dans la tâche",
         "description": "Rechercher dans la tâche ouverte."
@@ -270,10 +261,6 @@
         "label": "Aller à la boîte de réception",
         "description": "Ouvrir la boîte de réception de l'espace de travail."
       },
-      "goChat": {
-        "label": "Aller aux discussions",
-        "description": "Ouvrir les discussions de l'espace de travail."
-      },
       "goMyIssues": {
         "label": "Aller à Mes tâches",
         "description": "Ouvrir les tâches qui vous sont assignées."
@@ -286,25 +273,13 @@
         "label": "Aller aux projets",
         "description": "Ouvrir la liste des projets."
       },
-      "goAutopilots": {
-        "label": "Aller aux automatisations",
-        "description": "Ouvrir les automatisations de l'espace de travail."
-      },
       "goAgents": {
         "label": "Aller aux agents",
         "description": "Ouvrir la liste des agents."
       },
-      "goSquads": {
-        "label": "Aller aux squads",
-        "description": "Ouvrir la liste des squads."
-      },
       "goUsage": {
         "label": "Aller aux statistiques",
         "description": "Ouvrir les statistiques de consommation."
-      },
-      "goRuntimes": {
-        "label": "Aller aux runtimes",
-        "description": "Ouvrir la configuration des runtimes."
       },
       "goSkills": {
         "label": "Aller aux skills",
@@ -327,10 +302,6 @@
       "reset_zoom": "Réinitialiser le zoom",
       "close_dialog": "Fermer la fenêtre ou le menu"
     }
-  },
-  "chat": {
-    "floating_label": "Fenêtre de discussion flottante",
-    "floating_hint": "Afficher le bouton de chat flottant sur chaque page."
   },
   "issue": {
     "opening": {

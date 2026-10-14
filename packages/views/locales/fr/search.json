@@ -21,7 +21,8 @@
     "unfold_all_comments": "Déplier tous les commentaires",
     "switch_to_light": "Passer au thème clair",
     "switch_to_dark": "Passer au thème sombre",
-    "use_system_theme": "Utiliser le thème du système"
+    "use_system_theme": "Utiliser le thème du système",
+    "switch_to_japan_blues": "Passer à Japan Blues"
   },
   "toast": {
     "link_copied": "Lien copié",

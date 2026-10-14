@@ -27,7 +27,7 @@ function makeItem(
     recipient_id: "user-1",
     actor_type: null,
     actor_id: null,
-    type: "mentioned",
+    type: "issue_assigned",
     severity: "info",
     issue_id: issueId,
     title: `item ${id}`,
@@ -392,4 +392,11 @@ describe("inbox list refresh during the first load", () => {
       qc.clear();
     }
   });
+});
+
+it("does not refresh inbox lists for a removed notification kind", async () => {
+  const qc = new QueryClient();
+  const invalidate = vi.spyOn(qc, "invalidateQueries");
+  await onInboxNew(qc, wsId, makeItem("hidden", "issue-a", { type: "task_failed" }));
+  expect(invalidate).not.toHaveBeenCalled();
 });

@@ -156,7 +156,8 @@
       "title": "主题",
       "light": "浅色",
       "dark": "深色",
-      "system": "跟随系统"
+      "system": "跟随系统",
+      "japan_blues": "Japan Blues"
     },
     "language": {
       "title": "语言",
@@ -178,13 +179,7 @@
     "sticky_comment_bar": {
       "title": "固定底部评论栏"
     },
-    "running_agent_reply": {
-      "title": "回复正在运行的智能体时",
-      "steer": "插话到当前运行",
-      "after_run": "本轮结束后开始",
-      "hint": "只决定默认选项，每条消息发送前仍可单独修改。"
-    },
-    "comments_title": "评论与聊天",
+    "comments_title": "评论",
     "region_title": "语言与地区",
     "appearance_title": "外观",
     "issue_fields_title": "创建任务时显示的字段",
@@ -241,10 +236,6 @@
         "label": "显示或隐藏右侧边栏",
         "description": "仅在有右侧栏的页面可用。"
       },
-      "toggleChat": {
-        "label": "显示或隐藏聊天窗",
-        "description": "打开或关闭悬浮聊天窗，打开时自动聚焦输入框。"
-      },
       "findInIssue": {
         "label": "在任务中查找",
         "description": "搜索当前打开的任务详情。"
@@ -269,10 +260,6 @@
         "label": "前往收件箱",
         "description": "打开工作区收件箱。"
       },
-      "goChat": {
-        "label": "前往聊天",
-        "description": "打开工作区聊天。"
-      },
       "goMyIssues": {
         "label": "前往我的任务",
         "description": "打开分配给你的任务。"
@@ -285,25 +272,13 @@
         "label": "前往项目",
         "description": "打开项目列表。"
       },
-      "goAutopilots": {
-        "label": "前往自动化",
-        "description": "打开工作区自动化。"
-      },
       "goAgents": {
         "label": "前往智能体",
         "description": "打开智能体列表。"
       },
-      "goSquads": {
-        "label": "前往小队",
-        "description": "打开小队列表。"
-      },
       "goUsage": {
         "label": "前往用量",
         "description": "打开用量分析。"
-      },
-      "goRuntimes": {
-        "label": "前往运行时",
-        "description": "打开运行时配置。"
       },
       "goSkills": {
         "label": "前往 Skills",
@@ -326,10 +301,6 @@
       "reset_zoom": "重置缩放",
       "close_dialog": "关闭对话框或菜单"
     }
-  },
-  "chat": {
-    "floating_label": "悬浮聊天窗",
-    "floating_hint": "在每个页面显示悬浮聊天按钮。"
   },
   "issue": {
     "opening": {

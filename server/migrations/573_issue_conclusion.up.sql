@@ -1,0 +1,1 @@
+ALTER TABLE issue ADD COLUMN IF NOT EXISTS conclusion text NOT NULL DEFAULT '';

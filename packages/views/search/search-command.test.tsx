@@ -301,8 +301,10 @@ vi.mock("../navigation/context", () => {
   };
 });
 
+const mockAvailableThemes = vi.hoisted(() => ({ current: ["light", "dark", "system"] }));
+
 vi.mock("@multica/ui/components/common/theme-provider", () => ({
-  useTheme: () => ({ theme: mockTheme.current, setTheme: mockSetTheme }),
+  useTheme: () => ({ theme: mockTheme.current, setTheme: mockSetTheme, themes: mockAvailableThemes.current }),
 }));
 
 vi.mock("sonner", () => ({
@@ -320,6 +322,7 @@ describe("SearchCommand", () => {
     mockSquads.current = [];
     mockSetTheme.mockReset();
     mockTheme.current = "system";
+    mockAvailableThemes.current = ["light", "dark", "system"];
     mockPathname.current = "/ws-test/issues";
     mockGetShareableUrl.mockReset().mockImplementation((p: string) => `https://app.multica/${p}`);
     mockMembers.current = [];
@@ -760,6 +763,22 @@ describe("SearchCommand", () => {
     // Only threads carrying a resolution get seeded into the expand set.
     expect(mockResolvedExpandAll).toHaveBeenCalledWith("issue-1", ["root-2", "root-3"]);
     expect(mockCommentCollapseAll).not.toHaveBeenCalled();
+    expect(useSearchStore.getState().open).toBe(false);
+  });
+
+  it("does not offer Japan Blues on platforms without the palette", async () => {
+    renderSearch();
+    await userEvent.setup().type(screen.getByPlaceholderText("Type a command or search..."), "Japan");
+    expect(screen.queryByText((_, el) => el?.textContent === "Switch to Japan Blues" && el?.tagName === "SPAN")).not.toBeInTheDocument();
+  });
+
+  it("switches to Japan Blues when offered by the platform", async () => {
+    mockAvailableThemes.current = ["light", "dark", "japan-blues", "system"];
+    renderSearch();
+    await userEvent.setup().type(screen.getByPlaceholderText("Type a command or search..."), "Japan Blues");
+    const command = await screen.findByText((_, el) => el?.textContent === "Switch to Japan Blues" && el?.tagName === "SPAN");
+    await userEvent.setup().click(command);
+    expect(mockSetTheme).toHaveBeenCalledWith("japan-blues");
     expect(useSearchStore.getState().open).toBe(false);
   });
 

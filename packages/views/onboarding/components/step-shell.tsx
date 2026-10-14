@@ -4,8 +4,7 @@ import { useRef, type ReactNode } from "react";
 import { cn } from "@multica/ui/lib/utils";
 import { useScrollFade } from "@multica/ui/hooks/use-scroll-fade";
 import { DragStrip } from "@multica/views/platform";
-import type { OnboardingStep } from "@multica/core/onboarding";
-import { StepProgressBar, StepSidebar } from "./step-sidebar";
+import { type OnboardingRailStep, StepProgressBar, StepSidebar } from "./step-sidebar";
 
 /**
  * Geometry for the onboarding steps, taken from the ReUI onboarding-3 block so
@@ -101,12 +100,12 @@ export function StepShell({
   chromeFooter,
   children,
 }: {
-  currentStep: OnboardingStep;
+  currentStep: OnboardingRailStep;
   onBack?: () => void;
   /** Workspace step disables Back while its create request is in flight. */
   backDisabled?: boolean;
   /** Return to an already-completed step from the rail. */
-  onStepChange?: (step: OnboardingStep) => void;
+  onStepChange?: (step: OnboardingRailStep) => void;
   /** Injected by the flow — the Log out escape hatch. Rendered in whichever
    *  chrome is visible: the rail at `md` and up, the compact bar below it. */
   chromeFooter?: ReactNode;

@@ -1,6 +1,7 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { inboxKeys, mapArchivedInboxCache, type ArchivedInboxCache } from "./queries";
 import type { InboxItem, IssuePriority, IssueStatus } from "../types";
+import { isSupportedInboxType } from "../types/inbox";
 
 // Re-read a query because the server changed — in a way that is never answered
 // by a request that was already on the wire before the change.
@@ -33,8 +34,9 @@ async function refreshInboxQuery(qc: QueryClient, queryKey: QueryKey) {
 export async function onInboxNew(
   qc: QueryClient,
   wsId: string,
-  _item: InboxItem,
+  item: InboxItem,
 ) {
+  if (!isSupportedInboxType(item.type)) return;
   // Refetch instead of setQueryData, so every observer is notified.
   //
   // Both lists: a new notification on an ARCHIVED issue puts that issue back in

@@ -389,7 +389,7 @@ func (h *Handler) ListIssueTableRows(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := fmt.Sprintf(`%s
-SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
+SELECT i.id, i.workspace_id, i.title, i.description, i.conclusion, i.status, i.priority,
        i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
        i.parent_issue_id, i.position, i.start_date, i.due_date, i.created_at,
 	       i.updated_at, i.last_activity_at, i.number, i.project_id, i.metadata, i.stage, i.properties,
@@ -419,6 +419,7 @@ SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
 			&row.issue.WorkspaceID,
 			&row.issue.Title,
 			&row.issue.Description,
+			&row.issue.Conclusion,
 			&row.issue.Status,
 			&row.issue.Priority,
 			&row.issue.AssigneeType,

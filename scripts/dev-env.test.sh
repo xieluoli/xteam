@@ -205,6 +205,17 @@ dev_env up --ttl nope > "$out" 2>&1 || status=$?
 [ "$status" -ne 0 ] || fail "up accepted a non-numeric TTL"
 require_contains "$out" "TTL must be a positive integer"
 
+# Removed clients must be rejected before registry or service side effects.
+status=0
+bash -c 'source "$1"; cmd_gc() { die "registry touched"; }; cmd_up --components desktop' _ \
+  "$root_dir/scripts/dev-env.sh" > "$out" 2>&1 || status=$?
+[ "$status" -ne 0 ] || fail "desktop component was accepted"
+require_contains "$out" "Unknown component 'desktop'"
+
+# A renderer port no longer reserves an otherwise free web/backend slot.
+allocated="$(bash -c 'source "$1"; path_offset() { printf 0; }; offset_registered() { return 1; }; port_free() { [ "$1" != 5174 ]; }; allocate_offset fixture' _ "$root_dir/scripts/dev-env.sh")"
+[ "$allocated" = 0 ] || fail "unused native renderer port still reserves slot $allocated"
+
 # Rewriting an allocated database name must preserve the existing connection
 # endpoint, credentials and query parameters.
 rewritten="$(bash -c 'source "$1"; database_url_with_name "$2" "$3"' _ \
@@ -231,7 +242,8 @@ node -e '
   const payload = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
   if (payload.name !== "probe-901") throw new Error("name = " + payload.name);
   if (payload.backend_port !== 18981) throw new Error("backend_port = " + payload.backend_port);
-  for (const key of ["api", "web", "daemon", "desktop"]) {
+  if ("desktop" in payload.components || "desktop_renderer_port" in payload) throw new Error("native fields still exposed");
+  for (const key of ["api", "web", "daemon"]) {
     if (!payload.components[key]) throw new Error("missing component " + key);
     if (payload.components[key].state !== "stopped") {
       throw new Error(key + " state = " + payload.components[key].state);
@@ -331,7 +343,11 @@ dev_env destroy drop-fails-904 --yes > "$out" 2>&1 || fail "retrying destroy aft
 # destroy consumes the manifest: the slot is free afterwards, which is what
 # makes the registry an allocator rather than a second place to leak.
 # ---------------------------------------------------------------------------
+native_data="$MULTICA_DEV_DESKTOP_APP_DATA/Multica Canary probe-901"
+mkdir -p "$native_data"
+printf 'personal-data' > "$native_data/keep"
 dev_env destroy probe-901 --yes > "$out" 2>&1 || fail "destroy must succeed"
+[ -f "$native_data/keep" ] || fail "destroy removed native client user data"
 [ ! -d "$MULTICA_DEV_HOME/envs/probe-901" ] || fail "destroy left the environment directory behind"
 
 dev_env list > "$out" 2>&1 || fail "list must succeed after destroy"

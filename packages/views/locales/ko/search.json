@@ -21,7 +21,8 @@
     "unfold_all_comments": "모든 댓글 펼치기",
     "switch_to_light": "라이트 테마로 전환",
     "switch_to_dark": "다크 테마로 전환",
-    "use_system_theme": "시스템 테마 사용"
+    "use_system_theme": "시스템 테마 사용",
+    "switch_to_japan_blues": "Japan Blues로 전환"
   },
   "toast": {
     "link_copied": "링크를 복사했습니다",

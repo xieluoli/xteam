@@ -770,7 +770,7 @@ describe("handleInboxNew", () => {
       recipient_id: "member-1",
       actor_type: "member",
       actor_id: "member-2",
-      type: "mentioned",
+      type: "issue_assigned",
       severity: "info",
       issue_id: "issue-1",
       title: "Mentioned you",
@@ -783,6 +783,17 @@ describe("handleInboxNew", () => {
       ...overrides,
     };
   }
+
+  it("ignores removed notification kinds without refreshing caches or showing a banner", async () => {
+    const qc = createQueryClient();
+    qc.setQueryData(inboxKeys.list("ws-a"), []);
+    qc.setQueryData(inboxKeys.unreadSummary(), []);
+    const invalidate = vi.spyOn(qc, "invalidateQueries");
+    const showNotification = stubDesktopAPI();
+    await handleInboxNew(qc, inboxItem({ type: "new_comment" }));
+    expect(invalidate).not.toHaveBeenCalled();
+    expect(showNotification).not.toHaveBeenCalled();
+  });
 
   function stubDesktopAPI() {
     const showNotification = vi.fn();

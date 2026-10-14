@@ -169,6 +169,13 @@ describe("ChatSessionSchema", () => {
   });
 });
 describe("IssueSchema (via ListIssuesResponseSchema)", () => {
+  it("persists conclusion text and normalizes missing, null or malformed additive fields", () => {
+    for (const [value, expected] of [["已验收\n可上线", "已验收\n可上线"], ["", ""], [null, ""], [42, ""], [{ text: "bad" }, ""], [undefined, ""]]) {
+      const parsed = ListIssuesResponseSchema.parse({ issues: [{ ...baseIssue, conclusion: value }], total: 1 });
+      expect(parsed.issues[0]).toMatchObject({ id: baseIssue.id, conclusion: expected });
+    }
+  });
+
   // A custom status key can be derived rather than readable — "客户确认" becomes
   // `in_review_2` — so the display name travels with it. The field has to
   // survive a server that predates it, since an issue that fails validation

@@ -1,7 +1,14 @@
 "use client"
 
-// Re-export the shared ThemeProvider from @multica/ui
-export { ThemeProvider } from "@multica/ui/components/common/theme-provider"
+import { ThemeProvider as SharedThemeProvider } from "@multica/ui/components/common/theme-provider";
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <SharedThemeProvider themes={["light", "dark", "japan-blues"]} enableColorScheme={false}>
+      {children}
+    </SharedThemeProvider>
+  );
+}
 
 // Suppress React 19 false-positive about next-themes' inline <script>.
 // The script works correctly; React 19 just warns about any <script> in components.

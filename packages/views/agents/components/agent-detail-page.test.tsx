@@ -21,9 +21,9 @@ import {
 
 const TEST_RESOURCES = { en: { common: enCommon, agents: enAgents } };
 
-// The DM tests exercise the header action wiring plus the real permission
-// rules (via auth + member fixtures); the tabbed body and avatar/presence
-// widgets are irrelevant weight, so they're stubbed.
+// The header-action tests exercise the wiring plus the real permission rules
+// (via auth + member fixtures); the tabbed body and avatar/presence widgets
+// are irrelevant weight, so they're stubbed.
 vi.mock("./agent-overview-pane", () => ({
   AgentOverviewPane: ({
     agent,
@@ -49,9 +49,6 @@ vi.mock("./agent-presence-indicator", () => ({
 
 const agentsRef = vi.hoisted(() => ({ current: [] as unknown[] }));
 const membersRef = vi.hoisted(() => ({ current: [] as unknown[] }));
-// When set, the member query never resolves — the "membership still loading"
-// window in which the DM decision is undetermined.
-const membersPendingRef = vi.hoisted(() => ({ current: false }));
 const currentUserRef = vi.hoisted(() => ({
   current: { id: "user-1" } as { id: string } | null,
 }));
@@ -98,10 +95,7 @@ vi.mock("@multica/core/workspace/queries", () => ({
   },
   memberListOptions: (wsId: string) => ({
     queryKey: ["members", wsId],
-    queryFn: () =>
-      membersPendingRef.current
-        ? new Promise(() => {})
-        : Promise.resolve(membersRef.current),
+    queryFn: () => Promise.resolve(membersRef.current),
   }),
   workspaceKeys: {
     agents: (wsId: string) => ["agents", wsId],
@@ -137,7 +131,6 @@ vi.mock("@multica/core/modals", () => ({
 vi.mock("@multica/core/paths", () => ({
   useWorkspacePaths: () => ({
     agents: () => "/acme/agents",
-    chat: () => "/acme/chat",
   }),
 }));
 vi.mock("@multica/core/api", () => {
@@ -214,7 +207,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   currentUserRef.current = { id: "user-1" };
   membersRef.current = [{ user_id: "user-1", role: "member" }];
-  membersPendingRef.current = false;
   agentsRef.current = [baseAgent];
   mockGetAgent.mockRejectedValue(new ApiError("not found", 404, "Not Found"));
   mockUpdateAgent.mockResolvedValue({ ...baseAgent, model: "new-model" });
@@ -375,56 +367,7 @@ describe("AgentDetailPage direct-detail fallback", () => {
   });
 });
 
-describe("AgentDetailPage DM button", () => {
-  it("navigates to the chat deep link when the user can chat with the agent", async () => {
-    const { push } = renderPage();
-    fireEvent.click(await screen.findByRole("button", { name: "DM" }));
-    expect(push).toHaveBeenCalledWith("/acme/chat?agent=agent-1");
-    expect(mockToastError).not.toHaveBeenCalled();
-  });
-
-  it("shows a toast instead of navigating when the user lacks chat access", async () => {
-    // Post-MUL-3963 a workspace admin can VIEW another member's private agent
-    // but can no longer invoke (chat with) it — the exact case where the DM
-    // button must explain itself rather than navigate.
-    agentsRef.current = [
-      { ...baseAgent, permission_mode: "private", invocation_targets: [] },
-    ];
-    membersRef.current = [{ user_id: "user-1", role: "admin" }];
-    const { push } = renderPage();
-    fireEvent.click(await screen.findByRole("button", { name: "DM" }));
-    expect(mockToastError).toHaveBeenCalledWith(
-      "You don't have access to chat with this agent.",
-    );
-    expect(push).not.toHaveBeenCalled();
-  });
-
-  it("disables DM while membership is resolving instead of toasting a false deny", async () => {
-    // Review P2: a pending member query collapses role to null, which the
-    // rules read as not_member — a legitimate public_to+workspace member
-    // would get a wrong "no access" toast. Undetermined must disable, not deny.
-    membersPendingRef.current = true;
-    const { push } = renderPage();
-    // The control is an anchor now, so "disabled" is expressed the only way a
-    // link can express it: aria-disabled plus removal from the tab order.
-    const dm = await screen.findByRole("button", { name: "DM" });
-    expect(dm).toHaveAttribute("aria-disabled", "true");
-    expect(dm).toHaveAttribute("tabindex", "-1");
-    fireEvent.click(dm);
-    expect(mockToastError).not.toHaveBeenCalled();
-    expect(push).not.toHaveBeenCalled();
-  });
-
-  it("hides the DM button on an archived agent", async () => {
-    agentsRef.current = [
-      { ...baseAgent, archived_at: "2026-06-01T00:00:00Z" },
-    ];
-    renderPage();
-    // The archived banner is the signal the page has settled past loading.
-    await screen.findByText(/This agent is archived/);
-    expect(screen.queryByRole("button", { name: "DM" })).not.toBeInTheDocument();
-  });
-
+describe("AgentDetailPage header actions", () => {
   it("hides the more-actions trigger when no menu actions are available", async () => {
     // The gate must survive a caller who genuinely CAN archive: an admin
     // passes `canEditAgent`, so `canArchive` is true. The only thing keeping
@@ -476,7 +419,7 @@ describe("AgentDetailPage DM button", () => {
       screen.getByRole("button", { name: "Bind runtime" }),
     ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "DM" }));
+    fireEvent.click(screen.getByRole("button", { name: "Assign work" }));
     expect(mockToastError).toHaveBeenCalledWith(
       "Bind a runtime before running this agent.",
     );

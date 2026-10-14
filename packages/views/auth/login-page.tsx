@@ -32,7 +32,7 @@ import { useT } from "../i18n";
 interface GoogleAuthConfig {
   clientId: string;
   redirectUri: string;
-  /** Opaque state passed through Google OAuth (e.g. "platform:desktop"). */
+  /** Opaque state passed through Google OAuth (next URL and CLI callback). */
   state?: string;
 }
 
@@ -57,11 +57,7 @@ interface LoginPageProps {
   onTokenObtained?: () => void;
   /** Override Google login handler (e.g. desktop opens browser externally). When provided, renders the Google button even if `google` config is omitted. */
   onGoogleLogin?: () => void;
-  /** Slot rendered at the bottom of the sign-in card, below the
-   *  Google button. The web shell uses it for a "Prefer the desktop
-   *  app?" prompt; desktop omits it (a download prompt inside the app
-   *  would be absurd). */
-  extra?: ReactNode;
+
 }
 
 // ---------------------------------------------------------------------------
@@ -105,7 +101,6 @@ export function LoginPage({
   cliCallback,
   onTokenObtained,
   onGoogleLogin,
-  extra,
 }: LoginPageProps) {
   const { t } = useT("auth");
   const qc = useQueryClient();
@@ -497,7 +492,6 @@ export function LoginPage({
               {t(($) => $.signin.google)}
             </Button>
           )}
-          {extra && <div className="w-full pt-1 text-center">{extra}</div>}
         </CardFooter>
       </Card>
     </div>

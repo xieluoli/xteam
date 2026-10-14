@@ -9,7 +9,6 @@ import {
   type AgentDraft,
   type BuilderRestore,
 } from "@multica/core/agents";
-import { isRuntimeUsableForUser } from "@multica/core/runtimes";
 import type {
   ChatMessage,
   MemberWithUser,
@@ -23,7 +22,6 @@ import {
   ChatMessageSkeleton,
 } from "../../chat/components/chat-message-list";
 import { useT } from "../../i18n";
-import { AppLink } from "../../navigation";
 import { ModelDropdown } from "../components/model-dropdown";
 import { RuntimePicker } from "../components/runtime-picker";
 
@@ -43,7 +41,6 @@ export function BuilderSetup({
   starting,
   error,
   onStart,
-  connectRuntimeHref,
   banner,
 }: {
   draft: AgentDraft;
@@ -56,17 +53,11 @@ export function BuilderSetup({
   starting: boolean;
   error: string | null;
   onStart: () => void;
-  connectRuntimeHref: string;
   /** Rendered above the card: the way back to an unfinished conversation, so
    *  this screen cannot silently start yet another one. */
   banner?: ReactNode;
 }) {
   const { t } = useT("agents");
-  const hasOnline = runtimes.some(
-    (runtime) =>
-      runtime.status === "online" &&
-      isRuntimeUsableForUser(runtime, currentUserId),
-  );
   return (
     <main className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-5 py-10">
       <div className="w-full max-w-xl">
@@ -108,22 +99,13 @@ export function BuilderSetup({
           </div>
         )}
         <div className="mt-6 flex justify-end">
-          {hasOnline ? (
-            <Button
-              onClick={onStart}
-              disabled={starting || selectedRuntime?.status !== "online"}
-            >
-              {starting && <Loader2 className="size-4 animate-spin" />}
-              {t(($) => $.creation_studio.builder.start)}
-            </Button>
-          ) : (
-            <Button
-              render={<AppLink href={connectRuntimeHref} />}
-              nativeButton={false}
-            >
-              {t(($) => $.creation_studio.builder.connect_runtime)}
-            </Button>
-          )}
+          <Button
+            onClick={onStart}
+            disabled={starting || selectedRuntime?.status !== "online"}
+          >
+            {starting && <Loader2 className="size-4 animate-spin" />}
+            {t(($) => $.creation_studio.builder.start)}
+          </Button>
         </div>
         </div>
       </div>

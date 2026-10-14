@@ -66,30 +66,12 @@ describe("resolveTabPresentation — direct resources", () => {
       visual: { kind: "actor", actorType: "member", id: "m1" },
       title: { kind: "text", text: "Ada" },
     });
-    expect(present("/acme/squads/sq1")).toEqual({
-      visual: { kind: "actor", actorType: "squad", id: "sq1" },
-      title: { kind: "tab", tabKey: "squad" },
-    });
   });
 
-  it("autopilot / skill / machine / runtime use a type icon + name", () => {
-    expect(present("/acme/autopilots/a1", { autopilot: { title: "Nightly" } })).toEqual({
-      visual: { kind: "icon", icon: "Zap" },
-      title: { kind: "text", text: "Nightly" },
-    });
+  it("skill uses a type icon + name", () => {
     expect(present("/acme/skills/s1", { skill: { name: "Deploy" } })).toEqual({
       visual: { kind: "icon", icon: "BookOpenText" },
       title: { kind: "text", text: "Deploy" },
-    });
-    expect(present("/acme/runtimes/m1", { machine: { name: "Mac Studio" } })).toEqual({
-      visual: { kind: "icon", icon: "Monitor" },
-      title: { kind: "text", text: "Mac Studio" },
-    });
-    expect(
-      present("/acme/runtimes/m1/runtime/r1", { runtime: { name: "cloud-1" } }),
-    ).toEqual({
-      visual: { kind: "icon", icon: "Server" },
-      title: { kind: "text", text: "cloud-1" },
     });
   });
 
@@ -202,6 +184,20 @@ describe("resolveTabPresentation — flow and unknown", () => {
       visual: { kind: "icon", icon: "FileQuestion" },
       title: { kind: "tab", tabKey: "unknown" },
     });
+  });
+
+  it("removed surfaces present neutrally instead of borrowing a page identity", () => {
+    for (const url of [
+      "/acme/autopilots/a1",
+      "/acme/squads/sq1",
+      "/acme/runtimes/m1",
+      "/acme/runtimes/m1/runtime/r1",
+    ]) {
+      expect(present(url)).toEqual({
+        visual: { kind: "icon", icon: "FileQuestion" },
+        title: { kind: "tab", tabKey: "unknown" },
+      });
+    }
   });
 });
 

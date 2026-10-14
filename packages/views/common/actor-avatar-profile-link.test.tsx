@@ -125,6 +125,16 @@ describe("ActorAvatar profile link", () => {
     vi.restoreAllMocks();
   });
 
+  it.each([undefined, true])("keeps historical squad avatars static (profileLink: %s)", (profileLink) => {
+    render(
+      <NavigationProvider value={makeAdapter()}>
+        <ActorAvatar actorType="squad" actorId="squad-1" name="Historical squad" profileLink={profileLink} />
+      </NavigationProvider>,
+    );
+    expect(document.querySelector('[data-slot="avatar"]')).toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
   it("renders a departed timeline member as static hydrated identity", () => {
     actorDirectory.known = false;
     render(

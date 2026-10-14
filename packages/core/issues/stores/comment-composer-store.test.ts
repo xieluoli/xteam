@@ -23,7 +23,7 @@ beforeAll(() => {
 
 describe("comment composer store", () => {
   beforeEach(() => {
-    useCommentComposerStore.setState({ sticky: true, runningAgentReply: "steer" });
+    useCommentComposerStore.setState({ sticky: true });
   });
 
   it("toggleSticky flips the preference", () => {
@@ -34,16 +34,9 @@ describe("comment composer store", () => {
     expect(useCommentComposerStore.getState().sticky).toBe(true);
   });
 
-  it("steers a running agent by default and remembers starting after the run", () => {
-    expect(useCommentComposerStore.getState().runningAgentReply).toBe("steer");
-    useCommentComposerStore.getState().setRunningAgentReply("after_run");
-    expect(useCommentComposerStore.getState().runningAgentReply).toBe("after_run");
-    expect(JSON.parse(localStorage.getItem("multica_comment_composer")!).state.runningAgentReply).toBe("after_run");
-  });
-
-  it("keeps steering as the default for preferences saved before the option existed", async () => {
+  it("rehydrates the sticky preference", async () => {
     localStorage.setItem("multica_comment_composer", JSON.stringify({ state: { sticky: false }, version: 0 }));
     await useCommentComposerStore.persist.rehydrate();
-    expect(useCommentComposerStore.getState()).toMatchObject({ sticky: false, runningAgentReply: "steer" });
+    expect(useCommentComposerStore.getState().sticky).toBe(false);
   });
 });

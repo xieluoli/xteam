@@ -26,8 +26,7 @@ export function createKoDict(
       headlineLine2: "사람이 아닐지도 모릅니다.",
       subheading:
         "Multica는 코딩 AI 에이전트를 진짜 팀원으로 만들어 주는 소스 공개 플랫폼입니다. 태스크를 맡기고, 진행 상황을 따라가고, 반복되는 노하우를 스킬로 쌓아 두세요. 사람과 AI 에이전트로 이루어진 팀을 한곳에서 관리할 수 있습니다.",
-      cta: "무료로 시작하기",
-      downloadDesktop: "데스크톱 다운로드",
+      cta: "앱 열기",
       talkToSales: "영업팀에 문의",
       worksWith: "20개 이상의 AI 코딩 도구 지원",
       imageAlt: "사람과 AI 에이전트가 함께 태스크를 관리하는 Multica 보드 화면",
@@ -243,7 +242,6 @@ export function createKoDict(
             { label: "작동 방식", href: "#how-it-works" },
             { label: "사용 사례", href: "/usecases" },
             { label: "변경 로그", href: "/changelog" },
-            { label: "다운로드", href: "/download" },
           ],
         },
         resources: {
@@ -3396,58 +3394,6 @@ export function createKoDict(
       ],
     },
     download: {
-      hero: {
-        macArm64: {
-          title: "macOS용 Multica",
-          sub: "Apple Silicon · 데몬 포함, 별도 설정 없음",
-          primary: "다운로드(.dmg)",
-          altZip: "또는 .zip 다운로드",
-        },
-        macIntel: {
-          title: "macOS용 Multica",
-          sub: "Intel · 데몬 포함, 별도 설정 없음",
-          primary: "다운로드(.dmg)",
-          altZip: "또는 .zip 다운로드",
-        },
-        winX64: {
-          title: "Windows용 Multica",
-          sub: "데몬 포함, 별도 설정 없음",
-          primary: "다운로드(.exe)",
-        },
-        winArm64: {
-          title: "Windows용 Multica",
-          sub: "ARM · 데몬 포함, 별도 설정 없음",
-          primary: "다운로드(.exe)",
-        },
-        linux: {
-          title: "Linux용 Multica",
-          sub: "데몬 포함, 별도 설정 없음",
-          primary: "AppImage 다운로드",
-          altFormats: "또는 .deb / .rpm",
-        },
-        unknown: {
-          title: "플랫폼 선택",
-          sub: "모든 설치 파일은 아래에 정리되어 있습니다.",
-        },
-        safariMacHint: "Intel Mac을 사용 중인가요? 아래에서 Intel 버전을 선택하세요.",
-        archFallbackHint: "아키텍처가 맞지 않나요? 아래에서 모든 형식을 확인하세요.",
-      },
-      allPlatforms: {
-        title: "모든 플랫폼",
-        macArm64Label: "macOS · Apple Silicon",
-        macX64Label: "macOS · Intel",
-        winX64Label: "Windows · x64",
-        winArm64Label: "Windows · ARM64",
-        linuxX64Label: "Linux · x64",
-        linuxArm64Label: "Linux · ARM64",
-        formatDmg: ".dmg",
-        formatZip: ".zip",
-        formatExe: ".exe",
-        formatAppImage: ".AppImage",
-        formatDeb: ".deb",
-        formatRpm: ".rpm",
-        unavailable: "사용할 수 없음",
-      },
       cli: {
         title: "CLI가 더 편하신가요?",
         sub: "서버, 원격 개발 환경, headless 환경에 적합합니다. 데스크톱과 동일한 데몬을 터미널에서 바로 설치할 수 있습니다.",
@@ -3459,16 +3405,6 @@ export function createKoDict(
         sshNote: "이미 서버에 접속해 있나요? 같은 명령을 SSH에서도 그대로 사용할 수 있습니다.",
         copyLabel: "복사",
         copiedLabel: "복사했습니다",
-      },
-      cloud: {
-        title: "클라우드 런타임 (대기자 명단)",
-        sub: "Multica가 런타임을 직접 호스팅해 드립니다. 아직 정식 출시 전입니다. 이메일을 남겨 주시면 준비되는 대로 알려드릴게요.",
-      },
-      footer: {
-        releaseNotes: "{version}의 새로운 내용",
-        allReleases: "모든 릴리스 보기",
-        currentVersion: "현재 버전: {version}",
-        versionUnavailable: "버전을 확인할 수 없습니다. GitHub를 확인하세요.",
       },
     },
     contactSales: {

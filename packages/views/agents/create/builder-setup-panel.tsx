@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useWorkspacePaths } from "@multica/core/paths";
 import type {
   AgentBuilderSessionSummary,
   RuntimeDevice,
@@ -33,7 +32,6 @@ export function BuilderSetupPanel({
   onStarted: (sessionId: string, runtimeId: string) => void;
   onRuntimeLabel: (runtime: RuntimeDevice | null) => void;
 }) {
-  const paths = useWorkspacePaths();
   const form = useCreateAgentForm();
   const { draft, setDraft, selectedRuntime } = form;
 
@@ -69,7 +67,6 @@ export function BuilderSetupPanel({
       starting={builder.starting}
       error={builder.error}
       onStart={() => void startConversation()}
-      connectRuntimeHref={paths.runtimes()}
     />
   );
 }

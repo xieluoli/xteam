@@ -5,7 +5,7 @@
 -- member assignment (`assignee_type='member' AND assignee_id=involves_user_id`)
 -- because that is already the meaning of the `assignee_id` filter (tab 1
 -- "Assigned to me"), and the two filters must produce disjoint result sets.
-SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
+SELECT i.id, i.workspace_id, i.title, i.description, i.conclusion, i.status, i.priority,
        i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
        i.parent_issue_id, i.position, i.start_date, i.due_date, i.created_at, i.updated_at, i.last_activity_at, i.number, i.project_id, i.metadata, i.stage, i.properties,
        i.revision, i.duplicate_of_issue_id
@@ -205,6 +205,7 @@ WITH wakeup_source AS MATERIALIZED (SELECT set_config('multica.source_task_id', 
         i.*,
         COALESCE(sqlc.narg('title')::text, i.title) AS next_title,
         COALESCE(sqlc.narg('description')::text, i.description) AS next_description,
+        COALESCE(sqlc.narg('conclusion')::text, i.conclusion) AS next_conclusion,
         COALESCE(sqlc.narg('status')::text, i.status) AS next_status,
         COALESCE(sqlc.narg('priority')::text, i.priority) AS next_priority,
         sqlc.narg('assignee_type')::text AS next_assignee_type,
@@ -262,21 +263,21 @@ WITH wakeup_source AS MATERIALIZED (SELECT set_config('multica.source_task_id', 
     SELECT
         candidate.*,
         ROW(
-            title, description, status, priority, assignee_type, assignee_id,
+            title, description, conclusion, status, priority, assignee_type, assignee_id,
             position, start_date, due_date, parent_issue_id, project_id, stage,
             duplicate_of_issue_id
         ) IS DISTINCT FROM ROW(
-            next_title, next_description, next_status, next_priority,
+            next_title, next_description, next_conclusion, next_status, next_priority,
             next_assignee_type, next_assignee_id, next_position, next_start_date,
             next_due_date, next_parent_issue_id, next_project_id, next_stage,
             next_duplicate_of_issue_id
         ) AS did_change,
         ROW(
-            title, description, status, priority, assignee_type, assignee_id,
+            title, description, conclusion, status, priority, assignee_type, assignee_id,
             start_date, due_date, parent_issue_id, project_id, stage,
             duplicate_of_issue_id
         ) IS DISTINCT FROM ROW(
-            next_title, next_description, next_status, next_priority,
+            next_title, next_description, next_conclusion, next_status, next_priority,
             next_assignee_type, next_assignee_id, next_start_date, next_due_date,
             next_parent_issue_id, next_project_id, next_stage,
             next_duplicate_of_issue_id
@@ -286,6 +287,7 @@ WITH wakeup_source AS MATERIALIZED (SELECT set_config('multica.source_task_id', 
 UPDATE issue AS i SET
     title = changed.next_title,
     description = changed.next_description,
+    conclusion = changed.next_conclusion,
     status = changed.next_status,
     priority = changed.next_priority,
     assignee_type = changed.next_assignee_type,
@@ -507,7 +509,7 @@ DELETE FROM issue WHERE issue.id IN (SELECT target.id FROM target);
 -- name: ListOpenIssues :many
 -- See ListIssues for the semantics of involves_user_id (mirrors the 4-branch
 -- filter; member-direct assignment is intentionally excluded).
-SELECT i.id, i.workspace_id, i.title, i.description, i.status, i.priority,
+SELECT i.id, i.workspace_id, i.title, i.description, i.conclusion, i.status, i.priority,
        i.assignee_type, i.assignee_id, i.creator_type, i.creator_id,
        i.parent_issue_id, i.position, i.start_date, i.due_date, i.created_at, i.updated_at, i.last_activity_at, i.number, i.project_id, i.metadata, i.stage, i.properties,
        i.revision, i.duplicate_of_issue_id

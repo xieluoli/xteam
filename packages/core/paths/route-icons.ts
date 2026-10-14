@@ -60,15 +60,11 @@ export type NavLabelKey =
 /** Stable identifier for each workspace navigation page. */
 export type WorkspacePageKey =
   | "inbox"
-  | "chat"
   | "myIssues"
   | "issues"
   | "projects"
-  | "autopilots"
   | "agents"
-  | "squads"
   | "usage"
-  | "runtimes"
   | "skills"
   | "settings";
 
@@ -87,15 +83,11 @@ export interface WorkspacePage {
  */
 export const WORKSPACE_PAGES: Record<WorkspacePageKey, WorkspacePage> = {
   inbox: { segment: "inbox", icon: "Inbox", navKey: "inbox" },
-  chat: { segment: "chat", icon: "MessageSquare", navKey: "chat" },
   myIssues: { segment: "my-issues", icon: "CircleUser", navKey: "my_issues" },
   issues: { segment: "issues", icon: "ListTodo", navKey: "issues" },
   projects: { segment: "projects", icon: "FolderKanban", navKey: "projects" },
-  autopilots: { segment: "autopilots", icon: "Zap", navKey: "autopilots" },
   agents: { segment: "agents", icon: "Bot", navKey: "agents" },
-  squads: { segment: "squads", icon: "Users", navKey: "squads" },
   usage: { segment: "usage", icon: "BarChart3", navKey: "usage" },
-  runtimes: { segment: "runtimes", icon: "Monitor", navKey: "runtimes" },
   skills: { segment: "skills", icon: "BookOpenText", navKey: "skills" },
   settings: { segment: "settings", icon: "Settings", navKey: "settings" },
 };

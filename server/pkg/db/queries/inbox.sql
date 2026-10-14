@@ -4,7 +4,8 @@ SELECT i.*,
        iss.priority AS issue_priority
 FROM inbox_item i
 LEFT JOIN issue iss ON iss.id = i.issue_id
-WHERE i.workspace_id = $1 AND i.recipient_type = $2 AND i.recipient_id = $3 AND i.archived = false
+WHERE i.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+  AND i.workspace_id = $1 AND i.recipient_type = $2 AND i.recipient_id = $3 AND i.archived = false
 ORDER BY i.created_at DESC;
 
 -- name: ListArchivedInboxItems :many
@@ -35,14 +36,16 @@ WITH eligible_archived AS MATERIALIZED (
            i.created_at,
            i.details
     FROM inbox_item i
-    WHERE i.workspace_id = $1
+    WHERE i.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+      AND i.workspace_id = $1
       AND i.recipient_type = $2
       AND i.recipient_id = $3
       AND i.archived = true
       AND (i.issue_id IS NULL OR NOT EXISTS (
           SELECT 1
           FROM inbox_item active
-          WHERE active.workspace_id = i.workspace_id
+          WHERE active.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+            AND active.workspace_id = i.workspace_id
             AND active.recipient_type = i.recipient_type
             AND active.recipient_id = i.recipient_id
             AND active.issue_id = i.issue_id
@@ -83,23 +86,24 @@ ORDER BY i.created_at DESC, i.id DESC;
 
 -- name: GetInboxItem :one
 SELECT * FROM inbox_item
-WHERE id = $1;
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed') AND id = $1;
 
 -- name: GetInboxItemInWorkspace :one
 SELECT * FROM inbox_item
-WHERE id = $1 AND workspace_id = $2;
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed') AND id = $1 AND workspace_id = $2;
 
 -- name: CreateInboxItem :one
 INSERT INTO inbox_item (
     workspace_id, recipient_type, recipient_id,
     type, severity, issue_id, title, body,
     actor_type, actor_id, details, id
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, COALESCE(sqlc.narg('id')::uuid, gen_random_uuid()))
+) SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, COALESCE(sqlc.narg('id')::uuid, gen_random_uuid())
+WHERE $4::text IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
 RETURNING *;
 
 -- name: MarkInboxRead :one
 UPDATE inbox_item SET read = true
-WHERE id = $1
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed') AND id = $1
 RETURNING *;
 
 -- name: MarkInboxUnread :one
@@ -107,27 +111,27 @@ RETURNING *;
 -- the inbox renders one row per issue carrying that group's NEWEST item, and
 -- the group's read state is that item's read state. Flipping the whole group
 -- unread would resurrect older siblings the user already dealt with and
--- inflate CountUnreadInbox (which counts raw rows), while changing nothing the
--- UI shows.
+-- change older siblings that the UI does not show.
 UPDATE inbox_item SET read = false
-WHERE id = $1
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed') AND id = $1
 RETURNING *;
 
 -- name: ArchiveInboxItem :one
 UPDATE inbox_item SET archived = true
-WHERE id = $1
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed') AND id = $1
 RETURNING *;
 
 -- name: ArchiveInboxByIssue :execrows
 UPDATE inbox_item SET archived = true
-WHERE workspace_id = $1 AND recipient_type = $2 AND recipient_id = $3 AND issue_id = $4 AND archived = false;
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+  AND workspace_id = $1 AND recipient_type = $2 AND recipient_id = $3 AND issue_id = $4 AND archived = false;
 
 -- name: UnarchiveInboxItem :one
 -- Deliberately does not touch `read`: unarchiving restores an item to the main
 -- inbox in the exact read/unread state it was archived in, so restoring an
 -- unread item legitimately raises the unread badge again (MUL-3736).
 UPDATE inbox_item SET archived = false
-WHERE id = $1
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed') AND id = $1
 RETURNING *;
 
 -- name: UnarchiveInboxByIssue :execrows
@@ -135,16 +139,25 @@ RETURNING *;
 -- archives every sibling for the same issue, so unarchiving must bring the
 -- whole group back. Leaves `read` untouched for the same reason as above.
 UPDATE inbox_item SET archived = false
-WHERE workspace_id = $1 AND recipient_type = $2 AND recipient_id = $3 AND issue_id = $4 AND archived = true;
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+  AND workspace_id = $1 AND recipient_type = $2 AND recipient_id = $3 AND issue_id = $4 AND archived = true;
 
 -- name: ArchiveInboxByIssueAndType :many
 UPDATE inbox_item SET archived = true
-WHERE workspace_id = $1 AND issue_id = $2 AND type = $3 AND archived = false
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+  AND workspace_id = $1 AND issue_id = $2 AND type = $3 AND archived = false
 RETURNING recipient_type, recipient_id;
 
 -- name: CountUnreadInbox :one
-SELECT count(*) FROM inbox_item
-WHERE workspace_id = $1 AND recipient_type = $2 AND recipient_id = $3 AND read = false AND archived = false;
+-- Same newest-visible-per-issue rule as the cross-workspace summary and UI.
+SELECT count(*) FROM (
+    SELECT DISTINCT ON (COALESCE(i.issue_id, i.id)) i.read
+    FROM inbox_item i
+    WHERE i.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+      AND i.workspace_id = $1 AND i.recipient_type = $2 AND i.recipient_id = $3
+      AND i.archived = false
+    ORDER BY COALESCE(i.issue_id, i.id), i.created_at DESC, i.id DESC
+) newest WHERE newest.read = false;
 
 -- name: CountUnreadInboxByWorkspace :many
 -- Per-workspace unread inbox counts for a recipient member, matching the
@@ -163,21 +176,24 @@ FROM (
         i.workspace_id, i.read
     FROM inbox_item i
     JOIN member m ON m.workspace_id = i.workspace_id AND m.user_id = i.recipient_id
-    WHERE i.recipient_type = 'member'
+    WHERE i.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+      AND i.recipient_type = 'member'
       AND i.recipient_id = $1
       AND i.archived = false
-    ORDER BY i.workspace_id, COALESCE(i.issue_id, i.id), i.created_at DESC
+    ORDER BY i.workspace_id, COALESCE(i.issue_id, i.id), i.created_at DESC, i.id DESC
 ) newest
 WHERE newest.read = false
 GROUP BY newest.workspace_id;
 
 -- name: MarkAllInboxRead :execrows
 UPDATE inbox_item SET read = true
-WHERE workspace_id = $1 AND recipient_type = 'member' AND recipient_id = $2 AND archived = false AND read = false;
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+  AND workspace_id = $1 AND recipient_type = 'member' AND recipient_id = $2 AND archived = false AND read = false;
 
 -- name: ArchiveAllInbox :execrows
 UPDATE inbox_item SET archived = true
-WHERE workspace_id = $1 AND recipient_type = 'member' AND recipient_id = $2 AND archived = false;
+WHERE type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+  AND workspace_id = $1 AND recipient_type = 'member' AND recipient_id = $2 AND archived = false;
 
 -- name: ArchiveAllReadInbox :execrows
 -- "Read" is the state of the one issue row the inbox renders: the newest
@@ -190,7 +206,8 @@ WITH newest_groups AS (
            COALESCE(i.issue_id, i.id) AS group_id,
            i.read
     FROM inbox_item i
-    WHERE i.workspace_id = $1
+    WHERE i.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+      AND i.workspace_id = $1
       AND i.recipient_type = 'member'
       AND i.recipient_id = $2
       AND i.archived = false
@@ -202,7 +219,8 @@ WITH newest_groups AS (
 )
 UPDATE inbox_item i SET archived = true
 FROM read_groups selected
-WHERE i.workspace_id = $1
+WHERE i.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+  AND i.workspace_id = $1
   AND i.recipient_type = 'member'
   AND i.recipient_id = $2
   AND i.archived = false
@@ -210,7 +228,8 @@ WHERE i.workspace_id = $1
 
 -- name: ArchiveCompletedInbox :execrows
 UPDATE inbox_item i SET archived = true
-WHERE i.workspace_id = $1 AND i.recipient_type = 'member' AND i.recipient_id = $2 AND i.archived = false
+WHERE i.type IN ('status_changed', 'issue_assigned', 'unassigned', 'assignee_changed')
+  AND i.workspace_id = $1 AND i.recipient_type = 'member' AND i.recipient_id = $2 AND i.archived = false
   AND i.issue_id IN (
     SELECT id FROM issue
     WHERE workspace_id = $1

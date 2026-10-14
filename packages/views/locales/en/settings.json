@@ -157,7 +157,8 @@
       "title": "Theme",
       "light": "Light",
       "dark": "Dark",
-      "system": "System"
+      "system": "System",
+      "japan_blues": "Japan Blues"
     },
     "language": {
       "title": "Language",
@@ -179,13 +180,7 @@
     "sticky_comment_bar": {
       "title": "Pin comment bar to bottom"
     },
-    "running_agent_reply": {
-      "title": "When replying to a running agent",
-      "steer": "Add to current run",
-      "after_run": "Start after this run",
-      "hint": "Sets the default only. You can still change it for any message before sending."
-    },
-    "comments_title": "Comments & chat",
+    "comments_title": "Comments",
     "region_title": "Language & region",
     "appearance_title": "Appearance",
     "issue_fields_title": "Fields shown when creating issues",
@@ -242,10 +237,6 @@
         "label": "Toggle right sidebar",
         "description": "Available on pages with a right sidebar."
       },
-      "toggleChat": {
-        "label": "Toggle chat window",
-        "description": "Open or close the floating chat window. Opening it focuses the message input."
-      },
       "findInIssue": {
         "label": "Find in issue",
         "description": "Search within the open issue detail."
@@ -270,10 +261,6 @@
         "label": "Go to Inbox",
         "description": "Open the workspace inbox."
       },
-      "goChat": {
-        "label": "Go to Chat",
-        "description": "Open workspace chat."
-      },
       "goMyIssues": {
         "label": "Go to My Issues",
         "description": "Open issues assigned to you."
@@ -286,25 +273,13 @@
         "label": "Go to Projects",
         "description": "Open the project list."
       },
-      "goAutopilots": {
-        "label": "Go to Autopilot",
-        "description": "Open workspace automations."
-      },
       "goAgents": {
         "label": "Go to Agents",
         "description": "Open the agent list."
       },
-      "goSquads": {
-        "label": "Go to Squads",
-        "description": "Open the squad list."
-      },
       "goUsage": {
         "label": "Go to Usage",
         "description": "Open usage analytics."
-      },
-      "goRuntimes": {
-        "label": "Go to Runtimes",
-        "description": "Open runtime configuration."
       },
       "goSkills": {
         "label": "Go to Skills",
@@ -327,10 +302,6 @@
       "reset_zoom": "Reset zoom",
       "close_dialog": "Close dialog or menu"
     }
-  },
-  "chat": {
-    "floating_label": "Floating chat window",
-    "floating_hint": "Show the floating chat button on every page."
   },
   "issue": {
     "opening": {

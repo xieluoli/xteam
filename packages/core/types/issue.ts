@@ -174,6 +174,7 @@ export interface Issue {
   identifier: string;
   title: string;
   description: string | null;
+  conclusion?: string;
   status: IssueStatus;
   /**
    * The category `status` belongs to, when the endpoint resolved it. Optional

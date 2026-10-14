@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { CheckCircle2, ChevronRight, CornerUpLeft, ListChevronsDownUp, Copy, Link2, Loader2, MessageSquarePlus, MoreHorizontal, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { CheckCircle2, ChevronRight, ListChevronsDownUp, Copy, Link2, Loader2, MessageSquarePlus, MoreHorizontal, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@multica/ui/components/ui/card";
 import { Button, buttonVariants } from "@multica/ui/components/ui/button";
@@ -33,13 +33,11 @@ import { useLocale, useTimeAgo } from "../../i18n";
 import { ContentEditor, type ContentEditorRef, ReadonlyContent, useFileDropZone, FileDropOverlay, Attachment as AttachmentRenderer, AttachmentDownloadProvider, useUploadGate, useComposerSubmit } from "../../editor";
 import { useCommentUploads } from "./use-comment-uploads";
 import { FileUploadButton } from "@multica/ui/components/common/file-upload-button";
-import { api, dispatchReasonCode, errorCode } from "@multica/core/api";
+import { errorCode } from "@multica/core/api";
 import { ReplyInput } from "./reply-input";
 import { CommentTriggerChips } from "./comment-trigger-chips";
 import { useCommentTriggerPreview } from "../hooks/use-comment-trigger-preview";
-import { useRecipientActions } from "../hooks/use-recipient-actions";
-import { SteerBadge, SteerReceipts } from "./steer-receipts";
-import type { AgentTask, TimelineEntry, Attachment } from "@multica/core/types";
+import type { TimelineEntry, Attachment } from "@multica/core/types";
 import { contentReferencesAttachment } from "@multica/core/types";
 import { isDeletedComment } from "@multica/core/issues/comment-deletion";
 import { commentSupplementReceipts, isSupplementInFlight } from "@multica/core/issues/run-steering";
@@ -54,13 +52,9 @@ import { useT } from "../../i18n";
 import { CommentsFoldBar } from "./resolved-thread-bar";
 import { deriveThreadResolution } from "./thread-utils";
 import { RevisionConflictCompare } from "./revision-conflict-compare";
-import { InlineCommentRun, PlacedInlineCommentRun, useInlineCommentRunState, type InlineCommentRunState } from "./inline-comment-run";
-import { EMPTY_COMMENT_RUNS, isRunFailureNotice, orderThreadWithRuns, type CommentRun, type ThreadRunSlot } from "./comment-runs";
-import { descriptionPreview } from "./description-preview";
 import { useCommentAnnotations } from "./use-comment-annotations";
 import { useAttachmentVersions } from "./deliverables/attachment-versions";
 import { VersionBadge } from "./deliverables/version-badge";
-import { useRunCommentMotion } from "./use-run-comment-motion";
 import { WakeupSourceChip } from "./wakeup-source-chip";
 
 const commentActionClassName =
@@ -110,9 +104,6 @@ function StickyHeaderShell({
 
 interface CommentCardProps {
   issueId: string;
-  runs?: CommentRun[];
-  runViewState?: InlineCommentRunState;
-  enteringRunIds?: ReadonlySet<string>;
   entry: TimelineEntry;
   /**
    * Flat list of every nested reply under this thread root, in render order.
@@ -131,9 +122,9 @@ interface CommentCardProps {
    * `CommentRow` has to rerun the rule per row.
    */
   canModerate?: boolean;
-  onReply: (parentId: string, content: string, attachmentIds?: string[], suppressAgentIds?: string[], steerTaskIds?: string[]) => Promise<string | boolean>;
+  onReply: (parentId: string, content: string, attachmentIds?: string[]) => Promise<string | boolean>;
   onReplyAccepted?: (commentId: string) => void;
-  onEdit: (commentId: string, content: string, attachmentIds: string[], suppressAgentIds?: string[], contentBase?: string) => Promise<void>;
+  onEdit: (commentId: string, content: string, attachmentIds: string[], contentBase?: string) => Promise<void>;
   onDelete: (commentId: string) => void;
   onToggleReaction: (commentId: string, emoji: string) => void;
   onCreateSubIssue?: (commentId: string) => void;
@@ -141,8 +132,6 @@ interface CommentCardProps {
   onResolveToggle?: (commentId: string, resolved: boolean) => void;
   /** Copy a deep link (`#comment-…`) to a single comment in this thread. */
   onCopyLink?: (commentId: string) => void;
-  /** Scroll to and flash a comment in this thread. */
-  onJumpToComment?: (commentId: string) => void;
   /**
    * When non-null, the thread root is currently rendered as a resolved-but-
    * expanded card. Pass a "Collapse" affordance into the header so the user
@@ -294,78 +283,14 @@ function initialStandaloneAttachmentIds(entry: TimelineEntry): Set<string> {
   );
 }
 
-function retryableAgentFailureComment(entry: TimelineEntry): entry is TimelineEntry & { source_task_id: string } {
-  return (
-    entry.actor_type === "agent" &&
-    entry.comment_type === "system" &&
-    typeof entry.source_task_id === "string" &&
-    entry.source_task_id.length > 0
-  );
-}
-
-function TaskCommentRetryButton({
-  issueId,
-  taskId,
-  className,
-}: {
-  issueId: string;
-  taskId: string;
-  className?: string;
-}) {
-  const { t } = useT("issues");
-  const [retrying, setRetrying] = useState(false);
-
-  const handleRetry = async () => {
-    if (retrying) return;
-    setRetrying(true);
-    try {
-      await api.rerunIssue(issueId, taskId);
-    } catch (e) {
-      // Rerun re-checks the operator's invoke permission (MUL-4525); a
-      // structured 403 is a permission block, not a transient failure.
-      toast.error(
-        dispatchReasonCode(e) === "invocation_not_allowed"
-          ? t(($) => $.execution_log.retry_blocked)
-          : e instanceof Error
-            ? e.message
-            : t(($) => $.execution_log.retry_failed),
-      );
-    } finally {
-      setRetrying(false);
-    }
-  };
-
-  return (
-    <div className={cn("flex", className)}>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        onClick={handleRetry}
-        disabled={retrying}
-        aria-label={t(($) => $.execution_log.retry_task_aria)}
-      >
-        {retrying ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <RotateCcw className="h-3.5 w-3.5" />
-        )}
-        {t(($) => $.execution_log.retry_task_tooltip)}
-      </Button>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Shared edit-attachment state hook
 // ---------------------------------------------------------------------------
 
-const NEVER_STEER = () => false;
-
 function useEditAttachmentState(
   issueId: string,
   entry: TimelineEntry,
-  onEdit: (commentId: string, content: string, attachmentIds: string[], suppressAgentIds?: string[], contentBase?: string) => Promise<void>,
+  onEdit: (commentId: string, content: string, attachmentIds: string[], contentBase?: string) => Promise<void>,
 ) {
   const { t } = useT("issues");
   const { t: tEditor } = useT("editor");
@@ -394,15 +319,6 @@ function useEditAttachmentState(
     editingCommentId: entry.id,
     content: editing ? content : "",
   });
-  // An edit neither steers nor stops a run: it can only skip a recipient.
-  const { recipients, routing, setAction: setRecipientAction, reset: resetRecipients } = useRecipientActions({
-    issueId,
-    agents: triggerPreview.agents,
-    allowSteer: false,
-    steerByDefault: NEVER_STEER,
-    resetKey: `${issueId}:${entry.id}:${entry.parent_id ?? ""}`,
-  });
-
   const editorAttachments = pendingAttachments.length > 0
     ? [...(entry.attachments ?? []), ...pendingAttachments]
     : entry.attachments;
@@ -428,7 +344,6 @@ function useEditAttachmentState(
     setEditing(false);
     setRevisionConflict(false);
     setContent(entry.content ?? "");
-    resetRecipients();
     setRetainedStandaloneIds(null);
     // clearDraft drops both the edit text and its pending attachments.
     clearDraft(draftKey);
@@ -503,15 +418,8 @@ function useEditAttachmentState(
       if (trimmed === (entry.content ?? "").trim() && !attachmentsChanged) {
         return true;
       }
-      const { suppressAgentIds } = routing;
       try {
-        await onEdit(
-          entry.id,
-          trimmed,
-          activeIds,
-          suppressAgentIds.length > 0 ? suppressAgentIds : undefined,
-          initialContentBase,
-        );
+        await onEdit(entry.id, trimmed, activeIds, initialContentBase);
         setRevisionConflict(false);
         return true;
       } catch (err) {
@@ -560,8 +468,6 @@ function useEditAttachmentState(
     dropZoneProps,
     triggerPreview,
     content,
-    recipients,
-    setRecipientAction,
     draftKey,
     setDraft,
     setContent,
@@ -630,9 +536,6 @@ function CommentRevisionConflict({
 // ---------------------------------------------------------------------------
 
 function CommentRow({
-  runHeader,
-  runMetadata,
-  replyTo,
   issueId,
   entry,
   currentUserId,
@@ -647,9 +550,6 @@ function CommentRow({
   onResolveToggle,
   onCopyLink,
 }: {
-  runHeader?: ReactNode;
-  runMetadata?: ReactNode;
-  replyTo?: ReactNode;
   issueId: string;
   entry: TimelineEntry;
   currentUserId?: string;
@@ -660,7 +560,7 @@ function CommentRow({
   hasReplies?: boolean;
   /** True when this row is the deep-link target currently being highlighted. */
   isHighlighted?: boolean;
-  onEdit: (commentId: string, content: string, attachmentIds: string[], suppressAgentIds?: string[], contentBase?: string) => Promise<void>;
+  onEdit: (commentId: string, content: string, attachmentIds: string[], contentBase?: string) => Promise<void>;
   onDelete: (commentId: string) => void;
   onToggleReaction: (commentId: string, emoji: string) => void;
   onCreateSubIssue?: (commentId: string) => void;
@@ -727,9 +627,6 @@ function CommentRow({
             {new Date(entry.created_at).toLocaleString(locale)}
           </TooltipContent>
         </Tooltip>
-
-        <SteerBadge issueId={issueId} entry={entry} />
-        {runHeader}
 
         {entry.actor_type === "agent" && entry.source_task_id && (
           <WakeupSourceChip issueId={issueId} taskId={entry.source_task_id} />
@@ -822,7 +719,6 @@ function CommentRow({
           />
         </div>
       </StickyHeaderShell>
-      {replyTo && <div className="pl-12 pr-4 max-md:pl-3 max-md:pr-3 pb-1.5">{replyTo}</div>}
 
       {edit.editing ? (
         <div
@@ -873,11 +769,10 @@ function CommentRow({
           <div className="flex items-center justify-between gap-2 mt-2">
             <div className="min-w-0 flex-1">
               <CommentTriggerChips
-                recipients={edit.recipients}
+                recipients={edit.triggerPreview.agents}
                 blocked={edit.triggerPreview.blocked}
                 hasAllMembersMention={edit.triggerPreview.hasAllMembersMention}
                 draftContent={edit.content}
-                onActionChange={edit.setRecipientAction}
               />
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -910,19 +805,8 @@ function CommentRow({
             <ReadonlyContent content={entry.content ?? ""} attachments={entry.attachments} />
           </div>
           <AttachmentList attachments={entry.attachments} content={entry.content} className="mt-1.5 pl-12 pr-4 max-md:pl-3 max-md:pr-3" />
-          <div className="pl-12 pr-4 max-md:pl-3 max-md:pr-3">
-            <SteerReceipts issueId={issueId} entry={entry} />
-          </div>
-          {retryableAgentFailureComment(entry) && (
-            <TaskCommentRetryButton
-              issueId={issueId}
-              taskId={entry.source_task_id}
-              className="mt-2 pl-12 pr-4 max-md:pl-3 max-md:pr-3"
-            />
-          )}
         </>
       )}
-      <div className="pl-12 pr-4 max-md:pl-3 max-md:pr-3">{runMetadata}</div>
       {!edit.editing && <ReactionBar
         reactions={reactions}
         showPicker={false}
@@ -931,70 +815,6 @@ function CommentRow({
         getActorName={getActorName}
         className="mt-1.5 pl-12 pr-4 max-md:pl-3 max-md:pr-3"
       />}
-    </div>
-  );
-}
-
-/** Names the input a run answers once other rows separate the two (MUL-7628). */
-function ReplyToQuote({ entry, onJump }: { entry: TimelineEntry; onJump?: (commentId: string) => void }) {
-  const { t } = useT("issues");
-  const { getActorName } = useActorName();
-  const label = t(($) => $.comment.replying_to, {
-    name: entry.actor_name || getActorName(entry.actor_type, entry.actor_id),
-    preview: descriptionPreview(entry.content ?? ""),
-  });
-  return (
-    <button type="button" disabled={!onJump} onClick={() => onJump?.(entry.id)} title={label}
-      className="flex max-w-full min-w-0 items-center gap-1.5 rounded-xs text-left text-caption text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:hover:text-muted-foreground">
-      <CornerUpLeft aria-hidden className="size-3 shrink-0" />
-      <span className="min-w-0 truncate">{label}</span>
-    </button>
-  );
-}
-
-/** A run without a persisted reply still belongs to the agent, never its trigger author. */
-export function AgentRunComment({ run, standalone = false, commentProps, entering = false, replyTo }: {
-  run: CommentRun;
-  standalone?: boolean;
-  entering?: boolean;
-  commentProps?: CommentCardProps;
-  /** The input this run answers, shown when the thread no longer places the two together. */
-  replyTo?: ReactNode;
-}) {
-  const viewState = useInlineCommentRunState();
-  const replyEntry = commentProps?.entry;
-  // A deleted reply renders nothing in a run slot either (see CommentRow), so
-  // the slot falls back to the run's own activity block: the run happened, and
-  // it still carries `hasReply`, so it never prints the deleted body as its
-  // output. A deleted thread ROOT keeps rendering — it heads its own thread.
-  const replyHidden = !standalone && !!replyEntry && isDeletedComment(replyEntry);
-  // The platform's failure notice only restates how the run ended, so the
-  // run's own block takes its slot and says it once (MUL-7692). A standalone
-  // notice that people replied to still heads its thread as a card.
-  const notice = replyEntry && !replyHidden && isRunFailureNotice(replyEntry, run.task)
-    && !(standalone && commentProps?.replies.some((entry) => !isDeletedComment(entry)))
-    ? replyEntry : undefined;
-  const reply = replyHidden || notice ? undefined : replyEntry;
-  // The notice keeps its deep-link target and highlight in the run's slot.
-  const slotEntry = reply ?? notice;
-  const motionRef = useRunCommentMotion(entering, reply?.id, run.task.status);
-  return (
-    <div ref={motionRef} data-run-slot-id={run.task.id}
-      data-run-comment-id={!reply ? run.task.id : undefined}
-      id={!standalone && slotEntry ? `comment-${slotEntry.id}` : undefined}
-      className={cn(standalone ? !reply && "rounded-xl border bg-card" : "border-t border-border/50", !reply && "py-1.5", slotEntry && commentProps?.highlightedCommentId === slotEntry.id && highlightedCommentBackgroundClass)}>
-      {commentProps && reply ? standalone ? (
-        <CommentCard {...commentProps} runs={commentProps.runs ?? [run]} runViewState={viewState} />
-      ) : (
-        <CommentRow {...commentProps}
-          isHighlighted={commentProps.highlightedCommentId === reply?.id}
-          isResolution={!!reply?.resolved_at}
-          replyTo={replyTo}
-          runHeader={<PlacedInlineCommentRun run={run} viewState={viewState} presentation="header" />}
-          runMetadata={<PlacedInlineCommentRun run={run} viewState={viewState} />} />
-      ) : <div className="px-4 max-md:px-3">
-        <InlineCommentRun run={run} viewState={viewState} showIdentity replyTo={replyTo} replacesFailureNotice={!!notice} />
-      </div>}
     </div>
   );
 }
@@ -1012,9 +832,6 @@ export function AgentRunComment({ run, standalone = false, commentProps, enterin
 
 function CommentCardImpl({
   issueId,
-  runs = EMPTY_COMMENT_RUNS,
-  runViewState,
-  enteringRunIds,
   entry,
   replies,
   currentUserId,
@@ -1027,7 +844,6 @@ function CommentCardImpl({
   onCreateSubIssue,
   onResolveToggle,
   onCopyLink,
-  onJumpToComment,
   onCollapseResolved,
   expandedResolvedIds,
   onResolvedExpandChange,
@@ -1064,37 +880,13 @@ function CommentCardImpl({
   const canEditEntry = receipts.length === 0 && (isOwn || (canModerate && entry.actor_type === "member"));
   const canDeleteEntry = !receipts.some(isSupplementInFlight) && (isOwn || canModerate);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  // A reply here goes into the running turn of a run that belongs to this
-  // thread by default; another thread's turn is only reached by choice.
-  const steerThreadRunByDefault = useCallback(
-    (task: AgentTask) => runs.some((run) => run.task.id === task.id),
-    [runs],
-  );
 
   const allNestedReplies = replies;
   // What the thread shows. Tombstones are excluded from display and counts but
-  // stay in `allNestedReplies`, which run anchoring and "has replies" reason
-  // over. Every tombstone has at least one live descendant (the server prunes
-  // one that loses its last reply), so no content hides behind this.
+  // stay in `allNestedReplies`, which "has replies" reasons over. Every
+  // tombstone has at least one live descendant (the server prunes one that
+  // loses its last reply), so no content hides behind this.
   const visibleReplies = allNestedReplies.filter((reply) => !isDeletedComment(reply));
-  // A failure notice heading a thread keeps the thread's header; its run line
-  // below says how the run ended, so the raw body and its button are dropped.
-  const noticeRun = runs.find((run) => run.hasReply && run.commentId === entry.id && isRunFailureNotice(entry, run.task));
-  const renderRuns = (commentId: string, presentation: "inline" | "header" = "inline") => runs.filter((run) => run.commentId === commentId && run.hasReply
-    && (!run.anchorCommentId || run.anchorCommentId === commentId || replyFolded))
-    .map((run) => <PlacedInlineCommentRun key={run.task.id} run={run} presentation={presentation}
-      viewState={run.commentId === entry.id ? runViewState : undefined} replacesFailureNotice={run === noticeRun} />);
-
-  // A run slot renders the run's latest comment, or its activity until it
-  // posts one.
-  const renderThreadRow = (row: TimelineEntry | ThreadRunSlot) => "run" in row ? (
-    <AgentRunComment key={row.run.task.id} run={row.run} entering={enteringRunIds?.has(row.run.task.id)}
-      replyTo={row.replyTo && <ReplyToQuote entry={row.replyTo} onJump={onJumpToComment} />}
-      commentProps={row.reply ? {
-        issueId, entry: row.reply, replies: [], currentUserId, canModerate, onReply, onEdit, onDelete,
-        onToggleReaction, onCreateSubIssue, onResolveToggle, onCopyLink, highlightedCommentId, enteringRunIds,
-      } : undefined} />
-  ) : renderReply(row);
 
   const renderReply = (reply: TimelineEntry) => (
     <Fragment key={reply.id}>
@@ -1111,8 +903,6 @@ function CommentCardImpl({
           <CommentRow
             issueId={issueId}
             entry={reply}
-            runHeader={renderRuns(reply.id, "header")}
-            runMetadata={renderRuns(reply.id)}
             currentUserId={currentUserId}
             canModerate={canModerate}
             isResolution={reply.id === replyResolutionId}
@@ -1152,12 +942,11 @@ function CommentCardImpl({
   const resolutionReply = replyResolutionId
     ? allNestedReplies.find((r) => r.id === replyResolutionId) ?? null
     : null;
-  // Replies and run slots in the order they happened (MUL-7628). Folded, the
-  // resolution stays visible along with any run that has not replied yet.
-  const threadRows = replyFolded
-    ? orderThreadWithRuns(entry, resolutionReply ? [resolutionReply] : [], runs.filter((run) => !run.hasReply
-      && (run.anchorCommentId === entry.id || run.anchorCommentId === replyResolutionId)))
-    : orderThreadWithRuns(entry, allNestedReplies, runs);
+  // What the thread lists, oldest first (the server orders by created_at, id).
+  // Folded, the resolution is the only reply kept visible.
+  const threadReplies = replyFolded
+    ? resolutionReply ? [resolutionReply] : []
+    : allNestedReplies;
 
   // Pin the root comment's header to the timeline's scroll parent while the
   // thread is open, so a LONG root comment keeps its author + actions visible
@@ -1237,8 +1026,6 @@ function CommentCardImpl({
                     </TooltipContent>
                   </Tooltip>
 
-                  <SteerBadge issueId={issueId} entry={entry} />
-                  {renderRuns(entry.id, "header")}
                   {entry.actor_type === "agent" && entry.source_task_id && (
                     <WakeupSourceChip issueId={issueId} taskId={entry.source_task_id} />
                   )}
@@ -1410,11 +1197,10 @@ function CommentCardImpl({
                         />
                       )}
                     <CommentTriggerChips
-                      recipients={edit.recipients}
+                      recipients={edit.triggerPreview.agents}
                       blocked={edit.triggerPreview.blocked}
                       hasAllMembersMention={edit.triggerPreview.hasAllMembersMention}
                       draftContent={edit.content}
-                      onActionChange={edit.setRecipientAction}
                     />
                     <FileUploadButton
                       size="sm"
@@ -1439,7 +1225,7 @@ function CommentCardImpl({
                 </div>
                 {edit.isDragOver && <FileDropOverlay />}
               </div>
-            ) : !noticeRun && (
+            ) : (
               <>
                 <div tabIndex={currentUserId ? 0 : undefined} role="group"
             aria-label={t(($) => $.reply.annotations.source_label, { name: entry.actor_name || getActorName(entry.actor_type, entry.actor_id) })}
@@ -1447,19 +1233,8 @@ function CommentCardImpl({
                   <ReadonlyContent content={entry.content ?? ""} attachments={entry.attachments} />
                 </div>
                 <AttachmentList attachments={entry.attachments} content={entry.content} className="mt-1.5 pl-8 max-md:pl-0" />
-                <div className="pl-8 max-md:pl-0">
-                  <SteerReceipts issueId={issueId} entry={entry} />
-                </div>
-                {retryableAgentFailureComment(entry) && (
-                  <TaskCommentRetryButton
-                    issueId={issueId}
-                    taskId={entry.source_task_id}
-                    className="mt-2 pl-8 max-md:pl-0"
-                  />
-                )}
               </>
             )}
-            <div className="pl-8 max-md:pl-0">{renderRuns(entry.id)}</div>
             {!edit.editing && <ReactionBar
               reactions={reactions}
               showPicker={false}
@@ -1488,7 +1263,7 @@ function CommentCardImpl({
                   />
                 </div>
               )}
-              {threadRows.map(renderThreadRow)}
+              {threadReplies.map(renderReply)}
             </>
           ) : (
             <>
@@ -1506,7 +1281,7 @@ function CommentCardImpl({
                 </button>
               )}
               {/* Replies — chronological; the resolution keeps its place with a badge */}
-              {threadRows.map(renderThreadRow)}
+              {threadReplies.map(renderReply)}
 
               {/* Reply input */}
               <div className="border-t border-border/50 px-4 max-md:px-3 py-2.5">
@@ -1520,8 +1295,7 @@ function CommentCardImpl({
                   avatarId={currentUserId ?? ""}
                   draftKey={`reply:${issueId}:${entry.id}`}
                   onEditAnnotation={(id) => annotation.editAnnotation(id, true)}
-                  steerByDefault={steerThreadRunByDefault}
-                  onSubmit={(content, attachmentIds, suppressAgentIds, steerTaskIds) => replyTargetMissing ? Promise.resolve(false) : onReply(replyTargetId, content, attachmentIds, suppressAgentIds, steerTaskIds)}
+                  onSubmit={(content, attachmentIds) => replyTargetMissing ? Promise.resolve(false) : onReply(replyTargetId, content, attachmentIds)}
                   onAccepted={onReplyAccepted}
                 />
               </div>

@@ -49,11 +49,6 @@
   "detail": {
     "select_prompt": "詳細を表示する通知を選択してください",
     "empty": "インボックスは空です",
-    "original_input": "元の入力",
-    "retry_with_context": "コンテキストを保持して再試行",
-    "edit_advanced": "詳細フォームで編集",
-    "autopilot_quota_exceeded_body": "このワークスペースは現在の期間の自動化実行上限 {{limit}} 回に達しました。実行枠が {{resetAt}} にリセットされるまで、以降の自動化は開始されません。",
-    "autopilot_quota_upgrade": "アップグレード方法を見る",
     "archive": "アーカイブ",
     "unarchive": "アーカイブ解除"
   },
@@ -97,14 +92,11 @@
     "children_done_stage": "ステージ {{stage}} のサブタスクがすべて終わりました"
   },
   "toasts": {
-    "source_context_retry_started": "元のコンテキストで再試行を開始しました",
     "archived": "通知をアーカイブしました",
     "unarchived": "通知を元に戻しました"
   },
   "errors": {
     "archived_lookup_failed": "リンク先の通知を読み込めませんでした",
-    "source_context_retry_failed": "元のコンテキストで再試行できませんでした",
-    "source_context_retry_unavailable": "このコンテキストは再試行できません。分岐点からやり直してください。",
     "mark_read_failed": "既読にできませんでした",
     "mark_unread_failed": "未読にできませんでした",
     "archive_failed": "アーカイブできませんでした",

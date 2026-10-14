@@ -156,7 +156,8 @@
       "title": "테마",
       "light": "라이트",
       "dark": "다크",
-      "system": "시스템"
+      "system": "시스템",
+      "japan_blues": "Japan Blues"
     },
     "language": {
       "title": "언어",
@@ -178,13 +179,7 @@
     "sticky_comment_bar": {
       "title": "댓글 입력란을 하단에 고정"
     },
-    "running_agent_reply": {
-      "title": "실행 중인 에이전트에 답장할 때",
-      "steer": "현재 실행에 추가",
-      "after_run": "이번 실행 후 시작",
-      "hint": "기본값만 정합니다. 보내기 전에 메시지마다 바꿀 수 있습니다."
-    },
-    "comments_title": "댓글 및 채팅",
+    "comments_title": "댓글",
     "region_title": "언어 및 지역",
     "appearance_title": "모양",
     "issue_fields_title": "태스크 생성 시 표시할 필드",
@@ -241,10 +236,6 @@
         "label": "오른쪽 사이드바 전환",
         "description": "오른쪽 사이드바가 있는 페이지에서 사용할 수 있습니다."
       },
-      "toggleChat": {
-        "label": "채팅 창 전환",
-        "description": "플로팅 채팅 창을 열거나 닫습니다. 열면 메시지 입력란에 포커스합니다."
-      },
       "findInIssue": {
         "label": "태스크에서 찾기",
         "description": "열린 태스크 상세 내용에서 검색합니다."
@@ -269,10 +260,6 @@
         "label": "받은 편지함으로 이동",
         "description": "워크스페이스 받은 편지함을 엽니다."
       },
-      "goChat": {
-        "label": "채팅으로 이동",
-        "description": "워크스페이스 채팅을 엽니다."
-      },
       "goMyIssues": {
         "label": "내 태스크로 이동",
         "description": "나에게 할당된 태스크를 엽니다."
@@ -285,25 +272,13 @@
         "label": "프로젝트로 이동",
         "description": "프로젝트 목록을 엽니다."
       },
-      "goAutopilots": {
-        "label": "자동화로 이동",
-        "description": "워크스페이스 자동화를 엽니다."
-      },
       "goAgents": {
         "label": "에이전트로 이동",
         "description": "에이전트 목록을 엽니다."
       },
-      "goSquads": {
-        "label": "스쿼드로 이동",
-        "description": "스쿼드 목록을 엽니다."
-      },
       "goUsage": {
         "label": "사용량으로 이동",
         "description": "사용량 분석을 엽니다."
-      },
-      "goRuntimes": {
-        "label": "런타임으로 이동",
-        "description": "런타임 설정을 엽니다."
       },
       "goSkills": {
         "label": "Skills로 이동",
@@ -326,10 +301,6 @@
       "reset_zoom": "확대/축소 재설정",
       "close_dialog": "대화상자 또는 메뉴 닫기"
     }
-  },
-  "chat": {
-    "floating_label": "플로팅 채팅 창",
-    "floating_hint": "모든 페이지에 플로팅 채팅 버튼을 표시합니다."
   },
   "issue": {
     "opening": {

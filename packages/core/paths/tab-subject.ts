@@ -82,8 +82,6 @@ export function parseTabSubject(url: string): TabSubject {
       return { kind: "page", page: "myIssues" };
     case "projects":
       return id ? { kind: "project", id } : { kind: "page", page: "projects" };
-    case "autopilots":
-      return id ? { kind: "autopilot", id } : { kind: "page", page: "autopilots" };
     case "agents":
       if (id === "new") return { kind: "flow", flow: "create-agent" };
       return id
@@ -92,10 +90,6 @@ export function parseTabSubject(url: string): TabSubject {
     case "members":
       // No members collection route exists; only `/members/:id`.
       return id ? { kind: "actor", actorType: "member", id } : { kind: "unknown" };
-    case "squads":
-      return id
-        ? { kind: "actor", actorType: "squad", id }
-        : { kind: "page", page: "squads" };
     case "usage":
       return { kind: "page", page: "usage" };
     case "inbox":
@@ -106,13 +100,6 @@ export function parseTabSubject(url: string): TabSubject {
       };
     case "chat":
       return { kind: "chat", sessionId: query.get("session") || null };
-    case "runtimes":
-      if (!id) return { kind: "page", page: "runtimes" };
-      // `/runtimes/:machineId/runtime/:runtimeId` — nested runtime.
-      if (segments[3] === "runtime" && segments[4]) {
-        return { kind: "runtime", machineId: id, runtimeId: segments[4] };
-      }
-      return { kind: "machine", machineId: id };
     case "skills":
       return id ? { kind: "skill", id } : { kind: "page", page: "skills" };
     case "settings":

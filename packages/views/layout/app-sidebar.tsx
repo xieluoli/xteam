@@ -69,9 +69,6 @@ import { workspaceListOptions, myInvitationListOptions, workspaceKeys } from "@m
 import { resolvePublicFileUrl } from "@multica/core/workspace/avatar-url";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { inboxUnreadSummaryOptions, useInboxUnreadCount, hasOtherWorkspaceUnread, unreadWorkspaceIds } from "@multica/core/inbox/queries";
-import { chatSessionsOptions } from "@multica/core/chat/queries";
-import { countUnreadChatMessages } from "@multica/core/chat/unread";
-import { useChatStore } from "@multica/core/chat";
 import { api, ApiError } from "@multica/core/api";
 import { useConfigStore } from "@multica/core/config";
 import { pinListOptions } from "@multica/core/pins/queries";
@@ -87,7 +84,6 @@ import {
   useShortcut,
 } from "@multica/core/shortcuts";
 import { ShortcutKeycaps } from "../common/shortcut-keycaps";
-import { useAppForeground } from "../common/use-app-foreground";
 
 // Top-level nav items stay active when the user is on a child route
 // (e.g. "Projects" stays lit on /:slug/projects/:id). Pinned items keep
@@ -113,15 +109,11 @@ const PINNED_PREVIEW_LIMIT = 5;
 // Only parameterless paths are valid nav destinations.
 type NavKey =
   | "inbox"
-  | "chat"
   | "myIssues"
   | "issues"
   | "projects"
-  | "autopilots"
   | "agents"
-  | "squads"
   | "usage"
-  | "runtimes"
   | "skills"
   | "settings";
 
@@ -129,15 +121,11 @@ type NavKey =
 // icons derived from the destination path via routeIconForPath.
 type NavLabelKey =
   | "inbox"
-  | "chat"
   | "my_issues"
   | "issues"
   | "projects"
-  | "autopilots"
   | "agents"
-  | "squads"
   | "usage"
-  | "runtimes"
   | "skills"
   | "settings";
 
@@ -147,20 +135,16 @@ type NavLabelKey =
 const personalNav: { key: NavKey; labelKey: NavLabelKey }[] = [
   { key: "inbox", labelKey: "inbox" },
   { key: "myIssues", labelKey: "my_issues" },
-  { key: "chat", labelKey: "chat" },
 ];
 
 const workNav: { key: NavKey; labelKey: NavLabelKey }[] = [
   { key: "issues", labelKey: "issues" },
   { key: "projects", labelKey: "projects" },
-  { key: "autopilots", labelKey: "autopilots" },
 ];
 
 const aiTeamNav: { key: NavKey; labelKey: NavLabelKey }[] = [
   { key: "agents", labelKey: "agents" },
-  { key: "squads", labelKey: "squads" },
   { key: "skills", labelKey: "skills" },
-  { key: "runtimes", labelKey: "runtimes" },
 ];
 
 const utilityNav: { key: NavKey; labelKey: NavLabelKey }[] = [
@@ -461,35 +445,6 @@ export function AppSidebar({ topSlot, searchSlot, headerClassName, headerStyle }
   // for the switcher dot, so the count costs no request of its own — it used
   // to download the whole inbox list here just to count it (MUL-6967).
   const unreadCount = useInboxUnreadCount(wsId);
-  // Chat tab unread badge: IM-style total of unread *messages* across chat
-  // threads (countUnreadChatMessages is the shared definition — mobile's tab
-  // badge derives from the same function, keeping the platforms in agreement).
-  const { data: chatSessions = [] } = useQuery({
-    ...chatSessionsOptions(wsId ?? ""),
-    enabled: !!wsId,
-  });
-  // The session the user is reading right now must not count: the thread list
-  // renders its row badge as 0 (auto mark-read is about to clear it), and a
-  // reply landing in the open conversation would otherwise flash a sidebar
-  // count with no matching row. "Reading right now" = a session is active, a
-  // chat surface is actually showing it (chat page route or the floating
-  // window), AND the app is in the foreground. When the app is backgrounded,
-  // auto mark-read is suppressed (MUL-4485) so the reply stays unread — the
-  // badge must count it, or the notification is silently eaten while the user
-  // is away. A remembered selection while both surfaces are closed also still
-  // counts, for the same reason.
-  const activeChatSessionId = useChatStore((s) => s.activeSessionId);
-  const floatingChatOpen = useChatStore((s) => s.isOpen);
-  const appForeground = useAppForeground();
-  const chatHref = p.chat();
-  const viewedChatSessionId =
-    appForeground && (floatingChatOpen || isNavActive(pathname, chatHref))
-      ? activeChatSessionId
-      : null;
-  const chatUnreadCount = React.useMemo(
-    () => countUnreadChatMessages(chatSessions, viewedChatSessionId),
-    [chatSessions, viewedChatSessionId],
-  );
   // Cross-workspace unread summary backs the workspace-switcher dot. One
   // shared cache entry across workspaces; gated on an active workspace since
   // the endpoint resolves through the workspace-member middleware.
@@ -789,13 +744,6 @@ export function AppSidebar({ topSlot, searchSlot, headerClassName, headerStyle }
                         {item.key === "inbox" && unreadCount > 0 && (
                           <CappedNumberFlow
                             value={unreadCount}
-                            animated={false}
-                            className="ml-auto text-caption"
-                          />
-                        )}
-                        {item.key === "chat" && chatUnreadCount > 0 && (
-                          <CappedNumberFlow
-                            value={chatUnreadCount}
                             animated={false}
                             className="ml-auto text-caption"
                           />

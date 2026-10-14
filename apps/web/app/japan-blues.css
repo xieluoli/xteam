@@ -1,0 +1,55 @@
+/* Japan Blues — https://tweakcn.com/themes/cmmhql9yf000404jshrdebgfj
+ * Opt-in web palette. Keep shared typography, spacing and status/chart colours.
+ * Correct the upstream invalid card foreground and use readable button text. */
+html.japan-blues {
+  color-scheme: light;
+  --background: oklch(0.9818 0.0054 95.0986);
+  --foreground: oklch(0.1450 0 0);
+  --card: oklch(0.9818 0.0054 95.0986);
+  --card-foreground: oklch(0.1450 0 0);
+  --popover: oklch(1.0000 0 0);
+  --popover-foreground: oklch(0.2671 0.0196 98.9390);
+  --primary: oklch(0.7040 0.0400 256.7880);
+  --primary-foreground: oklch(0.3250 0.0440 257.2870);
+  --secondary: oklch(0.8690 0.0220 252.8940);
+  --secondary-foreground: oklch(0.3720 0.0440 257.2870);
+  --muted: oklch(0.9230 0.0030 48.7170);
+  --muted-foreground: oklch(0.4650 0.0130 58.0710);
+  --accent: oklch(0.9245 0.0138 92.9892);
+  --accent-foreground: oklch(0.2333 0.0195 275.9526);
+  --border: oklch(0.8690 0.0050 56.3660);
+  --input: oklch(0.9220 0 0);
+  --ring: oklch(0.5540 0.0460 257.4170);
+  --radius: 0.5rem;
+  --sidebar: oklch(0.9663 0.0080 98.8792);
+  --sidebar-foreground: oklch(0.2680 0.0070 34.2980);
+  --sidebar-primary: oklch(0.5540 0.0460 257.4170);
+  --sidebar-primary-foreground: oklch(0.9881 0 0);
+  --sidebar-accent: oklch(0.9245 0.0138 92.9892);
+  --sidebar-accent-foreground: oklch(0.3250 0 0);
+  --sidebar-border: oklch(0.8690 0.0220 252.8940);
+  --sidebar-ring: oklch(0.7040 0.0400 256.7880);
+  --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
+  --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
+  --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  --app-shell: var(--sidebar);
+  --page-canvas: var(--background);
+  --surface: var(--card);
+  --surface-foreground: var(--card-foreground);
+  --surface-raised: var(--popover);
+  --surface-hover: var(--accent);
+  --surface-selected: var(--secondary);
+  --surface-selected-foreground: var(--secondary-foreground);
+  --surface-border: var(--border);
+  --faint-foreground: oklch(0.5500 0.0130 58.0710);
+  --brand: var(--secondary-foreground);
+  --brand-foreground: var(--background);
+  --surface-shadow: var(--shadow-sm);
+  --menu-shadow: var(--shadow-md);
+  --floating-shadow: var(--shadow-xl);
+}

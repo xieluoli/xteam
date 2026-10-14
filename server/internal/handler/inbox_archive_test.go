@@ -19,7 +19,7 @@ func TestArchivedInboxPageBeyond200(t *testing.T) {
 		issue := dbfx.Issue(t, "Archived", testutil.Cols{"workspace_id": ws})
 		dbfx.Insert(t, "inbox_item", testutil.Cols{
 			"workspace_id": ws, "recipient_type": "member", "recipient_id": testUserID,
-			"type": "mentioned", "severity": "info", "title": "Archived", "issue_id": issue,
+			"type": "status_changed", "severity": "info", "title": "Archived", "issue_id": issue,
 			"archived": true, "created_at": created,
 		})
 	}
@@ -77,7 +77,7 @@ func TestArchivedInboxFiltersAndLookupUseLatestGroup(t *testing.T) {
 	insert := func(issueID *string, read bool, actorType string, actorID *string, created time.Time, details string, archived bool) string {
 		return dbfx.Insert(t, "inbox_item", testutil.Cols{
 			"workspace_id": ws, "recipient_type": "member", "recipient_id": testUserID,
-			"type": "mentioned", "severity": "info", "title": "Archive filter", "issue_id": issueID,
+			"type": "status_changed", "severity": "info", "title": "Archive filter", "issue_id": issueID,
 			"read": read, "actor_type": actorType, "actor_id": actorID, "archived": archived,
 			"created_at": created, "details": details,
 		})

@@ -33,6 +33,13 @@ export type InboxItemType =
   // system rule notifies a member assignee instead of waking an agent).
   | "children_done";
 
+// Keep the broader wire enum for installed clients; the workspace inbox only
+// projects notification kinds backed by the retained issue workflows.
+export function isSupportedInboxType(type: string): boolean {
+  return type === "status_changed" || type === "issue_assigned" ||
+    type === "unassigned" || type === "assignee_changed";
+}
+
 /**
  * One workspace's unread inbox count in the cross-workspace summary
  * (`GET /api/inbox/unread-summary`). The sidebar uses this to light a dot on

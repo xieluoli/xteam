@@ -94,15 +94,15 @@ beforeEach(() => {
 });
 
 describe("useCreateAgentSubmit cache handoff", () => {
-  it("hydrates list and detail before navigating without awaiting reconciliation", async () => {
+  it.each([null, "historical-squad"])("opens the agent detail after creation (squad: %s)", async (squadId) => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
     queryClient.setQueryData<Agent[]>(workspaceKeys.agents("ws-1"), []);
 
     // A slow list reconciliation must not gate the detail route.
-    vi.spyOn(queryClient, "invalidateQueries").mockReturnValue(
-      new Promise<void>(() => {}),
+    vi.spyOn(queryClient, "invalidateQueries").mockImplementation((filters) =>
+      filters?.queryKey?.length === 3 ? new Promise<void>(() => {}) : Promise.resolve(),
     );
     let navigationSnapshot:
       | { path: string; list: Agent[] | undefined; detail: Agent | undefined }
@@ -128,7 +128,7 @@ describe("useCreateAgentSubmit cache handoff", () => {
             runtimeId: CREATED_AGENT.runtime_id,
           },
           runtimeId: CREATED_AGENT.runtime_id,
-          squadId: null,
+          squadId,
         }),
       { wrapper: wrapper(queryClient) },
     );

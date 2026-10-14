@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Download } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useAuthStore } from "@multica/core/auth";
 import { docsHrefForLocale, useLocale } from "../i18n";
 import { useDashboardCtaHref } from "../utils/use-dashboard-cta";
@@ -37,13 +37,6 @@ export function LandingHero() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link href={ctaHref} className={heroButtonClassName("solid")}>
                 {user ? t.header.dashboard : t.hero.cta}
-              </Link>
-              <Link
-                href="/download"
-                className={heroButtonClassName("ghost")}
-              >
-                <Download className="size-4" aria-hidden />
-                {t.hero.downloadDesktop}
               </Link>
               <Link
                 href="/contact-sales"

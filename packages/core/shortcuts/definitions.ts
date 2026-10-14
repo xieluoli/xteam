@@ -10,22 +10,17 @@ export type ShortcutActionId =
   | "createIssue"
   | "toggleSidebar"
   | "toggleRightSidebar"
-  | "toggleChat"
   | "findInIssue"
   | "archiveInboxItem"
   | "send"
   | "goBack"
   | "goForward"
   | "goInbox"
-  | "goChat"
   | "goMyIssues"
   | "goIssues"
   | "goProjects"
-  | "goAutopilots"
   | "goAgents"
-  | "goSquads"
   | "goUsage"
-  | "goRuntimes"
   | "goSkills"
   | "goSettings";
 
@@ -86,13 +81,6 @@ export const SHORTCUT_ACTIONS: readonly ShortcutActionDefinition[] = [
     defaultShortcut: primary("/"),
     allowInEditable: false,
   },
-  // Mod+J follows the "toggle a docked panel" convention, and is one of the few
-  // letters this module's own policy leaves free on every platform and runtime:
-  // it is neither app-owned (PRIMARY_RESERVED_KEYS) nor browser-owned
-  // (BROWSER_ONLY_PRIMARY_RESERVED_KEYS). `allowInEditable` because the point of
-  // the binding is reaching — and dismissing — chat without a mouse, which has
-  // to keep working while the caret sits in the chat composer itself.
-  { id: "toggleChat", category: "general", defaultShortcut: primary("J"), allowInEditable: true },
   { id: "findInIssue", category: "general", defaultShortcut: primary("F"), allowInEditable: true },
   {
     id: "archiveInboxItem",
@@ -109,15 +97,11 @@ export const SHORTCUT_ACTIONS: readonly ShortcutActionDefinition[] = [
   { id: "goBack", category: "navigation", defaultShortcut: primary("["), allowInEditable: false },
   { id: "goForward", category: "navigation", defaultShortcut: primary("]"), allowInEditable: false },
   { id: "goInbox", category: "navigation", defaultShortcut: null, allowInEditable: false },
-  { id: "goChat", category: "navigation", defaultShortcut: null, allowInEditable: false },
   { id: "goMyIssues", category: "navigation", defaultShortcut: null, allowInEditable: false },
   { id: "goIssues", category: "navigation", defaultShortcut: null, allowInEditable: false },
   { id: "goProjects", category: "navigation", defaultShortcut: null, allowInEditable: false },
-  { id: "goAutopilots", category: "navigation", defaultShortcut: null, allowInEditable: false },
   { id: "goAgents", category: "navigation", defaultShortcut: null, allowInEditable: false },
-  { id: "goSquads", category: "navigation", defaultShortcut: null, allowInEditable: false },
   { id: "goUsage", category: "navigation", defaultShortcut: null, allowInEditable: false },
-  { id: "goRuntimes", category: "navigation", defaultShortcut: null, allowInEditable: false },
   { id: "goSkills", category: "navigation", defaultShortcut: null, allowInEditable: false },
   { id: "goSettings", category: "navigation", defaultShortcut: null, allowInEditable: false },
 ] as const;

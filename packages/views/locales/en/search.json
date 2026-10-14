@@ -21,7 +21,8 @@
     "unfold_all_comments": "Unfold All Comments",
     "switch_to_light": "Switch to Light Theme",
     "switch_to_dark": "Switch to Dark Theme",
-    "use_system_theme": "Use System Theme"
+    "use_system_theme": "Use System Theme",
+    "switch_to_japan_blues": "Switch to Japan Blues"
   },
   "toast": {
     "link_copied": "Link copied",

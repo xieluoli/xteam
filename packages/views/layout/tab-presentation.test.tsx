@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { issueDetailOptions } from "@multica/core/issues/queries";
 import { issueStatusListOptions } from "@multica/core/issue-statuses/queries";
 import { projectDetailOptions } from "@multica/core/projects/queries";
-import { chatSessionsOptions } from "@multica/core/chat/queries";
 import {
   inboxListOptions,
   archivedInboxPagesOptions,
@@ -13,7 +12,6 @@ import {
 } from "@multica/core/inbox/queries";
 import { EMPTY_INBOX_FILTERS } from "@multica/core/inbox/filter-store";
 import { agentListOptions } from "@multica/core/workspace/queries";
-import { runtimeListOptions } from "@multica/core/runtimes/queries";
 
 // Mutable workspace stub so a test can simulate "workspace not resolved yet".
 const ws = vi.hoisted(() => ({ current: { id: "ws1", slug: "acme" } as { id: string; slug: string } | null }));
@@ -25,8 +23,7 @@ vi.mock("@multica/core/paths", async (importOriginal) => ({
 
 vi.mock("../i18n", async () => {
   const layout = (await import("../locales/en/layout.json")).default;
-  const chat = (await import("../locales/en/chat.json")).default;
-  const bundles: Record<string, unknown> = { layout, chat };
+  const bundles: Record<string, unknown> = { layout };
   return {
     useT: (ns: string) => ({
       t: (select: (b: Record<string, unknown>) => string) =>
@@ -67,10 +64,6 @@ function seed(qc: QueryClient) {
     icon: "🚀",
     title: "Apollo",
   } as never);
-  qc.setQueryData(chatSessionsOptions("ws1").queryKey, [
-    { id: "s1", title: "Deploy plan", status: "active" },
-    { id: "s2", title: "  ", status: "active" },
-  ] as never);
   qc.setQueryData(inboxListOptions("ws1").queryKey, [
     { id: "n1", issue_id: "i9", title: "Assigned to you", type: "issue_assigned" },
     { id: "n2", issue_id: null, title: "Quick create failed", type: "quick_create_failed" },
@@ -94,10 +87,8 @@ function seed(qc: QueryClient) {
   qc.setQueryData(agentListOptions("ws1").queryKey, [
     { id: "ag1", name: "Robby", avatar_url: null },
   ] as never);
-  qc.setQueryData(runtimeListOptions("ws1").queryKey, [
-    { id: "rt1", name: "Claude (host)", custom_name: "Prod Box", status: "online" },
-  ] as never);
 }
+
 
 function presentationOf(url: string, fallback?: string) {
   const qc = makeClient();
@@ -163,31 +154,6 @@ describe("useTabPresentation — live from cache", () => {
     expect(presentationOf("/acme/agents/ag1")).toEqual({
       visual: { kind: "actor", actorType: "agent", id: "ag1" },
       title: "Robby",
-    });
-  });
-
-  it("machine tab uses the runtime's custom name over the raw daemon name", () => {
-    expect(presentationOf("/acme/runtimes/rt1")).toEqual({
-      visual: { kind: "icon", icon: "Monitor" },
-      title: "Prod Box",
-    });
-  });
-
-  it("chat container: MessageSquare icon + session title", () => {
-    expect(presentationOf("/acme/chat?session=s1")).toEqual({
-      visual: { kind: "icon", icon: "MessageSquare" },
-      title: "Deploy plan",
-    });
-  });
-
-  it("chat container: blank session title uses the New chat fallback", () => {
-    expect(presentationOf("/acme/chat?session=s2").title).toBe("New chat");
-  });
-
-  it("chat container: no session stays Chat", () => {
-    expect(presentationOf("/acme/chat")).toEqual({
-      visual: { kind: "icon", icon: "MessageSquare" },
-      title: "Chat",
     });
   });
 

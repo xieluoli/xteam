@@ -26,8 +26,7 @@ export function createJaDict(
       headlineLine2: "人間ではないかもしれません。",
       subheading:
         "Multica は、コーディングエージェントを本物のチームメンバーに変える、ソースコード公開型のプラットフォームです。タスクを割り当て、進捗を追い、ノウハウをスキルとして積み上げる。人間と AI エージェントから成るチームを、ひとつの場所で管理できます。",
-      cta: "無料トライアルを始める",
-      downloadDesktop: "デスクトップ版をダウンロード",
+      cta: "アプリを開く",
       talkToSales: "営業に相談する",
       worksWith: "20+ の AI コーディングツールに対応",
       imageAlt: "人間と AI エージェントがタスクを管理する Multica のボード画面",
@@ -244,7 +243,6 @@ export function createJaDict(
             { label: "仕組み", href: "#how-it-works" },
             { label: "ユースケース", href: "/usecases" },
             { label: "変更履歴", href: "/changelog" },
-            { label: "ダウンロード", href: "/download" },
           ],
         },
         resources: {
@@ -3375,58 +3373,6 @@ export function createJaDict(
       ],
     },
     download: {
-      hero: {
-        macArm64: {
-          title: "macOS 版 Multica",
-          sub: "Apple Silicon · デーモン同梱、設定不要",
-          primary: "ダウンロード(.dmg)",
-          altZip: "または .zip をダウンロード",
-        },
-        macIntel: {
-          title: "macOS 版 Multica",
-          sub: "Intel · デーモン同梱、設定不要",
-          primary: "ダウンロード(.dmg)",
-          altZip: "または .zip をダウンロード",
-        },
-        winX64: {
-          title: "Windows 版 Multica",
-          sub: "デーモン同梱、設定不要",
-          primary: "ダウンロード(.exe)",
-        },
-        winArm64: {
-          title: "Windows 版 Multica",
-          sub: "ARM · デーモン同梱、設定不要",
-          primary: "ダウンロード(.exe)",
-        },
-        linux: {
-          title: "Linux 版 Multica",
-          sub: "デーモン同梱、設定不要",
-          primary: "AppImage をダウンロード",
-          altFormats: "または .deb / .rpm",
-        },
-        unknown: {
-          title: "プラットフォームを選択",
-          sub: "すべてのインストーラーは下にまとまっています。",
-        },
-        safariMacHint: "Intel Mac をお使いですか? 下の Intel 版を選択してください。",
-        archFallbackHint: "アーキテクチャが合いませんか? 下ですべての形式を確認してください。",
-      },
-      allPlatforms: {
-        title: "すべてのプラットフォーム",
-        macArm64Label: "macOS · Apple Silicon",
-        macX64Label: "macOS · Intel",
-        winX64Label: "Windows · x64",
-        winArm64Label: "Windows · ARM64",
-        linuxX64Label: "Linux · x64",
-        linuxArm64Label: "Linux · ARM64",
-        formatDmg: ".dmg",
-        formatZip: ".zip",
-        formatExe: ".exe",
-        formatAppImage: ".AppImage",
-        formatDeb: ".deb",
-        formatRpm: ".rpm",
-        unavailable: "利用できません",
-      },
       cli: {
         title: "CLI のほうが便利ですか?",
         sub: "サーバー、リモート開発環境、ヘッドレス環境に最適です。デスクトップと同じデーモンを、ターミナルからインストールできます。",
@@ -3438,16 +3384,6 @@ export function createJaDict(
         sshNote: "すでにサーバーに接続中ですか? 同じコマンドが SSH 上でもそのまま使えます。",
         copyLabel: "コピー",
         copiedLabel: "コピーしました",
-      },
-      cloud: {
-        title: "クラウドランタイム(順番待ち)",
-        sub: "ランタイムを当社がホストします。まだ提供前です。メールアドレスをお預けいただければ、準備でき次第お知らせします。",
-      },
-      footer: {
-        releaseNotes: "{version} の新着情報",
-        allReleases: "すべてのリリースを見る",
-        currentVersion: "現在のバージョン: {version}",
-        versionUnavailable: "バージョンを確認できません。GitHub をご確認ください。",
       },
     },
     contactSales: {

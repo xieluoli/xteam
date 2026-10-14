@@ -23,8 +23,7 @@ export function createZhDict(
     headlineLine2: "\u4e0d\u662f\u4eba\u7c7b\u3002",
     subheading:
       "Multica 是一个源码公开的平台，\u5c06\u7f16\u7801 智能体 \u53d8\u6210\u771f\u6b63\u7684\u961f\u53cb\u3002\u5206\u914d\u4efb\u52a1\u3001\u8ddf\u8e2a\u8fdb\u5ea6\u3001\u79ef\u7d2f\u6280\u80fd\u2014\u2014\u5728\u4e00\u4e2a\u5730\u65b9\u7ba1\u7406\u4f60\u7684\u4eba\u7c7b + 智能体 \u56e2\u961f\u3002",
-    cta: "免费开始",
-    downloadDesktop: "下载桌面端",
+    cta: "打开应用",
     talkToSales: "联系商务",
     worksWith: "支持 20+ 种 AI 编程工具",
     imageAlt: "Multica \u770b\u677f\u89c6\u56fe\u2014\u2014\u4eba\u7c7b\u548c 智能体 \u534f\u540c\u7ba1\u7406\u4efb\u52a1",
@@ -244,7 +243,6 @@ export function createZhDict(
           { label: "\u5982\u4f55\u5de5\u4f5c", href: "#how-it-works" },
           { label: "\u6848\u4f8b", href: "/usecases" },
           { label: "更新日志", href: "/changelog" },
-          { label: "下载", href: "/download" },
         ],
       },
       resources: {
@@ -3871,58 +3869,6 @@ export function createZhDict(
     ],
   },
   download: {
-    hero: {
-      macArm64: {
-        title: "Multica for macOS",
-        sub: "Apple Silicon · 内置 daemon，无需配置",
-        primary: "下载 (.dmg)",
-        altZip: "或下载 .zip",
-      },
-      macIntel: {
-        title: "Multica for macOS",
-        sub: "Intel · 内置守护进程，无需配置",
-        primary: "下载 (.dmg)",
-        altZip: "或下载 .zip",
-      },
-      winX64: {
-        title: "Multica for Windows",
-        sub: "内置 daemon，无需配置",
-        primary: "下载 (.exe)",
-      },
-      winArm64: {
-        title: "Multica for Windows",
-        sub: "ARM · 内置 daemon，无需配置",
-        primary: "下载 (.exe)",
-      },
-      linux: {
-        title: "Multica for Linux",
-        sub: "内置 daemon，无需配置",
-        primary: "下载 AppImage",
-        altFormats: "或 .deb / .rpm",
-      },
-      unknown: {
-        title: "选择你的平台",
-        sub: "下方是所有支持的安装包。",
-      },
-      safariMacHint: "在 Intel Mac 上？请在下方选择 Intel 版本。",
-      archFallbackHint: "架构不对？下方是所有可选格式。",
-    },
-    allPlatforms: {
-      title: "所有平台",
-      macArm64Label: "macOS · Apple Silicon",
-      macX64Label: "macOS · Intel",
-      winX64Label: "Windows · x64",
-      winArm64Label: "Windows · ARM64",
-      linuxX64Label: "Linux · x64",
-      linuxArm64Label: "Linux · ARM64",
-      formatDmg: ".dmg",
-      formatZip: ".zip",
-      formatExe: ".exe",
-      formatAppImage: ".AppImage",
-      formatDeb: ".deb",
-      formatRpm: ".rpm",
-      unavailable: "暂不可用",
-    },
     cli: {
       title: "想用 CLI？",
       sub: "适合服务器、远程开发机、无图形界面环境。底层 daemon 与 Desktop 相同，通过终端安装。",
@@ -3934,16 +3880,6 @@ export function createZhDict(
       sshNote: "已经在服务器上？通过 SSH 执行同样的命令即可。",
       copyLabel: "复制",
       copiedLabel: "已复制",
-    },
-    cloud: {
-      title: "Cloud runtime（等待名单）",
-      sub: "我们将为你托管 runtime，目前尚未上线——留下邮箱，上线后通知你。",
-    },
-    footer: {
-      releaseNotes: "v{version} 更新内容",
-      allReleases: "查看所有版本",
-      currentVersion: "当前版本：{version}",
-      versionUnavailable: "版本获取失败——请前往 GitHub 查看",
     },
   },
   contactSales: {

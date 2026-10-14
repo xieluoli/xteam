@@ -49,11 +49,6 @@
   "detail": {
     "select_prompt": "选择一条通知查看详情",
     "empty": "收件箱为空",
-    "original_input": "原始输入",
-    "retry_with_context": "保留上下文重试",
-    "edit_advanced": "在完整表单中编辑",
-    "autopilot_quota_exceeded_body": "当前周期的 {{limit}} 次自动化执行额度已用完。在 {{resetAt}} 重置前，后续自动化执行将不会启动。",
-    "autopilot_quota_upgrade": "查看升级方案",
     "archive": "归档",
     "unarchive": "取消归档"
   },
@@ -97,14 +92,11 @@
     "children_done_stage": "第 {{stage}} 阶段的子任务已全部结束"
   },
   "toasts": {
-    "source_context_retry_started": "已使用原始上下文开始重试",
     "archived": "已归档通知",
     "unarchived": "已恢复通知"
   },
   "errors": {
     "archived_lookup_failed": "无法加载链接指向的通知",
-    "source_context_retry_failed": "无法使用原始上下文重试",
-    "source_context_retry_unavailable": "该上下文已无法重试，请从派生起点重新发起。",
     "mark_read_failed": "标为已读失败",
     "mark_unread_failed": "标为未读失败",
     "archive_failed": "归档失败",

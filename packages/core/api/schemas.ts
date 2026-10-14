@@ -1296,6 +1296,7 @@ export const IssueSchema = z.object({
   identifier: z.string(),
   title: z.string(),
   description: z.string().nullable(),
+  conclusion: z.string().nullish().transform((value) => value ?? "").catch(""),
   status: z.string(),
   // The canonical status whose platform behavior `status` carries — equal to
   // `status` for the 7 built-ins, and the inherited category for a custom
@@ -2611,8 +2612,8 @@ export const EMPTY_INBOX_UNREAD_SUMMARY: InboxWorkspaceUnread[] = [];
 // Inbox items (`/api/inbox` and `/api/inbox/archived` GET).
 // Lenient per the usual rules: `severity` / `type` / `recipient_type` stay
 // `z.string()` so a notification kind this client doesn't know yet still
-// parses and renders (the UI's type-label lookup already tolerates unknown
-// kinds). Nullable optional fields are declared optional as well, since older
+// parses; the workspace Inbox applies its supported-type projection afterward.
+// Nullable optional fields are declared optional as well, since older
 // rows can omit them entirely. On malformed JSON parseWithFallback returns the
 // empty list — the affected view then reads as empty rather than white-
 // screening the inbox. Both endpoints share this boundary because they return

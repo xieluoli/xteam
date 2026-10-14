@@ -5,9 +5,9 @@ xteam is an independently maintained derivative of [Multica](https://github.com/
 - **Pinned upstream baseline:** [`b115ec80f1748d8d2766481706b0ecb830389286`](https://github.com/multica-ai/multica/commit/b115ec80f1748d8d2766481706b0ecb830389286) (2026-10-12). Upstream history is retained; upstream `main` is not automatically tracked for updates.
 - **License:** the complete [Multica License](LICENSE) and [NOTICE](NOTICE) remain applicable. This repository is not licensed as a whole under MIT. Internal self-hosting is permitted; hosted access for third parties, including free access, requires a commercial license.
 - **Branding:** the derived application UI retains Multica's name, logo, copyright, and attribution. Rebranding requires a written branding waiver, separate from any commercial license; none has been obtained.
-- **Status:** repository initialization only. The application remains upstream Multica; the xteam context-server changes have not been implemented. See [self-hosting](SELF_HOSTING.md) and [contributing](CONTRIBUTING.md) for the existing upstream setup.
+- **Status:** web-only fork in progress. Desktop and mobile source, build, and release entry points have been removed; the Go backend, CLI, and execution engine remain. See [self-hosting](SELF_HOSTING.md), [contributing](CONTRIBUTING.md), and [repository boundaries](AGENTS.md).
 
-**Modified by xteam on 2026-10-13:** added this provenance and licensing notice. The upstream README below is retained for reference; its features and release links describe Multica, not a separate xteam release.
+**Modified by xteam on 2026-10-13:** added this provenance and licensing notice. The upstream overview below is adapted for this web-only checkout; external features and release links describe Multica, not a separate xteam release.
 
 ---
 
@@ -116,7 +116,7 @@ issue — so nobody reconstructs context, and nothing ships without a human sayi
 - **[Roles](https://multica.ai/docs/members-roles) and [access scopes](https://multica.ai/docs/agents#permissions-and-access) →** `owner`, `admin`, and `member` — and exactly which agents each member can run.
 - **[Security model](https://multica.ai/docs/security-model) →** What an agent can reach, and what it can't.
 - **[Slack, Feishu/Lark, DingTalk, WeCom, and Telegram](https://multica.ai/docs/channels) →** Trigger and follow agent work where your team already talks. New Feishu/Lark connections are open to mainland-China Feishu only for now; DingTalk, WeCom, and Telegram are [community-maintained](https://multica.ai/docs/community-maintained).
-- **Web, [desktop](https://multica.ai/docs/desktop-app), and [mobile](https://multica.ai/docs/mobile-app) →** The same workspace on macOS, Windows, Linux, iPhone, and iPad — the iOS app builds from source today, not yet on the App Store.
+- **[Web client](apps/web/) →** Access the workspace in a browser; this checkout does not build desktop or mobile apps.
 - **[CLI and API](https://multica.ai/docs/cli) →** Every surface is scriptable. Agents drive Multica through the same CLI you do.
 
 ---
@@ -124,8 +124,6 @@ issue — so nobody reconstructs context, and nothing ships without a human sayi
 ## Get started
 
 - **Cloud** — sign up at **[multica.ai](https://multica.ai)**. No terminal required.
-- **Desktop** — download **[Multica Desktop](https://multica.ai/download)** for macOS, Windows, or
-  Linux. It connects the computer it runs on as a runtime automatically.
 - **Self-host** — run the whole stack on your own infrastructure; see below.
 
 The one prerequisite: the machine that will run agents needs at least one
@@ -158,9 +156,9 @@ turn it off — [what's collected](SELF_HOSTING.md#anonymous-deployment-telemetr
 ### Your first agent in five minutes
 
 **1. Connect a computer.** A *runtime* is any machine agents can work on — your laptop, or a
-cloud box. Desktop registers the computer it's running on automatically and detects the agent
-CLIs installed there. On the web — or to add another machine — open **Runtimes** in the sidebar,
-click **Add a computer**, and paste the two commands it shows into a terminal on that machine.
+cloud box. The backend execution engine and [CLI](server/cmd/multica/) remain available; this
+web-only fork does not provide runtime-management pages. The walkthrough below describes
+upstream Multica, not a completed xteam context-server workflow.
 
 **2. Create an agent.** Open **Agents** in the sidebar and click **New agent**. Pick the runtime
 you just connected, pick a provider, and give it a name — or let **Build with AI** generate the
@@ -222,15 +220,16 @@ The docs are also available in [简体中文](https://multica.ai/docs/zh), [日�
 ## Architecture
 
 ```
-   Web (browser)        Desktop (Electron)        iPhone · iPad (Expo)
-         │                      │                          │
-         ▼                      │                          │
-  ┌──────────────┐              │                          │
-  │   Next.js    │              │                          │
-  │ pages + API  │              │                          │
-  │    proxy     │              │                          │
-  └──────┬───────┘              │  HTTPS + WebSocket       │
-         ▼                      ▼                          ▼
+   Web (browser)
+         │
+         ▼
+  ┌──────────────┐
+  │   Next.js    │
+  │ pages + API  │
+  │    proxy     │
+  └──────┬───────┘
+         │ HTTPS + WebSocket
+         ▼
   ┌───────────────────────────────────────────────────────────┐   ┌───────────────┐
   │                Go backend  (Chi + WebSocket)              │──>│ PostgreSQL 17 │
   └─────────────────────────────┬─────────────────────────────┘   └───────────────┘
@@ -247,8 +246,6 @@ The docs are also available in [简体中文](https://multica.ai/docs/zh), [日�
 | Layer | Stack |
 | --- | --- |
 | Web | Next.js 16 (App Router) |
-| Desktop | Electron, sharing the web UI packages |
-| Mobile | Expo / React Native (iPhone and iPad) |
 | Backend | Go (Chi router, sqlc, gorilla/websocket) |
 | Database | PostgreSQL 17 (`pgcrypto` + `pg_trgm`) |
 | Agent runtime | Local daemon executing any [supported agent CLI](#runtimes) |
@@ -262,15 +259,14 @@ Contributors: start with the [Contributing Guide](CONTRIBUTING.md).
 **Prerequisites:** [Node.js](https://nodejs.org/) 22, [pnpm](https://pnpm.io/) 10.28.2, [Go](https://go.dev/) 1.26.9, [Docker](https://www.docker.com/)
 
 ```bash
-make dev
+make up
 ```
 
-`make dev` auto-detects your environment (main checkout or worktree), creates the env file,
-installs dependencies, sets up the database, runs migrations, and starts every service.
+`make up` prepares the current checkout and starts the web client and backend.
+Use `make status` to inspect it and `make down` to stop it without deleting data.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow, worktree support, testing, and
-troubleshooting. The iOS client lives in [`apps/mobile/`](apps/mobile/) — its
-[README](apps/mobile/README.md) covers building it onto your own device.
+troubleshooting. Desktop and mobile clients are not part of this checkout.
 
 We release most weekdays, so `main` moves quickly — pull often.
 

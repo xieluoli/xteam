@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -8,9 +9,11 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/multica-ai/multica/server/internal/middleware"
 	"github.com/multica-ai/multica/server/internal/testutil"
+	db "github.com/multica-ai/multica/server/pkg/db/generated"
 )
 
 func inboxRequest(method, path, workspaceID string) *http.Request {
@@ -82,7 +85,7 @@ func TestListArchivedInboxLimitsIssueGroupsNotRows(t *testing.T) {
 		"workspace_id":   workspaceID,
 		"recipient_type": "member",
 		"recipient_id":   testUserID,
-		"type":           "new_comment",
+		"type":           "issue_assigned",
 		"severity":       "info",
 		"issue_id":       olderIssueID,
 		"title":          "older-group",
@@ -271,7 +274,7 @@ func TestInboxListBodyPreview(t *testing.T) {
 
 // Both inbox lists ship the preview, the stored row keeps the whole comment,
 // and a notification that needs its full body still gets it.
-func TestInboxListsShipCommentPreviewNotFullComment(t *testing.T) {
+func TestInboxListsHideHistoricalCommentsWithoutDeleting(t *testing.T) {
 	workspaceID := dbfx.Workspace(t, "Inbox body preview", "inbox-preview-"+uuid.NewString())
 	dbfx.Member(t, workspaceID, testUserID, "owner")
 	activeIssue := dbfx.Issue(t, "Active comment issue", testutil.Cols{"workspace_id": workspaceID})
@@ -296,48 +299,11 @@ func TestInboxListsShipCommentPreviewNotFullComment(t *testing.T) {
 	insert(testutil.Cols{"type": "new_comment", "issue_id": archivedIssue, "body": fullComment, "archived": true})
 	insert(testutil.Cols{"type": "autopilot_paused", "body": issueLessBody})
 
-	wantPreview := string([]rune(fullComment)[:inboxListBodyPreviewLimit-1]) + "…"
-	bodyOf := func(items []InboxItemResponse, issueID string) string {
-		t.Helper()
-		for _, item := range items {
-			if item.IssueID != nil && *item.IssueID == issueID {
-				if item.Body == nil {
-					t.Fatalf("item for issue %s has no body", issueID)
-				}
-				return *item.Body
-			}
-		}
-		t.Fatalf("no item for issue %s in %d items", issueID, len(items))
-		return ""
-	}
-
-	var active []InboxItemResponse
-	testutil.Call(t, inboxWorkspaceHandler(testHandler.ListInbox),
-		inboxRequest(http.MethodGet, "/api/inbox", workspaceID)).
-		Want(http.StatusOK).
-		JSON(&active)
-	if got := bodyOf(active, activeIssue); got != wantPreview {
-		t.Errorf("main list body = %d characters, want the %d-character preview",
-			utf8.RuneCountInString(got), inboxListBodyPreviewLimit)
-	}
-	var issueLess *string
-	for _, item := range active {
-		if item.IssueID == nil {
-			issueLess = item.Body
-		}
-	}
-	if issueLess == nil || *issueLess != issueLessBody {
-		t.Errorf("issue-less notification lost its full body (its detail pane renders it)")
-	}
-
-	var archived []InboxItemResponse
-	testutil.Call(t, inboxWorkspaceHandler(testHandler.ListArchivedInbox),
-		inboxRequest(http.MethodGet, "/api/inbox/archived", workspaceID)).
-		Want(http.StatusOK).
-		JSON(&archived)
-	if got := bodyOf(archived, archivedIssue); got != wantPreview {
-		t.Errorf("archived list body = %d characters, want the %d-character preview",
-			utf8.RuneCountInString(got), inboxListBodyPreviewLimit)
+	var active, archived []InboxItemResponse
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.ListInbox), inboxRequest(http.MethodGet, "/api/inbox", workspaceID)).Want(http.StatusOK).JSON(&active)
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.ListArchivedInbox), inboxRequest(http.MethodGet, "/api/inbox/archived", workspaceID)).Want(http.StatusOK).JSON(&archived)
+	if len(active) != 0 || len(archived) != 0 {
+		t.Fatal("historical comment or automation notice surfaced")
 	}
 
 	// Only the response is shortened; the stored comment is whole.
@@ -353,4 +319,116 @@ func truncateForLog(s string) string {
 		return string(r[:40])
 	}
 	return s
+}
+
+func TestStep3InboxProjectionPreservesHistoryAndCountsVisibleGroups(t *testing.T) {
+	workspaceID := dbfx.Workspace(t, "Step3 inbox", "step3-inbox-"+uuid.NewString())
+	dbfx.Member(t, workspaceID, testUserID, "owner")
+	issueID := dbfx.Issue(t, "Visible assignment", testutil.Cols{"workspace_id": workspaceID})
+	insert := func(kind string, archived, read bool, created testutil.Raw) string {
+		return dbfx.Insert(t, "inbox_item", testutil.Cols{
+			"workspace_id": workspaceID, "recipient_type": "member", "recipient_id": testUserID,
+			"issue_id": issueID, "type": kind, "severity": "info", "title": kind,
+			"archived": archived, "read": read, "created_at": created,
+		})
+	}
+	insert("issue_assigned", false, false, "now() - interval '3 minutes'")
+	insert("status_changed", false, true, "now() - interval '2 minutes'")
+	hiddenID := insert("new_comment", false, false, "now()")
+	var items []InboxItemResponse
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.ListInbox), inboxRequest(http.MethodGet, "/api/inbox", workspaceID)).Want(http.StatusOK).JSON(&items)
+	if len(items) != 2 {
+		t.Fatalf("visible items = %d, want 2 supported rows", len(items))
+	}
+	var count struct {
+		Count int64 `json:"count"`
+	}
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.CountUnreadInbox), inboxRequest(http.MethodGet, "/api/inbox/unread-count", workspaceID)).Want(http.StatusOK).JSON(&count)
+	if count.Count != 0 {
+		t.Fatalf("unread = %d, want 0 (newest visible row read)", count.Count)
+	}
+	var summary []InboxWorkspaceUnreadResponse
+	testutil.Call(t, testHandler.UnreadInboxSummary, inboxRequest(http.MethodGet, "/api/inbox/unread-summary", workspaceID)).Want(http.StatusOK).JSON(&summary)
+	for _, row := range summary {
+		if row.WorkspaceID == workspaceID && row.Count != 0 {
+			t.Fatalf("summary unread = %d, want 0", row.Count)
+		}
+	}
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.ArchiveAllReadInbox), inboxRequest(http.MethodPost, "/api/inbox/archive-all-read", workspaceID)).Want(http.StatusOK)
+	if dbfx.Count(t, "SELECT count(*) FROM inbox_item WHERE id=$1 AND NOT archived AND NOT read", hiddenID) != 1 {
+		t.Fatal("historical hidden row mutated")
+	}
+	for _, endpoint := range []http.HandlerFunc{testHandler.MarkInboxRead, testHandler.MarkInboxUnread, testHandler.ArchiveInboxItem, testHandler.UnarchiveInboxItem} {
+		req := testutil.WithURLParams(inboxRequest(http.MethodPatch, "/api/inbox/"+hiddenID, workspaceID), "id", hiddenID)
+		testutil.Call(t, inboxWorkspaceHandler(endpoint), req).Want(http.StatusNotFound)
+	}
+
+	var page archivedInboxPageResponse
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.ListArchivedInboxPage), inboxRequest(http.MethodGet, "/api/inbox/archived/page?group_id="+issueID, workspaceID)).Want(http.StatusOK).JSON(&page)
+	if len(page.Items) != 1 || page.Items[0].Type != "status_changed" {
+		t.Fatalf("archive blocked by hidden active sibling: %+v", page)
+	}
+	var facets archivedInboxFacetsResponse
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.GetArchivedInboxFacets), inboxRequest(http.MethodGet, "/api/inbox/archived/facets", workspaceID)).Want(http.StatusOK).JSON(&facets)
+	if facets.UnreadCount != 0 || facets.Statuses["todo"] != 1 {
+		t.Fatalf("archive facets disagree: %+v", facets)
+	}
+	testutil.Call(t, inboxWorkspaceHandler(testHandler.MarkAllInboxRead), inboxRequest(http.MethodPost, "/api/inbox/read-all", workspaceID)).Want(http.StatusOK)
+	if dbfx.Count(t, "SELECT count(*) FROM inbox_item WHERE id=$1 AND NOT archived AND NOT read", hiddenID) != 1 {
+		t.Fatal("mark-all changed hidden history")
+	}
+}
+
+func TestStep3InboxRejectsUnsupportedGeneration(t *testing.T) {
+	workspaceID := dbfx.Workspace(t, "Step3 writes", "step3-write-"+uuid.NewString())
+	dbfx.Member(t, workspaceID, testUserID, "owner")
+	issueID := dbfx.Issue(t, "Notification writes", testutil.Cols{"workspace_id": workspaceID})
+	for _, kind := range []string{"new_comment", "review_requested", "task_failed", "children_done", "autopilot_paused", "quick_create_done", "learning_reviewed"} {
+		_, err := testHandler.Queries.CreateInboxItem(t.Context(), db.CreateInboxItemParams{
+			WorkspaceID: parseUUID(workspaceID), RecipientType: "member", RecipientID: parseUUID(testUserID),
+			IssueID: parseUUID(issueID), Type: kind, Severity: "info", Title: kind,
+		})
+		if !errors.Is(err, pgx.ErrNoRows) {
+			t.Errorf("create %s = %v, want no row", kind, err)
+		}
+	}
+	if got := dbfx.Count(t, "SELECT count(*) FROM inbox_item WHERE workspace_id=$1", workspaceID); got != 0 {
+		t.Fatalf("unsupported notifications persisted: %d", got)
+	}
+	for _, kind := range []string{"status_changed", "issue_assigned", "unassigned", "assignee_changed"} {
+		item, err := testHandler.Queries.CreateInboxItem(t.Context(), db.CreateInboxItemParams{
+			WorkspaceID: parseUUID(workspaceID), RecipientType: "member", RecipientID: parseUUID(testUserID),
+			IssueID: parseUUID(issueID), Type: kind, Severity: "info", Title: kind,
+		})
+		if err != nil || item.Type != kind {
+			t.Fatalf("supported create %s: item=%+v error=%v", kind, item, err)
+		}
+	}
+	dbfx.Cleanup(t, "DELETE FROM inbox_item WHERE workspace_id=$1", workspaceID)
+
+}
+
+func TestStep3InboxBulkMutationsOnlyTouchSupportedRows(t *testing.T) {
+	for _, endpoint := range []struct {
+		name    string
+		handler http.HandlerFunc
+	}{
+		{"read", testHandler.MarkAllInboxRead}, {"archive", testHandler.ArchiveAllInbox}, {"completed", testHandler.ArchiveCompletedInbox},
+	} {
+		t.Run(endpoint.name, func(t *testing.T) {
+			workspaceID := dbfx.Workspace(t, "Step3 bulk", "step3-bulk-"+uuid.NewString())
+			dbfx.Member(t, workspaceID, testUserID, "owner")
+			issueID := dbfx.Issue(t, "Done", testutil.Cols{"workspace_id": workspaceID, "status": "done"})
+			for _, kind := range []string{"status_changed", "task_failed"} {
+				dbfx.Insert(t, "inbox_item", testutil.Cols{"workspace_id": workspaceID, "recipient_type": "member", "recipient_id": testUserID, "issue_id": issueID, "type": kind, "severity": "info", "title": kind})
+			}
+			testutil.Call(t, inboxWorkspaceHandler(endpoint.handler), inboxRequest(http.MethodPost, "/api/inbox/bulk", workspaceID)).Want(http.StatusOK)
+			if got := dbfx.Count(t, "SELECT count(*) FROM inbox_item WHERE workspace_id=$1 AND type='task_failed' AND NOT read AND NOT archived", workspaceID); got != 1 {
+				t.Fatal("bulk changed hidden historical item")
+			}
+			if got := dbfx.Count(t, "SELECT count(*) FROM inbox_item WHERE workspace_id=$1 AND type='status_changed' AND (read OR archived)", workspaceID); got != 1 {
+				t.Fatal("bulk did not change visible item")
+			}
+		})
+	}
 }

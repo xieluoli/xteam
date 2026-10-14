@@ -63,7 +63,7 @@ export function DeliverablesOverview({
   identifier: string;
   files: ReadonlyArray<DeliverableFile>;
   commentById: ReadonlyMap<string, TimelineEntry>;
-  onLocate: (origin: DeliverableOrigin) => void;
+  onLocate?: (origin: DeliverableOrigin) => void;
   /** The file the viewer was showing when it opened this; `G` goes back to it. */
   returnKey: string | null;
 }) {
@@ -116,10 +116,10 @@ export function DeliverablesOverview({
               onClose();
               openAttachment(file.latest);
             }}
-            onLocate={(origin) => {
+            onLocate={onLocate ? (origin) => {
               onClose();
               onLocate(origin);
-            }}
+            } : undefined}
           />
         </DialogContent>
       </Dialog>
@@ -141,7 +141,7 @@ function OverviewBody({
   commentById: ReadonlyMap<string, TimelineEntry>;
   onClose: () => void;
   onOpenFile: (file: DeliverableFile) => void;
-  onLocate: (origin: DeliverableOrigin) => void;
+  onLocate?: (origin: DeliverableOrigin) => void;
 }) {
   const { t } = useT("issues");
   const [filter, setFilter] = useState<Filter>("all");
@@ -258,7 +258,7 @@ function OverviewBody({
                 group={group}
                 onOpenFile={onOpenFile}
                 onLocate={
-                  group.comment
+                  group.comment && onLocate
                     ? () => onLocate({ kind: "comment", commentId: group.commentId })
                     : undefined
                 }

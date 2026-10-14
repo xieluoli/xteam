@@ -4,27 +4,20 @@ import { configureShortcutPlatform } from "@multica/core/shortcuts";
 import { NavigationProvider, type NavigationAdapter } from "../navigation";
 import { GlobalShortcuts } from "./global-shortcuts";
 
-// GlobalShortcuts pulls workspace paths and the sidebar/chat stores at render
-// time; none of that is exercised by the history chords, so stub them to keep
-// the test focused on the back/forward wiring and free of provider setup.
+// GlobalShortcuts pulls workspace paths and the sidebar store at render time;
+// neither is exercised by the history chords, so stub them to keep the test
+// focused on the back/forward wiring and free of provider setup.
 vi.mock("@multica/ui/components/ui/sidebar", () => ({
   useSidebar: () => ({ toggleSidebar: vi.fn() }),
-}));
-vi.mock("@multica/core/chat", () => ({
-  useChatStore: { getState: () => ({ floatingChatEnabled: false }) },
 }));
 vi.mock("@multica/core/paths", () => ({
   useWorkspacePaths: () => ({
     inbox: () => "/w/inbox",
-    chat: () => "/w/chat",
     myIssues: () => "/w/my-issues",
     issues: () => "/w/issues",
     projects: () => "/w/projects",
-    autopilots: () => "/w/autopilots",
     agents: () => "/w/agents",
-    squads: () => "/w/squads",
     usage: () => "/w/usage",
-    runtimes: () => "/w/runtimes",
     skills: () => "/w/skills",
     settings: () => "/w/settings",
   }),

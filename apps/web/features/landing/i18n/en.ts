@@ -23,8 +23,7 @@ export function createEnDict(
     headlineLine2: "won\u2019t be human.",
     subheading:
       "Multica is a source-available platform that turns coding agents into real teammates. Assign tasks, track progress, compound skills \u2014 manage your human + agent workforce in one place.",
-    cta: "Start free trial",
-    downloadDesktop: "Download Desktop",
+    cta: "Open app",
     talkToSales: "Talk to sales",
     worksWith: "Works with 20+ AI coding tools",
     imageAlt: "Multica board view \u2014 issues managed by humans and agents",
@@ -244,7 +243,6 @@ export function createEnDict(
           { label: "How it Works", href: "#how-it-works" },
           { label: "Use cases", href: "/usecases" },
           { label: "Changelog", href: "/changelog" },
-          { label: "Download", href: "/download" },
         ],
       },
       resources: {
@@ -3891,58 +3889,6 @@ export function createEnDict(
     ],
   },
   download: {
-    hero: {
-      macArm64: {
-        title: "Multica for macOS",
-        sub: "Apple Silicon · bundled daemon, zero setup",
-        primary: "Download (.dmg)",
-        altZip: "or download .zip",
-      },
-      macIntel: {
-        title: "Multica for macOS",
-        sub: "Intel · bundled daemon, zero setup",
-        primary: "Download (.dmg)",
-        altZip: "or download .zip",
-      },
-      winX64: {
-        title: "Multica for Windows",
-        sub: "Bundled daemon, zero setup",
-        primary: "Download (.exe)",
-      },
-      winArm64: {
-        title: "Multica for Windows",
-        sub: "ARM · bundled daemon, zero setup",
-        primary: "Download (.exe)",
-      },
-      linux: {
-        title: "Multica for Linux",
-        sub: "Bundled daemon, zero setup",
-        primary: "Download AppImage",
-        altFormats: "or .deb / .rpm",
-      },
-      unknown: {
-        title: "Choose your platform",
-        sub: "All installers are listed below.",
-      },
-      safariMacHint: "On an Intel Mac? Choose the Intel download below.",
-      archFallbackHint: "Wrong architecture? See all formats below.",
-    },
-    allPlatforms: {
-      title: "All platforms",
-      macArm64Label: "macOS · Apple Silicon",
-      macX64Label: "macOS · Intel",
-      winX64Label: "Windows · x64",
-      winArm64Label: "Windows · ARM64",
-      linuxX64Label: "Linux · x64",
-      linuxArm64Label: "Linux · ARM64",
-      formatDmg: ".dmg",
-      formatZip: ".zip",
-      formatExe: ".exe",
-      formatAppImage: ".AppImage",
-      formatDeb: ".deb",
-      formatRpm: ".rpm",
-      unavailable: "Not available",
-    },
     cli: {
       title: "Prefer the CLI?",
       sub: "For servers, remote dev boxes, and headless setups. Same daemon as Desktop, installed via terminal.",
@@ -3954,16 +3900,6 @@ export function createEnDict(
       sshNote: "Already on a server? Same commands work over SSH.",
       copyLabel: "Copy",
       copiedLabel: "Copied",
-    },
-    cloud: {
-      title: "Cloud runtime (waitlist)",
-      sub: "We’ll host the runtime for you. Not live yet — leave your email to be notified.",
-    },
-    footer: {
-      releaseNotes: "What’s new in {version}",
-      allReleases: "View all releases",
-      currentVersion: "Current version: {version}",
-      versionUnavailable: "Version unavailable — check GitHub",
     },
   },
   contactSales: {

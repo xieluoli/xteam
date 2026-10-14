@@ -32,10 +32,8 @@ import {
 } from "@multica/core/i18n";
 import { useLocaleAdapter } from "@multica/core/i18n/react";
 import { useAuthStore } from "@multica/core/auth";
-import { useChatStore } from "@multica/core/chat";
 import {
   useCommentComposerStore,
-  type RunningAgentReply,
 } from "@multica/core/issues/stores";
 import {
   useIssueOpeningStore,
@@ -61,9 +59,9 @@ import {
 
 /**
  * Preferences on one page. The settings here are stored in three different
- * places — the account (language, timezone), this device (theme, composer,
- * chat) and this device for the current workspace (create-dialog fields) —
- * so each section carries a scope badge instead of splitting them into tabs.
+ * places — the account (language, timezone), this device (theme, composer)
+ * and this device for the current workspace (create-dialog fields) — so each
+ * section carries a scope badge instead of splitting them into tabs.
  * Changes apply immediately; only failures are announced.
  */
 export function PreferencesTab() {
@@ -98,8 +96,6 @@ export function PreferencesTab() {
       >
         <SettingsCard>
           <StickyCommentBarRow />
-          <RunningAgentReplyRow />
-          <FloatingChatRow />
         </SettingsCard>
       </SettingsSection>
 
@@ -127,8 +123,8 @@ export function PreferencesTab() {
 
 function ThemeRow() {
   const { t } = useT("settings");
-  const { theme, setTheme } = useTheme();
-  const value = theme === "light" || theme === "dark" ? theme : "system";
+  const { theme, setTheme, themes } = useTheme();
+  const value = theme && themes.includes(theme) ? theme : "system";
   return (
     <SettingsRow anchor="theme" label={t(($) => $.preferences.theme.title)}>
       <div role="group" aria-label={t(($) => $.preferences.theme.title)}>
@@ -139,6 +135,7 @@ function ThemeRow() {
           options={[
             ["light", t(($) => $.preferences.theme.light)],
             ["dark", t(($) => $.preferences.theme.dark)],
+            ...(themes.includes("japan-blues") ? [["japan-blues", t(($) => $.preferences.theme.japan_blues)] as [string, string]] : []),
             ["system", t(($) => $.preferences.theme.system)],
           ]}
         />
@@ -253,50 +250,6 @@ function StickyCommentBarRow() {
   );
 }
 
-function RunningAgentReplyRow() {
-  const { t } = useT("settings");
-  const value = useCommentComposerStore((s) => s.runningAgentReply);
-  const setValue = useCommentComposerStore((s) => s.setRunningAgentReply);
-  const options: { value: RunningAgentReply; label: string }[] = [
-    { value: "steer", label: t(($) => $.preferences.running_agent_reply.steer) },
-    { value: "after_run", label: t(($) => $.preferences.running_agent_reply.after_run) },
-  ];
-
-  return (
-    <SettingsRow
-      anchor="running-agent-reply"
-      label={t(($) => $.preferences.running_agent_reply.title)}
-      description={t(($) => $.preferences.running_agent_reply.hint)}
-      size="select"
-    >
-      <Select
-        items={options}
-        value={value}
-        onValueChange={(next) => {
-          if (next && next !== value) setValue(next as RunningAgentReply);
-        }}
-      >
-        <SelectTrigger
-          size="sm"
-          className="w-full"
-          aria-label={t(($) => $.preferences.running_agent_reply.title)}
-        >
-          <SelectValue>
-            {options.find((option) => option.value === value)?.label}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent align="end">
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </SettingsRow>
-  );
-}
-
 /**
  * What a plain click on an issue card or row opens across the issue views.
  * The hint carries the one non-obvious part: Shift+Click opens the other one,
@@ -324,29 +277,6 @@ function IssueOpeningRow() {
           ]}
         />
       </div>
-    </SettingsRow>
-  );
-}
-
-/**
- * When off, the FAB / overlay never mount and Chat is reachable only from its
- * dedicated tab. A persisted client setting, so it applies immediately.
- */
-function FloatingChatRow() {
-  const { t } = useT("settings");
-  const enabled = useChatStore((s) => s.floatingChatEnabled);
-  const setEnabled = useChatStore((s) => s.setFloatingChatEnabled);
-  return (
-    <SettingsRow
-      anchor="chat"
-      label={t(($) => $.chat.floating_label)}
-      description={t(($) => $.chat.floating_hint)}
-    >
-      <Switch
-        checked={enabled}
-        onCheckedChange={(checked) => setEnabled(checked)}
-        aria-label={t(($) => $.chat.floating_label)}
-      />
     </SettingsRow>
   );
 }
