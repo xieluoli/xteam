@@ -1,4 +1,21 @@
 {
+  "marketplace": {
+    "title": "Agent 模板",
+    "search": "搜索模板",
+    "skills": "技能",
+    "no_skills": "未引用技能",
+    "mcp": "MCP",
+    "no_mcp": "未引用 MCP",
+    "mcp_error": "无法加载 MCP 引用",
+    "mcp_private": "另有私有 MCP 配置",
+    "author": "作者",
+    "unknown_author": "未知作者",
+    "copy": "Copy",
+    "view_template": "查看模板 {{name}}",
+    "loading": "加载中…",
+    "empty": "暂无模板",
+    "no_matches": "没有匹配的模板"
+  },
   "page": {
     "title": "智能体",
     "tagline": "能领取任务、留下评论、推进状态的 AI 队友。",

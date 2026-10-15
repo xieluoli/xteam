@@ -1,4 +1,21 @@
 {
+  "marketplace": {
+    "title": "Modèles d’agent",
+    "search": "Rechercher des modèles",
+    "skills": "Compétences",
+    "no_skills": "Aucune compétence référencée",
+    "mcp": "MCP",
+    "no_mcp": "Aucune référence MCP",
+    "mcp_error": "Impossible de charger les références MCP",
+    "mcp_private": "La configuration MCP supplémentaire est privée",
+    "author": "Auteur",
+    "unknown_author": "Auteur inconnu",
+    "copy": "Copy",
+    "view_template": "Voir le modèle {{name}}",
+    "loading": "Chargement…",
+    "empty": "Aucun modèle pour le moment",
+    "no_matches": "Aucun modèle correspondant"
+  },
   "page": {
     "title": "Agents",
     "tagline": "Des coéquipiers IA qui prennent des tâches, commentent et mettent à jour les statuts.",

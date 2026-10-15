@@ -1,4 +1,21 @@
 {
+  "marketplace": {
+    "title": "Agent templates",
+    "search": "Search templates",
+    "skills": "Skills",
+    "no_skills": "No skill references",
+    "mcp": "MCP",
+    "no_mcp": "No MCP references",
+    "mcp_error": "Couldn't load MCP references",
+    "mcp_private": "Additional MCP configuration is private",
+    "author": "Author",
+    "unknown_author": "Unknown author",
+    "copy": "Copy",
+    "view_template": "View template {{name}}",
+    "loading": "Loading…",
+    "empty": "No templates yet",
+    "no_matches": "No matching templates"
+  },
   "page": {
     "title": "Agents",
     "tagline": "AI teammates that pick up issues, comment, and update status.",

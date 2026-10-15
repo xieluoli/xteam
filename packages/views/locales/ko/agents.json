@@ -1,4 +1,21 @@
 {
+  "marketplace": {
+    "title": "에이전트 템플릿",
+    "search": "템플릿 검색",
+    "skills": "스킬",
+    "no_skills": "참조 스킬 없음",
+    "mcp": "MCP",
+    "no_mcp": "MCP 참조 없음",
+    "mcp_error": "MCP 참조를 불러올 수 없습니다",
+    "mcp_private": "추가 MCP 설정은 비공개입니다",
+    "author": "작성자",
+    "unknown_author": "알 수 없는 작성자",
+    "copy": "Copy",
+    "view_template": "템플릿 {{name}} 보기",
+    "loading": "불러오는 중…",
+    "empty": "아직 템플릿이 없습니다",
+    "no_matches": "일치하는 템플릿이 없습니다"
+  },
   "page": {
     "title": "에이전트",
     "tagline": "태스크를 맡고, 댓글을 남기고, 상태를 업데이트하는 AI 팀원입니다.",

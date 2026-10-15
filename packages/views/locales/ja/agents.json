@@ -1,4 +1,21 @@
 {
+  "marketplace": {
+    "title": "エージェントテンプレート",
+    "search": "テンプレートを検索",
+    "skills": "スキル",
+    "no_skills": "スキル参照なし",
+    "mcp": "MCP",
+    "no_mcp": "MCP 参照なし",
+    "mcp_error": "MCP 参照を読み込めません",
+    "mcp_private": "追加の MCP 設定は非公開です",
+    "author": "作成者",
+    "unknown_author": "不明な作成者",
+    "copy": "Copy",
+    "view_template": "テンプレート {{name}} を表示",
+    "loading": "読み込み中…",
+    "empty": "テンプレートはまだありません",
+    "no_matches": "一致するテンプレートはありません"
+  },
   "page": {
     "title": "エージェント",
     "tagline": "タスクを引き受け、コメントし、ステータスを更新する AI チームメイトです。",
