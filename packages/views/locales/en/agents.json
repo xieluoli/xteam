@@ -1,5 +1,18 @@
 {
+  "pm_install": {
+    "title": "Install PM in Codex",
+    "description": "Copy this instruction into Codex in your product project. Installs files only; no tasks are started.",
+    "snapshot": "Published snapshot: {{version}}",
+    "instructions_label": "Installation instructions",
+    "requirements": "Requires Node.js 22+ and a Codex version supporting custom agents. This is a published snapshot, not a live export.",
+    "download": "Download bundle",
+    "copy_instructions": "Copy instructions",
+    "copied": "Copied",
+    "copy_failed": "Clipboard unavailable. Select and copy the instructions manually.",
+    "instructions": "Install the published PM snapshot {{version}} into the current product project for Codex.\nSource: {{url}}\nExpected archive SHA-256 from the trusted release: {{sha256}}\nDownload the complete archive without executing remote shell pipelines. Verify its checksum, unpack into a separate staging directory, and read INSTALL.md, manifest.json, install.mjs and both agents/*.toml before running anything. The published snapshot is not an export of workspace-private configuration.\nConfirm the existing product directory. With Node.js 22+, run the extracted install.mjs --workspace \"<confirmed project>\" --check, then the same command without --check. Do not copy these angle-bracket placeholders literally.\nInstall pm-demo, prototype-review, and all six complete skill directories into .codex/agents and .agents/skills. Preserve existing differing content; stop on conflict, do not force overwrite. Do not modify global config, AGENTS.md, models, permissions or MCP. No agents, paid smoke runs or product tasks may be started by this install.\nVerify the installed receipt and files, then report whether Codex actually discovers both roles and six skills. If discovery cannot be checked or a restart is needed, say so. File installation alone is not proof of successful invocation."
+  },
   "marketplace": {
+    "built_in": "Multica built-in",
     "title": "Agent templates",
     "search": "Search templates",
     "skills": "Skills",

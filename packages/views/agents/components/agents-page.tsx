@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, Bot, Plus, Search } from "lucide-react";
+import { isMikaAgent } from "@multica/core/onboarding";
 import { useWorkspaceId } from "@multica/core/hooks";
 import { useWorkspacePaths } from "@multica/core/paths";
 import { agentListOptions, memberListOptions } from "@multica/core/workspace/queries";
@@ -17,9 +18,10 @@ import {
   CollectionPageHeaderAction,
   CollectionPageState,
 } from "../../layout/collection-page";
+import type { PmInstallRelease } from "./pm-install-dialog";
 import { AgentTemplateCard } from "./agent-template-card";
 
-export function AgentsPage() {
+export function AgentsPage({ pmInstallRelease }: { pmInstallRelease?: PmInstallRelease } = {}) {
   const { t } = useT("agents");
   const wsId = useWorkspaceId();
   const paths = useWorkspacePaths();
@@ -32,7 +34,9 @@ export function AgentsPage() {
   const visible = templates.filter((agent) => {
     const content = [agent.name, agent.description, ...agent.skills.map((skill) => skill.name)].join(" ");
     return content.toLocaleLowerCase().includes(query) || matchesPinyin(content, query);
-  }).sort((left, right) => left.name.localeCompare(right.name));
+  }).sort((left, right) =>
+    Number(isMikaAgent(right)) - Number(isMikaAgent(left)) || left.name.localeCompare(right.name),
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -84,7 +88,8 @@ export function AgentsPage() {
               <AgentTemplateCard
                 key={agent.id}
                 agent={agent}
-                author={members.data?.find((member) => member.user_id === agent.owner_id)?.name || (
+                pmInstallRelease={pmInstallRelease}
+                author={isMikaAgent(agent) ? "Multica" : members.data?.find((member) => member.user_id === agent.owner_id)?.name || (
                   members.isPending ? t(($) => $.marketplace.loading) : t(($) => $.marketplace.unknown_author)
                 )}
               />

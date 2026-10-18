@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Copy } from "lucide-react";
 import type { Agent } from "@multica/core/types";
+import { isMikaAgent } from "@multica/core/onboarding";
 import { useWorkspacePaths } from "@multica/core/paths";
 import { agentMcpServersOptions } from "@multica/core/workspace/queries";
 import { resolvePublicFileUrl } from "@multica/core/workspace/avatar-url";
@@ -11,14 +12,17 @@ import { Badge } from "@multica/ui/components/ui/badge";
 import { Button } from "@multica/ui/components/ui/button";
 import { AppLink } from "../../navigation";
 import { useT } from "../../i18n";
+import { PmInstallDialog, type PmInstallRelease } from "./pm-install-dialog";
 import { listManagedMcpServers } from "./tabs/mcp-config-model";
 
 export function AgentTemplateCard({
   agent,
   author,
+  pmInstallRelease,
 }: {
   agent: Agent;
   author: string;
+  pmInstallRelease?: PmInstallRelease;
 }) {
   const { t } = useT("agents");
   const paths = useWorkspacePaths();
@@ -28,18 +32,32 @@ export function AgentTemplateCard({
     ...(assigned.data ?? []).map((server) => server.name),
   ])].sort((left, right) => left.localeCompare(right));
 
+  const canInstallPm = pmInstallRelease && agent.name === "pm-demo" && !agent.system_key &&
+    agent.instructions.trim() === pmInstallRelease.instructions.trim() && !agent.mcp_config &&
+    !agent.mcp_config_redacted && !assigned.isPending && !assigned.isError && assigned.data?.length === 0 &&
+    agent.skills.length === pmInstallRelease.skillNames.length && agent.skills.every((skill) =>
+      skill.enabled && pmInstallRelease.skillNames.includes(skill.name),
+    );
+
   return (
     <article
       aria-label={agent.name}
       className="group relative flex min-h-[25rem] w-full min-w-0 max-w-sm flex-col rounded-xl border bg-card p-6 transition-colors hover:border-primary/40 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30"
     >
-      <ActorAvatar
-        name={agent.name}
-        initials=""
-        isAgent
-        avatarUrl={resolvePublicFileUrl(agent.avatar_url ?? "emoji:🤖")}
-        size="xl"
-      />
+      <div className="flex items-start justify-between gap-3">
+        <ActorAvatar
+          name={agent.name}
+          initials=""
+          isAgent
+          avatarUrl={resolvePublicFileUrl(agent.avatar_url ?? "emoji:🤖")}
+          size="xl"
+        />
+        {isMikaAgent(agent) && (
+          <Badge variant="outline" className="h-auto min-h-5 max-w-[65%] whitespace-normal bg-muted text-muted-foreground">
+            {t(($) => $.marketplace.built_in)}
+          </Badge>
+        )}
+      </div>
       <h2 className="mt-5 text-title font-semibold break-words">
         <AppLink
           href={paths.agentDetail(agent.id)}
@@ -94,9 +112,11 @@ export function AgentTemplateCard({
           <p className="text-muted-foreground">{t(($) => $.marketplace.author)}</p>
           <p className="mt-1 truncate font-medium" title={author}>{author}</p>
         </div>
-        <Button type="button" variant="outline" size="icon-sm" disabled aria-label={t(($) => $.marketplace.copy)}>
-          <Copy aria-hidden="true" />
-        </Button>
+        {canInstallPm ? <PmInstallDialog release={pmInstallRelease} /> : (
+          <Button type="button" variant="outline" size="icon-sm" disabled aria-label={t(($) => $.marketplace.copy)}>
+            <Copy aria-hidden="true" />
+          </Button>
+        )}
       </footer>
     </article>
   );

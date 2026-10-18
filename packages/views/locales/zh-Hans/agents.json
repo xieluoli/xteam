@@ -1,5 +1,18 @@
 {
+  "pm_install": {
+    "title": "在 Codex 中安装 PM",
+    "description": "将说明粘贴到产品项目的 Codex。只安装文件，不启动任务。",
+    "snapshot": "已发布快照：{{version}}",
+    "instructions_label": "安装说明",
+    "requirements": "需要 Node.js 22+ 及支持自定义 Agent 的 Codex。安装的是发布快照，不是实时导出。",
+    "download": "下载完整包",
+    "copy_instructions": "复制安装说明",
+    "copied": "已复制",
+    "copy_failed": "无法访问剪贴板，请手动选择并复制说明。",
+    "instructions": "请在当前产品项目中为 Codex 安装已发布的 PM 固定快照 {{version}}。\n来源：{{url}}\n可信发布记录中的压缩包 SHA-256：{{sha256}}\n下载完整包，不使用远程脚本管道。先校验压缩包哈希，解压到独立暂存目录，阅读 INSTALL.md、manifest.json、install.mjs 与两个 agents/*.toml，再执行安装。此包是公开发布快照，不是工作区私有配置的导出。\n确认已有产品目录。使用 Node.js 22+ 运行解压后的 install.mjs --workspace \"<已确认产品目录>\" --check，预检通过后执行同一命令去掉 --check；不要将占位符原样执行。\n应在 .codex/agents 与 .agents/skills 中注册 pm-demo、prototype-review 并安装六项完整技能。同名不同内容停止，不覆盖；不改全局配置、AGENTS.md、模型、权限或 MCP。不自动启动角色、付费冒烟或产品任务。\n核对回执与文件，再分别报告 Codex 是否实际发现两个角色和六项技能。无法验证或需重启时如实说明，不把文件安装成功冒充已调用成功。"
+  },
   "marketplace": {
+    "built_in": "Multica 内置",
     "title": "Agent 模板",
     "search": "搜索模板",
     "skills": "技能",

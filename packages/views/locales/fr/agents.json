@@ -1,5 +1,18 @@
 {
+  "pm_install": {
+    "title": "Installer PM dans Codex",
+    "description": "Collez ces instructions dans Codex dans votre projet produit. Seuls les fichiers sont installés, aucune tâche ne démarre.",
+    "snapshot": "Instantané publié : {{version}}",
+    "instructions_label": "Instructions d’installation",
+    "requirements": "Nécessite Node.js 22+ et Codex avec agents personnalisés. Il s’agit d’un instantané publié, pas d’un export en direct.",
+    "download": "Télécharger le paquet",
+    "copy_instructions": "Copier les instructions",
+    "copied": "Copié",
+    "copy_failed": "Presse-papiers indisponible. Sélectionnez et copiez les instructions manuellement.",
+    "instructions": "Installez l’instantané PM publié {{version}} pour Codex dans le projet produit actuel.\nSource : {{url}}\nSHA-256 de l’archive indiqué par la publication de confiance : {{sha256}}\nTéléchargez l’archive complète, sans exécuter de script distant par pipeline. Vérifiez son empreinte, extrayez-la dans un dossier temporaire distinct, puis lisez INSTALL.md, manifest.json, install.mjs et les deux fichiers agents/*.toml avant toute exécution. Ce paquet est un instantané public, pas un export des paramètres privés de l’espace de travail.\nConfirmez le répertoire produit existant. Avec Node.js 22+, lancez le fichier extrait install.mjs --workspace \"<répertoire produit confirmé>\" --check ; si le contrôle réussit, relancez sans --check. Ne transmettez pas les espaces réservés tels quels.\nInstallez pm-demo, prototype-review et les six compétences complètes dans .codex/agents et .agents/skills. Arrêtez-vous si le contenu existant diffère, sans l’écraser. Ne modifiez ni configuration globale, ni AGENTS.md, modèles, permissions ou MCP. Ne démarrez aucun agent, test payant ou tâche produit.\nVérifiez le reçu et les fichiers, puis indiquez séparément si Codex découvre réellement les deux rôles et les six compétences. Signalez toute vérification impossible ou tout redémarrage nécessaire ; l’installation des fichiers ne prouve pas la réussite d’un appel."
+  },
   "marketplace": {
+    "built_in": "Intégré à Multica",
     "title": "Modèles d’agent",
     "search": "Rechercher des modèles",
     "skills": "Compétences",

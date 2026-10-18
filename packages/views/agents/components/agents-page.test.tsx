@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { screen, within } from "@testing-library/react";
+import { screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Agent, MemberWithUser } from "@multica/core/types";
@@ -39,7 +39,7 @@ const AUTHOR: MemberWithUser = {
   created_at: "2026-10-15T00:00:00Z", name: "Template author", email: "private@example.invalid", avatar_url: null,
 };
 
-function renderPage(locale: "en" | "zh-Hans" = "en") {
+function renderPage(locale: "en" | "zh-Hans" = "en", pmInstallRelease?: import("./pm-install-dialog").PmInstallRelease) {
   const navigation: NavigationAdapter = {
     push: vi.fn(), replace: vi.fn(), back: vi.fn(), pathname: "/neo/agents",
     searchParams: new URLSearchParams(), hash: "", getShareableUrl: (path) => path,
@@ -47,7 +47,7 @@ function renderPage(locale: "en" | "zh-Hans" = "en") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   renderWithI18n(
     <QueryClientProvider client={client}>
-      <NavigationProvider value={navigation}><AgentsPage /></NavigationProvider>
+      <NavigationProvider value={navigation}><AgentsPage pmInstallRelease={pmInstallRelease} /></NavigationProvider>
     </QueryClientProvider>, { locale },
   );
   return navigation;
@@ -63,6 +63,86 @@ beforeEach(() => {
 });
 
 describe("Agent template marketplace", () => {
+  it("pins the built-in Mika before ordinary templates and credits Multica", async () => {
+    vi.mocked(api.listAgents).mockResolvedValue([
+      { ...DEMO, id: "ordinary-mika", name: "Mika" },
+      { ...DEMO, id: "alpha", name: "Alpha" },
+      DEMO,
+      { ...DEMO, id: "builtin-mika", name: "Workspace helper", system_key: "mika", avatar_url: "emoji:🦄" },
+    ]);
+    renderPage();
+    const builtin = await screen.findByRole("article", { name: "Workspace helper" });
+    expect(screen.getAllByRole("article").map((card) => card.getAttribute("aria-label"))).toEqual([
+      "Workspace helper", "Alpha", "Mika", "pm-demo",
+    ]);
+    expect(within(builtin).getByText("Multica built-in")).toBeVisible();
+    expect(within(builtin).getByText("Multica")).toBeVisible();
+    expect(within(builtin).queryByText("Template author")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("article", { name: "Mika" })).queryByText("Multica built-in")).not.toBeInTheDocument();
+    expect(within(builtin).getByRole("link")).toHaveAttribute("href", "/neo/agents/builtin-mika");
+  });
+
+  it("keeps Mika subject to search instead of forcing an unrelated pinned result", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.listAgents).mockResolvedValue([
+      DEMO, { ...DEMO, id: "builtin-mika", name: "Mika", description: "Workspace coordination", skills: [], system_key: "mika" },
+    ]);
+    renderPage("zh-Hans");
+    const builtin = await screen.findByRole("article", { name: "Mika" });
+    expect(within(builtin).getByText("Multica 内置")).toBeVisible();
+    await user.type(screen.getByRole("textbox", { name: "搜索模板" }), "pm-demo");
+    expect(screen.queryByRole("article", { name: "Mika" })).not.toBeInTheDocument();
+    expect(screen.getByRole("article", { name: "pm-demo" })).toBeInTheDocument();
+  });
+
+  it("copies a fixed Codex install entry only for the matching published PM snapshot", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.listAgents).mockResolvedValue([{ ...DEMO, mcp_config: null }]);
+    vi.mocked(api.listAgentMcpServers).mockResolvedValue([]);
+    renderPage("en", {
+      url: "https://github.com/xieluoli/xteam/releases/download/pm-test/pm-demo.tar.gz",
+      sha256: "a".repeat(64), version: "snapshot-test", instructions: "Product instructions",
+      skillNames: ["pmspec-explore"],
+    });
+    await screen.findByRole("button", { name: "Copy" });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Copy" })).toBeEnabled());
+    await user.click(screen.getByRole("button", { name: "Copy" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAccessibleName("Install PM in Codex");
+    const instructions = within(dialog).getByRole("textbox", { name: "Installation instructions" });
+    expect(instructions).toHaveProperty("value", expect.stringContaining("https://github.com/xieluoli/xteam/releases/download/pm-test/pm-demo.tar.gz"));
+    await user.click(within(dialog).getByRole("button", { name: "Copy instructions" }));
+    expect(await navigator.clipboard.readText()).toContain("snapshot-test");
+    expect(await navigator.clipboard.readText()).toContain("--check");
+    expect(await within(dialog).findByRole("status")).toHaveTextContent("Copied");
+  });
+
+  it("keeps the installation instructions available when clipboard permission is denied", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.listAgents).mockResolvedValue([{ ...DEMO, mcp_config: null }]);
+    vi.mocked(api.listAgentMcpServers).mockResolvedValue([]);
+    renderPage("en", {
+      url: "https://github.com/xieluoli/xteam/releases/download/pm-test/pm-demo.tar.gz",
+      sha256: "a".repeat(64), version: "snapshot-test", instructions: "Product instructions", skillNames: ["pmspec-explore"],
+    });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Copy" })).toBeEnabled());
+    await user.click(screen.getByRole("button", { name: "Copy" }));
+    vi.spyOn(navigator.clipboard, "writeText").mockRejectedValueOnce(new Error("permission denied"));
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Copy instructions" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Select and copy");
+    expect(within(dialog).getByRole("textbox", { name: "Installation instructions" })).toBeVisible();
+  });
+
+  it("does not export edited or MCP-configured templates as the public PM release", async () => {
+    vi.mocked(api.listAgents).mockResolvedValue([{ ...DEMO, instructions: "Private company instructions" }]);
+    renderPage("en", {
+      url: "https://github.com/xieluoli/xteam/releases/download/pm-test/pm-demo.tar.gz",
+      sha256: "a".repeat(64), version: "snapshot-test", instructions: "Product instructions", skillNames: ["pmspec-explore"],
+    });
+    expect(await screen.findByRole("button", { name: "Copy" })).toBeDisabled();
+  });
+
   it("shows unbound templates immediately with identity, references and author, not execution metrics", async () => {
     renderPage();
     const card = await screen.findByRole("article", { name: "pm-demo" });
