@@ -387,22 +387,14 @@ describe("navigation item presentation", () => {
   });
 });
 
-describe("personal nav — Inbox", () => {
-  beforeEach(() => {
-    summary.current = [];
-    navigation.current = { pathname: "/acme/issues" };
-  });
-
-  // The mocked SidebarMenuButton exposes the AppLink target as `data-href`
-  // and renders the label + badge as its children.
-  it("keeps the persistent Inbox counter static", () => {
-    summary.current = [{ workspace_id: "ws-1", count: 1 }];
-    const { container } = render(<AppSidebar />);
-    const inboxBadge = container
-      .querySelector<HTMLElement>('button[data-href="/acme/inbox"]')
-      ?.querySelector("number-flow-react") as (HTMLElement & { animated?: boolean }) | null;
-
-    expect(inboxBadge?.animated).toBe(false);
+describe("organization navigation", () => {
+  it("hides personal inbox routes and puts projects before issues", () => {
+    const { container } = renderWithI18n(<AppSidebar />);
+    expect(container.querySelector('[data-href="/acme/inbox"]')).toBeNull();
+    expect(container.querySelector('[data-href="/acme/my-issues"]')).toBeNull();
+    const destinations = [...container.querySelectorAll("button[data-href]")].map(item => item.getAttribute("data-href"));
+    expect(destinations.indexOf("/acme/projects")).toBeLessThan(destinations.indexOf("/acme/issues"));
+    expect(container.textContent).toContain("Organization library");
   });
 });
 

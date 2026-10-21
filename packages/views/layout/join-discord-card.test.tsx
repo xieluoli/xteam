@@ -34,7 +34,7 @@ describe("JoinDiscordCard", () => {
   it("links to the Discord invite", () => {
     render(<JoinDiscordCard />);
     const link = screen.getByRole("link", { name: /join our discord/i });
-    expect(link).toHaveAttribute("href", "https://discord.gg/W8gYBn226t");
+    expect(link).toHaveAttribute("href", "https://discord.gg/42xMYtuf6");
     expect(link).toHaveAttribute("target", "_blank");
   });
 

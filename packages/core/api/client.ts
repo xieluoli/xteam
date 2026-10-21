@@ -1,3 +1,4 @@
+import { ProjectContextSchema, type ProjectContext } from "../projects/context-schema";
 import type { ZodType } from "zod";
 import type { IssueWakeup, IssueWakeupInput, IssueWakeupSummaryRow, PausedWakeup, SystemWakeup, WakeupRun, WorkspaceSystemWakeup } from "../types/issue-wakeup";
 import type { WorkspaceWakeupPage, WorkspaceWakeupFilters } from "../types/issue-wakeup";
@@ -4038,6 +4039,20 @@ export class ApiClient {
 
   async deleteProject(id: string): Promise<void> {
     await this.fetch(`/api/projects/${id}`, { method: "DELETE" });
+  }
+
+  async getProjectContext(id: string): Promise<ProjectContext> {
+    const raw = await this.fetch<unknown>(`/api/projects/${id}/context`);
+    const parsed = parseWithFallback<ProjectContext | null>(raw, ProjectContextSchema, null, { endpoint: "getProjectContext" });
+    if (!parsed) throw new Error("Malformed project context response");
+    return parsed;
+  }
+
+  async updateProjectContext(id: string, document: ProjectContext): Promise<ProjectContext> {
+    const raw = await this.fetch<unknown>(`/api/projects/${id}/context`, { method: "PUT", body: JSON.stringify(document) });
+    const parsed = parseWithFallback<ProjectContext | null>(raw, ProjectContextSchema, null, { endpoint: "updateProjectContext" });
+    if (!parsed) throw new Error("Malformed project context response");
+    return parsed;
   }
 
   // Project resources

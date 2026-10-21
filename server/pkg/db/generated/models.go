@@ -1336,6 +1336,12 @@ type Project struct {
 	DueDate     pgtype.Date        `json:"due_date"`
 }
 
+type ProjectContext struct {
+	ProjectID pgtype.UUID `json:"project_id"`
+	Document  []byte      `json:"document"`
+	Revision  int64       `json:"revision"`
+}
+
 type ProjectResource struct {
 	ID           pgtype.UUID        `json:"id"`
 	ProjectID    pgtype.UUID        `json:"project_id"`
