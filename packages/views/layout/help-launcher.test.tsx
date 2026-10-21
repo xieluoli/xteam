@@ -108,4 +108,9 @@ describe("HelpLauncher", () => {
     );
   });
 
+  it("uses the organization Discord invite", () => {
+    render(<HelpLauncher />);
+    expect(screen.getByRole("link", { name: "Discord" })).toHaveAttribute("href", "https://discord.gg/42xMYtuf6");
+  });
+
 });

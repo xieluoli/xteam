@@ -52,7 +52,7 @@
     "new_issue_shortcut": "C",
     "pinned_label": "ピン留め済み",
     "work_group": "仕事",
-    "ai_team_group": "AI チーム",
+    "ai_team_group": "組織ライブラリ",
     "show_more_pins": "さらに {{count}} 件を表示…",
     "show_fewer_pins": "表示を減らす",
     "unread_overflow": "99+",

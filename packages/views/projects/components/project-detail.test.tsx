@@ -9,6 +9,7 @@ import { ProjectDetail } from "./project-detail";
 
 const mocks = vi.hoisted(() => ({
   role: "admin",
+  replace: vi.fn(),
   copyText: vi.fn(),
   deleteProject: vi.fn(),
   getShareableUrl: vi.fn((path: string) => `https://app.example${path}`),
@@ -218,6 +219,8 @@ vi.mock("../../issues/components/priority-icon", () => ({
   PriorityIcon: () => null,
 }));
 
+vi.mock("./project-context-panel", () => ({ ProjectContextPanel: () => null }));
+
 vi.mock("./project-resources-section", () => ({
   ProjectResourcesSection: () => null,
 }));
@@ -275,13 +278,13 @@ const PROJECT: Project = {
   resource_count: 0,
 };
 
-function renderProjectDetail() {
+function renderProjectDetail(search = "") {
   const adapter: NavigationAdapter = {
     push: mocks.push,
-    replace: vi.fn(),
+    replace: mocks.replace,
     back: vi.fn(),
     pathname: "/test-workspace/projects/project-1",
-    searchParams: new URLSearchParams(),
+    searchParams: new URLSearchParams(search),
     hash: "",
     getShareableUrl: mocks.getShareableUrl,
   };
@@ -299,6 +302,7 @@ beforeEach(() => {
   mocks.deleteProject.mockReset();
   mocks.getShareableUrl.mockClear();
   mocks.push.mockReset();
+  mocks.replace.mockReset();
   mocks.recordVisit.mockReset();
   mocks.toastSuccess.mockReset();
 });
@@ -354,5 +358,20 @@ describe("ProjectDetail project deletion", () => {
     expect(
       screen.queryByRole("button", { name: "Delete project" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+
+describe("Project context navigation", () => {
+  it("opens context by default and keeps work items reachable", async () => {
+    const user = userEvent.setup();
+    renderProjectDetail();
+    expect(screen.getByRole("tab", { name: "Context" })).toHaveAttribute("aria-selected", "true");
+    await user.click(screen.getByRole("tab", { name: "Work items" }));
+    expect(mocks.replace).toHaveBeenCalledWith("/test-workspace/projects/project-1?section=work");
+  });
+  it("keeps existing issue view deep links on work items", () => {
+    renderProjectDetail("view=board");
+    expect(screen.getByRole("tab", { name: "Work items" })).toHaveAttribute("aria-selected", "true");
   });
 });

@@ -52,7 +52,7 @@
     "new_issue_shortcut": "C",
     "pinned_label": "고정됨",
     "work_group": "업무",
-    "ai_team_group": "AI 팀",
+    "ai_team_group": "조직 라이브러리",
     "show_more_pins": "{{count}}개 더 보기…",
     "show_fewer_pins": "접기",
     "unread_overflow": "99+",

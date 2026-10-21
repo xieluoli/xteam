@@ -25,6 +25,8 @@ import { ActorAvatar } from "../../common/actor-avatar";
 import { currentPath, useNavigation } from "../../navigation";
 import { TitleEditor, ContentEditor, type ContentEditorRef } from "../../editor";
 import { PriorityIcon } from "../../issues/components/priority-icon";
+import { ProjectContextPanel } from "./project-context-panel";
+import { Tabs, TabsList, TabsTrigger } from "@multica/ui/components/ui/tabs";
 import { ProjectResourcesSection } from "./project-resources-section";
 import { ProjectStartDatePicker } from "./project-start-date-picker";
 import { ProjectDueDatePicker } from "./project-due-date-picker";
@@ -106,6 +108,13 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const wsId = useWorkspaceId();
   const wsPaths = useWorkspacePaths();
   const router = useNavigation();
+  const contextTab = router.searchParams.get("section") === "work" ||
+    (!router.searchParams.has("section") && router.searchParams.size > 0) ? "work" : "context";
+  const setContextTab = (value: string) => {
+    const params = new URLSearchParams(router.searchParams);
+    params.set("section", value);
+    router.replace(`${router.pathname}?${params}${router.hash}`);
+  };
   const userId = useAuthStore((s) => s.user?.id);
   const { data: project, isLoading } = useQuery(projectDetailOptions(wsId, projectId));
   const recordRecentContext = useRecentContextStore((s) => s.recordVisit);
@@ -548,10 +557,17 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             }
           />
 
-          <IssueSurface
-            scope={issueScope}
-            modes={["board", "list", "table", "swimlane", "gantt"]}
-          />
+          <Tabs value={contextTab} onValueChange={value => setContextTab(String(value))} className="shrink-0 border-b px-4 py-2">
+            <TabsList variant="line">
+              <TabsTrigger value="context">{t(($) => $.context.tab)}</TabsTrigger>
+              <TabsTrigger value="work">{t(($) => $.context.work)}</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          {contextTab === "context" ? (
+            <ProjectContextPanel key={projectId} projectId={projectId} wsId={wsId} canEdit={isWorkspaceAdmin} />
+          ) : (
+            <IssueSurface scope={issueScope} modes={["board", "list", "table", "swimlane", "gantt"]} />
+          )}
           </div>
         </ResizablePanel>
         {!isMobile && <ResizableHandle />}
