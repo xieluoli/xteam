@@ -58,10 +58,20 @@ func NewIssueService(q *db.Queries, tx TxStarter, bus *events.Bus, ac analytics.
 	}
 }
 
-// IssueCreateParams carries the already-validated, already-resolved inputs
-// to IssueService.Create. The handler owns the parsing step that turns its
-// request payload into this struct; the service stays transport-agnostic.
+// IssueRequestIdentity binds an MCP create retry to its original transaction.
+type IssueRequestIdentity struct {
+	TokenHash   string
+	KeyID       pgtype.UUID
+	RequestID   string
+	Fingerprint string
+}
+
+var ErrIssueRequestConflict = errors.New("request_id was already used with different issue fields")
+
+// IssueCreateParams carries validated inputs; optional Request makes external
+// create retries atomic with the new issue rather than a separate cache write.
 type IssueCreateParams struct {
+	Request       *IssueRequestIdentity
 	WorkspaceID   pgtype.UUID
 	Title         string
 	Description   pgtype.Text
@@ -240,6 +250,37 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 	}
 	defer tx.Rollback(ctx)
 	qtx := s.Queries.WithTx(tx)
+	if p.Request != nil {
+		if _, err := qtx.LockWorkspaceForChatSessionCreate(ctx, p.WorkspaceID); err != nil {
+			return IssueCreateResult{}, err
+		}
+
+		key, err := qtx.GetMCPKeyByHash(ctx, p.Request.TokenHash)
+		if err != nil || key.ID != p.Request.KeyID || key.WorkspaceID != p.WorkspaceID {
+			return IssueCreateResult{}, errors.New("MCP key access changed")
+		}
+		if _, err := qtx.GetMemberByUserAndWorkspace(ctx, db.GetMemberByUserAndWorkspaceParams{UserID: key.UserID, WorkspaceID: p.WorkspaceID}); err != nil {
+			return IssueCreateResult{}, errors.New("workspace access changed")
+		}
+		request := p.Request
+		if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1,0))", util.UUIDToString(request.KeyID)+":"+request.RequestID); err != nil {
+			return IssueCreateResult{}, err
+		}
+		receipt, err := qtx.GetMCPIssueRequest(ctx, db.GetMCPIssueRequestParams{KeyID: request.KeyID, RequestID: request.RequestID})
+		if err == nil {
+			if receipt.Fingerprint != request.Fingerprint {
+				return IssueCreateResult{}, ErrIssueRequestConflict
+			}
+			issue, err := qtx.GetIssueInWorkspace(ctx, db.GetIssueInWorkspaceParams{ID: receipt.IssueID, WorkspaceID: p.WorkspaceID})
+			if err != nil {
+				return IssueCreateResult{}, errors.New("original issue is no longer available; request_id cannot be reused")
+			}
+			return IssueCreateResult{Issue: issue, Labels: []db.IssueLabel{}}, nil
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return IssueCreateResult{}, err
+		}
+	}
 
 	properties, err := validateIssueCreateProperties(ctx, tx, qtx, p.WorkspaceID, p.Properties)
 	if err != nil {
@@ -499,6 +540,11 @@ func (s *IssueService) Create(ctx context.Context, p IssueCreateParams, opts Iss
 		}
 	}
 
+	if p.Request != nil {
+		if err := qtx.SaveMCPIssueRequest(ctx, db.SaveMCPIssueRequestParams{KeyID: p.Request.KeyID, RequestID: p.Request.RequestID, Fingerprint: p.Request.Fingerprint, IssueID: issue.ID}); err != nil {
+			return IssueCreateResult{}, err
+		}
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return IssueCreateResult{}, fmt.Errorf("commit: %w", err)
 	}

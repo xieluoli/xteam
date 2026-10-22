@@ -18,3 +18,7 @@ describe("reserved slugs", () => {
     expect(isReservedSlug("Login")).toBe(false);
   });
 });
+
+it("reserves the MCP endpoint so workspace routing cannot collide with it", () => {
+  expect(isReservedSlug("mcp")).toBe(true);
+});

@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS mcp_key_id_uidx;

@@ -1181,6 +1181,28 @@ type MaintenanceJob struct {
 	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
 }
 
+type McpIssueRequest struct {
+	KeyID       pgtype.UUID        `json:"key_id"`
+	RequestID   string             `json:"request_id"`
+	Fingerprint string             `json:"fingerprint"`
+	IssueID     pgtype.UUID        `json:"issue_id"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type McpKey struct {
+	ID          pgtype.UUID        `json:"id"`
+	UserID      pgtype.UUID        `json:"user_id"`
+	WorkspaceID pgtype.UUID        `json:"workspace_id"`
+	Name        string             `json:"name"`
+	TokenHash   string             `json:"token_hash"`
+	TokenPrefix string             `json:"token_prefix"`
+	Scopes      []string           `json:"scopes"`
+	ExpiresAt   pgtype.Timestamptz `json:"expires_at"`
+	LastUsedAt  pgtype.Timestamptz `json:"last_used_at"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Revoked     bool               `json:"revoked"`
+}
+
 type Member struct {
 	ID          pgtype.UUID        `json:"id"`
 	WorkspaceID pgtype.UUID        `json:"workspace_id"`

@@ -437,6 +437,12 @@ export class TestApiClient {
     this.createdProjectIds = [];
   }
 
+  /** Revoke only keys created by a test, before tearing down its workspace. */
+  async revokeMCPKey(id: string) {
+    const response = await this.authedFetch(`/api/mcp-keys/${id}`, { method: "DELETE" });
+    if (!response.ok && response.status !== 404) throw new Error(`revoke MCP key: ${response.status}`);
+  }
+
   getToken() {
     return this.token;
   }

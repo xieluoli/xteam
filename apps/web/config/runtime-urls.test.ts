@@ -345,3 +345,11 @@ describe("dev-only fallbacks", () => {
     expect(resolveDevDocsUrl({})).toBe("http://localhost:4000");
   });
 });
+
+describe("XTeam MCP routing", () => {
+  it("forwards the exact MCP endpoint without treating it as an app page", () => {
+    expect(runtimeRewriteDestination("/mcp", { REMOTE_API_URL: "http://backend:8080" })).toBe("http://backend:8080/mcp");
+    expect(runtimeRewriteDestination("/mcp", {})).toBeUndefined();
+    expect(runtimeRewriteDestination("/mcp-not-a-tool", { REMOTE_API_URL: "http://backend:8080" })).toBeUndefined();
+  });
+});
