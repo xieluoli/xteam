@@ -6,6 +6,7 @@ import { I18nProvider } from "@multica/core/i18n/react";
 import enCommon from "../locales/en/common.json";
 import enAuth from "../locales/en/auth.json";
 import enSettings from "../locales/en/settings.json";
+import { renderWithI18n as renderLocalized } from "../test/i18n";
 
 const TEST_RESOURCES = {
   en: { common: enCommon, auth: enAuth, settings: enSettings },
@@ -134,10 +135,10 @@ describe("LoginPage", () => {
     expect(screen.queryByText(/your session expired/i)).not.toBeInTheDocument();
   });
 
-  it("renders email form with 'Sign in to Multica' title", () => {
+  it("renders email form with 'Sign in to XTeam' title", () => {
     renderWithI18n(<LoginPage onSuccess={onSuccess} />);
     expect(
-      screen.getByText(/sign in to multica/i),
+      screen.getByText(/sign in to xteam/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/enter your email to get a login code/i),
@@ -146,6 +147,16 @@ describe("LoginPage", () => {
     expect(
       screen.getByRole("button", { name: /continue/i }),
     ).toBeInTheDocument();
+  });
+
+  it.each([
+    ["zh-Hans", "登录 XTeam"],
+    ["ja", "XTeamにログイン"],
+    ["ko", "XTeam에 로그인"],
+    ["fr", "Se connecter à XTeam"],
+  ] as const)("renders the XTeam login title in %s", (locale, title) => {
+    renderLocalized(<LoginPage onSuccess={onSuccess} />, { locale });
+    expect(screen.getByText(title, { exact: true })).toBeVisible();
   });
 
   // -------------------------------------------------------------------------
@@ -542,7 +553,7 @@ describe("LoginPage", () => {
     );
 
     expect(
-      screen.getByText(/sign in to multica/i),
+      screen.getByText(/sign in to xteam/i),
     ).toBeInTheDocument();
   });
 
@@ -723,7 +734,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: /back/i }));
 
     expect(
-      screen.getByText(/sign in to multica/i),
+      screen.getByText(/sign in to xteam/i),
     ).toBeInTheDocument();
   });
 
