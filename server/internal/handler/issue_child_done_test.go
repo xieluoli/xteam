@@ -312,8 +312,8 @@ func TestChildDoneSkippedWhenNoParent(t *testing.T) {
 	}
 }
 
-// A member assignee reads an inbox notification instead of a run.
-func TestChildDoneNotifiesMemberAssignee(t *testing.T) {
+// A member assignee consumes the child-done receipt without an inbox row or a run.
+func TestChildDoneMemberAssigneeConsumesReceiptWithoutInbox(t *testing.T) {
 	fx := newChildDoneFixture(t, "in_progress")
 	var userID string
 	dbfx.QueryRow(t, `SELECT user_id FROM member WHERE workspace_id = $1 LIMIT 1`, testWorkspaceID).Scan(&userID)
@@ -321,14 +321,14 @@ func TestChildDoneNotifiesMemberAssignee(t *testing.T) {
 
 	updateChildStatus(t, fx.child.ID, "done")
 
-	if n := dbfx.Count(t, `SELECT count(*) FROM inbox_item WHERE recipient_id = $1 AND issue_id = $2 AND type = 'children_done'`, userID, fx.parent.ID); n != 1 {
-		t.Fatalf("children_done inbox items = %d, want 1", n)
+	if n := dbfx.Count(t, `SELECT count(*) FROM inbox_item WHERE recipient_id = $1 AND issue_id = $2 AND type = 'children_done'`, userID, fx.parent.ID); n != 0 {
+		t.Fatalf("children_done inbox items = %d, want 0", n)
 	}
 	if runs := childDoneRuns(t, fx.parent.ID); len(runs) != 0 {
 		t.Fatalf("member parent started runs: %+v", runs)
 	}
 	entries := childDoneEntries(t, fx.parent.ID)
-	if len(entries) != 1 || entries[0].Outcome != "notified" || entries[0].TargetType != "member" || entries[0].TargetID != userID {
+	if len(entries) != 1 || entries[0].Outcome != "none" || entries[0].TargetType != "member" || entries[0].TargetID != userID {
 		t.Fatalf("entries = %+v", entries)
 	}
 }

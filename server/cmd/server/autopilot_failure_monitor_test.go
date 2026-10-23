@@ -85,7 +85,7 @@ func reloadAutopilotStatus(t *testing.T, queries *db.Queries, id pgtype.UUID) st
 	return ap.Status
 }
 
-func TestAutopilotFailureMonitor_PausesOffenderAndNotifiesCreator(t *testing.T) {
+func TestAutopilotFailureMonitor_PausesOffenderWithoutInbox(t *testing.T) {
 	queries := db.New(testPool)
 	bus := events.New()
 
@@ -133,31 +133,12 @@ func TestAutopilotFailureMonitor_PausesOffenderAndNotifiesCreator(t *testing.T) 
 		t.Fatalf("expected reason auto_paused_high_failure_rate, got %v", got)
 	}
 
-	if len(inboxEvents) != 1 {
-		t.Fatalf("expected 1 inbox:new event, got %d", len(inboxEvents))
+	if len(inboxEvents) != 0 {
+		t.Fatalf("paused autopilot emitted %d unsupported inbox events", len(inboxEvents))
 	}
-	item := inboxEvents[0].Payload.(map[string]any)["item"].(map[string]any)
-	if got := item["type"]; got != "autopilot_paused" {
-		t.Fatalf("expected inbox type autopilot_paused, got %v", got)
-	}
-	if got := item["severity"]; got != "attention" {
-		t.Fatalf("expected severity attention, got %v", got)
-	}
-	if got := item["recipient_id"]; got != testUserID {
-		t.Fatalf("expected recipient %s, got %v", testUserID, got)
-	}
-
-	// Confirm the inbox item exists in the DB too.
-	items := inboxItemsForRecipient(t, queries, testUserID)
-	var found bool
-	for _, it := range items {
-		if it.Type == "autopilot_paused" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Fatalf("expected an autopilot_paused inbox_item in DB for user %s", testUserID)
+	var count int
+	if err := testPool.QueryRow(context.Background(), `SELECT count(*) FROM inbox_item WHERE workspace_id = $1 AND type = 'autopilot_paused'`, testWorkspaceID).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("autopilot_paused rows = %d, error = %v", count, err)
 	}
 }
 
@@ -193,7 +174,7 @@ func TestAutopilotFailureMonitor_LeavesAlreadyPausedAlone(t *testing.T) {
 	}
 }
 
-func TestAutopilotFailureMonitor_AgentCreatorRoutesToOwner(t *testing.T) {
+func TestAutopilotFailureMonitor_AgentCreatorStillPausesWithoutInbox(t *testing.T) {
 	queries := db.New(testPool)
 	bus := events.New()
 	cfg := failureMonitorConfig{
@@ -204,7 +185,7 @@ func TestAutopilotFailureMonitor_AgentCreatorRoutesToOwner(t *testing.T) {
 	}
 
 	agentID := pickFixtureAgent(t)
-	// The fixture agent's owner_id is testUserID (set in setupIntegrationTestFixture).
+	// Agent ownership must not interfere with automatic pausing.
 	ap := seedAutopilot(t, queries, "Failure monitor: agent-created", "agent", agentID, agentID)
 	seedAutopilotRuns(t, ap.ID, 11, 10, time.Now().Add(-2*time.Hour))
 
@@ -218,19 +199,16 @@ func TestAutopilotFailureMonitor_AgentCreatorRoutesToOwner(t *testing.T) {
 	if got := reloadAutopilotStatus(t, queries, ap.ID); got != "paused" {
 		t.Fatalf("expected paused, got %q", got)
 	}
-	if len(inboxEvents) != 1 {
-		t.Fatalf("expected 1 inbox event for the agent's owner, got %d", len(inboxEvents))
+	if len(inboxEvents) != 0 {
+		t.Fatalf("paused autopilot emitted %d unsupported inbox events", len(inboxEvents))
 	}
-	item := inboxEvents[0].Payload.(map[string]any)["item"].(map[string]any)
-	if got := item["recipient_id"]; got != testUserID {
-		t.Fatalf("expected recipient owner %s, got %v", testUserID, got)
-	}
-	if got := item["recipient_type"]; got != "member" {
-		t.Fatalf("expected member recipient_type, got %v", got)
+	var count int
+	if err := testPool.QueryRow(context.Background(), `SELECT count(*) FROM inbox_item WHERE workspace_id = $1 AND type = 'autopilot_paused'`, testWorkspaceID).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("autopilot_paused rows = %d, error = %v", count, err)
 	}
 }
 
-func TestAutopilotFailureMonitor_FormerCreatorFallsBackToWorkspaceManagers(t *testing.T) {
+func TestAutopilotFailureMonitor_FormerCreatorStillPausesWithoutInbox(t *testing.T) {
 	queries := db.New(testPool)
 	bus := events.New()
 	cfg := failureMonitorConfig{
@@ -259,15 +237,12 @@ func TestAutopilotFailureMonitor_FormerCreatorFallsBackToWorkspaceManagers(t *te
 	if got := reloadAutopilotStatus(t, queries, autopilot.ID); got != "paused" {
 		t.Fatalf("expected paused, got %q", got)
 	}
-	if len(inboxEvents) != 1 {
-		t.Fatalf("paused fallback events = %d, want workspace owner", len(inboxEvents))
+	if len(inboxEvents) != 0 {
+		t.Fatalf("paused autopilot emitted %d unsupported inbox events", len(inboxEvents))
 	}
-	item := inboxEvents[0].Payload.(map[string]any)["item"].(map[string]any)
-	if got := item["recipient_id"]; got != testUserID {
-		t.Fatalf("paused fallback recipient = %s, want workspace owner %s", got, testUserID)
-	}
-	if got := item["recipient_type"]; got != "member" {
-		t.Fatalf("paused fallback recipient type = %q, want member", got)
+	var count int
+	if err := testPool.QueryRow(context.Background(), `SELECT count(*) FROM inbox_item WHERE workspace_id = $1 AND type = 'autopilot_paused'`, testWorkspaceID).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("autopilot_paused rows = %d, error = %v", count, err)
 	}
 }
 

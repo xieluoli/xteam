@@ -662,14 +662,8 @@ func TestAutopilotDispatchFansOutSubscribersToIssue(t *testing.T) {
 	}
 }
 
-// TestAutopilotDispatchNotifiesSubscribersOnCreate locks in the OQ3 promise
-// from the RFC ("reason='autopilot' 与 reason='manual' 一致，订阅事件全收"):
-// when an autopilot creates an issue, each template subscriber must land in
-// the recipient's inbox with type='issue_subscribed' pointing at the new
-// issue. Without this, subscribers would only see comment/status updates
-// after the fact and miss the creation event itself — flagged in PR #3060
-// review by the Emacs agent.
-func TestAutopilotDispatchNotifiesSubscribersOnCreate(t *testing.T) {
+// Dispatch still creates the issue and subscriptions without an issue_subscribed inbox row.
+func TestAutopilotDispatchSubscribesWithoutInbox(t *testing.T) {
 	ctx := context.Background()
 	title := fmt.Sprintf("Autopilot subscriber inbox %d", time.Now().UnixNano())
 	var autopilotID, issueID string
@@ -723,28 +717,18 @@ func TestAutopilotDispatchNotifiesSubscribersOnCreate(t *testing.T) {
 	issueID = uuidToString(run.IssueID)
 
 	var inboxCount int
-	var inboxType, inboxTitle string
 	if err := testPool.QueryRow(ctx, `
 		SELECT count(*) FROM inbox_item
 		WHERE issue_id = $1 AND recipient_id = $2 AND type = 'issue_subscribed'
 	`, issueID, testUserID).Scan(&inboxCount); err != nil {
 		t.Fatalf("count inbox rows: %v", err)
 	}
-	if inboxCount != 1 {
-		t.Fatalf("inbox_item rows for subscriber = %d, want 1", inboxCount)
+	if inboxCount != 0 {
+		t.Fatalf("inbox_item rows for subscriber = %d, want zero", inboxCount)
 	}
-
-	if err := testPool.QueryRow(ctx, `
-		SELECT type, title FROM inbox_item
-		WHERE issue_id = $1 AND recipient_id = $2 AND type = 'issue_subscribed'
-	`, issueID, testUserID).Scan(&inboxType, &inboxTitle); err != nil {
-		t.Fatalf("load inbox row: %v", err)
-	}
-	if inboxType != "issue_subscribed" {
-		t.Fatalf("inbox type = %q, want issue_subscribed", inboxType)
-	}
-	if inboxTitle != title {
-		t.Fatalf("inbox title = %q, want %q (issue title)", inboxTitle, title)
+	var reason string
+	if err := testPool.QueryRow(ctx, `SELECT reason FROM issue_subscriber WHERE issue_id = $1 AND user_id = $2`, issueID, testUserID).Scan(&reason); err != nil || reason != "autopilot" {
+		t.Fatalf("subscriber reason = %q, error = %v", reason, err)
 	}
 }
 

@@ -375,8 +375,7 @@ func TestNotification_StatusChanged_Muted(t *testing.T) {
 	}
 }
 
-// TestNotification_CommentCreated verifies that all subscribers except the
-// commenter receive a "new_comment" notification.
+// TestNotification_CommentCreated keeps the event working without a non-status/assignment inbox row.
 func TestNotification_CommentCreated(t *testing.T) {
 	queries := db.New(testPool)
 	bus := newNotificationBus(t, queries)
@@ -419,31 +418,17 @@ func TestNotification_CommentCreated(t *testing.T) {
 		},
 	})
 
-	// Creator should get a new_comment notification
-	creatorItems := inboxItemsForRecipient(t, queries, testUserID)
-	if len(creatorItems) != 1 {
-		t.Fatalf("expected 1 inbox item for creator, got %d", len(creatorItems))
+	// Non-status/assignment events must not create inbox rows.
+	var count int
+	if err := testPool.QueryRow(context.Background(), `SELECT count(*) FROM inbox_item WHERE issue_id = $1`, issueID).Scan(&count); err != nil {
+		t.Fatal(err)
 	}
-	if creatorItems[0].Type != "new_comment" {
-		t.Fatalf("expected type 'new_comment', got %q", creatorItems[0].Type)
+	if count != 0 {
+		t.Fatalf("unsupported event created %d inbox rows", count)
 	}
-	if creatorItems[0].Severity != "info" {
-		t.Fatalf("expected severity 'info', got %q", creatorItems[0].Severity)
-	}
-
-	// sub1 should also get a new_comment notification
-	sub1Items := inboxItemsForRecipient(t, queries, sub1ID)
-	if len(sub1Items) != 1 {
-		t.Fatalf("expected 1 inbox item for sub1, got %d", len(sub1Items))
-	}
-	if sub1Items[0].Type != "new_comment" {
-		t.Fatalf("expected type 'new_comment', got %q", sub1Items[0].Type)
-	}
-
-	// Commenter (actor) should NOT get a notification
-	commenterItems := inboxItemsForRecipient(t, queries, commenterID)
-	if len(commenterItems) != 0 {
-		t.Fatalf("expected 0 inbox items for commenter, got %d", len(commenterItems))
+	var reason string
+	if err := testPool.QueryRow(context.Background(), `SELECT reason FROM issue_subscriber WHERE issue_id = $1 AND user_id = $2`, issueID, commenterID).Scan(&reason); err != nil || reason != "commenter" {
+		t.Fatalf("commenter subscription = %q, error = %v", reason, err)
 	}
 }
 
@@ -686,8 +671,7 @@ func TestNotification_TaskCompleted(t *testing.T) {
 	}
 }
 
-// TestNotification_TaskFailed verifies that subscribers get a "task_failed"
-// notification when a task fails, excluding the agent.
+// TestNotification_TaskFailed keeps the event working without a non-status/assignment inbox row.
 func TestNotification_TaskFailed(t *testing.T) {
 	queries := db.New(testPool)
 	bus := newNotificationBus(t, queries)
@@ -716,20 +700,17 @@ func TestNotification_TaskFailed(t *testing.T) {
 		},
 	})
 
-	creatorItems := inboxItemsForRecipient(t, queries, testUserID)
-	if len(creatorItems) != 1 {
-		t.Fatalf("expected 1 inbox item for creator, got %d", len(creatorItems))
+	// Non-status/assignment events must not create inbox rows.
+	var count int
+	if err := testPool.QueryRow(context.Background(), `SELECT count(*) FROM inbox_item WHERE issue_id = $1`, issueID).Scan(&count); err != nil {
+		t.Fatal(err)
 	}
-	if creatorItems[0].Type != "task_failed" {
-		t.Fatalf("expected type 'task_failed', got %q", creatorItems[0].Type)
-	}
-	if creatorItems[0].Severity != "action_required" {
-		t.Fatalf("expected severity 'action_required', got %q", creatorItems[0].Severity)
+	if count != 0 {
+		t.Fatalf("unsupported event created %d inbox rows", count)
 	}
 }
 
-// TestNotification_PriorityChanged verifies that all subscribers except the actor
-// receive a "priority_changed" notification when an issue priority changes.
+// TestNotification_PriorityChanged keeps the event working without a non-status/assignment inbox row.
 func TestNotification_PriorityChanged(t *testing.T) {
 	queries := db.New(testPool)
 	bus := newNotificationBus(t, queries)
@@ -775,26 +756,17 @@ func TestNotification_PriorityChanged(t *testing.T) {
 		t.Fatalf("expected 0 inbox items for actor, got %d", len(actorItems))
 	}
 
-	// sub1 should get a priority_changed notification
-	sub1Items := inboxItemsForRecipient(t, queries, sub1ID)
-	if len(sub1Items) != 1 {
-		t.Fatalf("expected 1 inbox item for sub1, got %d", len(sub1Items))
+	// Non-status/assignment events must not create inbox rows.
+	var count int
+	if err := testPool.QueryRow(context.Background(), `SELECT count(*) FROM inbox_item WHERE issue_id = $1`, issueID).Scan(&count); err != nil {
+		t.Fatal(err)
 	}
-	if sub1Items[0].Type != "priority_changed" {
-		t.Fatalf("expected type 'priority_changed', got %q", sub1Items[0].Type)
-	}
-	if sub1Items[0].Severity != "info" {
-		t.Fatalf("expected severity 'info', got %q", sub1Items[0].Severity)
-	}
-	// Title is now just the issue title; details contain from/to
-	expectedTitle := "priority test issue"
-	if sub1Items[0].Title != expectedTitle {
-		t.Fatalf("expected title %q, got %q", expectedTitle, sub1Items[0].Title)
+	if count != 0 {
+		t.Fatalf("unsupported event created %d inbox rows", count)
 	}
 }
 
-// TestNotification_DueDateChanged verifies that all subscribers except the actor
-// receive a "due_date_changed" notification when an issue due date changes.
+// TestNotification_DueDateChanged keeps the event working without a non-status/assignment inbox row.
 func TestNotification_DueDateChanged(t *testing.T) {
 	queries := db.New(testPool)
 	bus := newNotificationBus(t, queries)
@@ -841,21 +813,17 @@ func TestNotification_DueDateChanged(t *testing.T) {
 		t.Fatalf("expected 0 inbox items for actor, got %d", len(actorItems))
 	}
 
-	// sub1 should get a due_date_changed notification
-	sub1Items := inboxItemsForRecipient(t, queries, sub1ID)
-	if len(sub1Items) != 1 {
-		t.Fatalf("expected 1 inbox item for sub1, got %d", len(sub1Items))
+	// Non-status/assignment events must not create inbox rows.
+	var count int
+	if err := testPool.QueryRow(context.Background(), `SELECT count(*) FROM inbox_item WHERE issue_id = $1`, issueID).Scan(&count); err != nil {
+		t.Fatal(err)
 	}
-	if sub1Items[0].Type != "due_date_changed" {
-		t.Fatalf("expected type 'due_date_changed', got %q", sub1Items[0].Type)
-	}
-	if sub1Items[0].Severity != "info" {
-		t.Fatalf("expected severity 'info', got %q", sub1Items[0].Severity)
+	if count != 0 {
+		t.Fatalf("unsupported event created %d inbox rows", count)
 	}
 }
 
-// TestNotification_StartDateChanged verifies that subscribers (except the actor)
-// receive a "start_date_changed" notification when an issue start date changes.
+// TestNotification_StartDateChanged keeps the event working without a non-status/assignment inbox row.
 func TestNotification_StartDateChanged(t *testing.T) {
 	queries := db.New(testPool)
 	bus := newNotificationBus(t, queries)
@@ -902,15 +870,13 @@ func TestNotification_StartDateChanged(t *testing.T) {
 		t.Fatalf("expected 0 inbox items for actor, got %d", len(actorItems))
 	}
 
-	sub1Items := inboxItemsForRecipient(t, queries, sub1ID)
-	if len(sub1Items) != 1 {
-		t.Fatalf("expected 1 inbox item for sub1, got %d", len(sub1Items))
+	// Non-status/assignment events must not create inbox rows.
+	var count int
+	if err := testPool.QueryRow(context.Background(), `SELECT count(*) FROM inbox_item WHERE issue_id = $1`, issueID).Scan(&count); err != nil {
+		t.Fatal(err)
 	}
-	if sub1Items[0].Type != "start_date_changed" {
-		t.Fatalf("expected type 'start_date_changed', got %q", sub1Items[0].Type)
-	}
-	if sub1Items[0].Severity != "info" {
-		t.Fatalf("expected severity 'info', got %q", sub1Items[0].Severity)
+	if count != 0 {
+		t.Fatalf("unsupported event created %d inbox rows", count)
 	}
 }
 
@@ -1112,8 +1078,7 @@ func publishStatusChange(bus *events.Bus, issueID, newStatus, prevStatus string)
 	bus.Publish(events.Event{
 		Type:        protocol.EventIssueUpdated,
 		WorkspaceID: testWorkspaceID,
-		ActorType:   "member",
-		ActorID:     testUserID,
+		ActorType:   "system",
 		Payload: map[string]any{
 			"issue": handler.IssueResponse{
 				ID:          issueID,
@@ -1131,12 +1096,8 @@ func publishStatusChange(bus *events.Bus, issueID, newStatus, prevStatus string)
 	})
 }
 
-// TestNotification_StatusChange_ArchivesStaleTaskFailed verifies that when an
-// issue transitions into a terminal status (in_review/done/cancelled), any
-// existing task_failed inbox rows for that issue are archived for every
-// affected member recipient, an inbox:batch-archived event fires per
-// recipient, and sibling notifications on the same issue are untouched.
-func TestNotification_StatusChange_ArchivesStaleTaskFailed(t *testing.T) {
+// TestNotification_StatusChange_PreservesHiddenFailureHistory keeps hidden history unchanged while delivering status notifications.
+func TestNotification_StatusChange_PreservesHiddenFailureHistory(t *testing.T) {
 	queries := db.New(testPool)
 	bus := newNotificationBus(t, queries)
 
@@ -1153,98 +1114,34 @@ func TestNotification_StatusChange_ArchivesStaleTaskFailed(t *testing.T) {
 	addTestSubscriber(t, issueID, "member", testUserID, "creator")
 	addTestSubscriber(t, issueID, "member", subID, "assignee")
 
-	agentID := "00000000-0000-0000-0000-aaaaaaaaaaaa"
-
-	// Two failed runs land before the status flip.
-	for i := 0; i < 2; i++ {
-		bus.Publish(events.Event{
-			Type:        protocol.EventTaskFailed,
-			WorkspaceID: testWorkspaceID,
-			ActorType:   "system",
-			Payload: map[string]any{
-				"task_id":  "00000000-0000-0000-0000-bbbbbbbbbbbb",
-				"agent_id": agentID,
-				"issue_id": issueID,
-			},
-		})
+	// Seed an old row directly: current notification writes reject this type.
+	if _, err := testPool.Exec(context.Background(), `INSERT INTO inbox_item
+		(workspace_id, recipient_type, recipient_id, type, severity, issue_id, title)
+		VALUES ($1, 'member', $2, 'task_failed', 'info', $3, 'historical failure')`, testWorkspaceID, testUserID, issueID); err != nil {
+		t.Fatal(err)
 	}
-
-	// A separate non-task notification on the same issue, so we can prove
-	// the archive scope is narrow. Use a comment-like notification by
-	// directly inserting a row of a different type.
-	_, err := testPool.Exec(context.Background(), `
-		INSERT INTO inbox_item (workspace_id, recipient_type, recipient_id, type, severity, issue_id, title, details)
-		VALUES ($1, 'member', $2, 'new_comment', 'info', $3, 'sibling notification', '{}')
-	`, testWorkspaceID, testUserID, issueID)
-	if err != nil {
-		t.Fatalf("seed sibling notification: %v", err)
-	}
-
-	if active, _ := countInboxByTypeForRecipient(t, testUserID, "task_failed"); active != 2 {
-		t.Fatalf("precondition: expected 2 active task_failed rows for creator, got %d", active)
-	}
-	if active, _ := countInboxByTypeForRecipient(t, subID, "task_failed"); active != 2 {
-		t.Fatalf("precondition: expected 2 active task_failed rows for sub, got %d", active)
-	}
-
-	// Track the batch-archived events fired during the status change.
-	var batchArchived []events.Event
-	bus.Subscribe(protocol.EventInboxBatchArchived, func(e events.Event) {
-		batchArchived = append(batchArchived, e)
-	})
-
+	var archivedEvents int
+	bus.Subscribe(protocol.EventInboxBatchArchived, func(events.Event) { archivedEvents++ })
 	publishStatusChange(bus, issueID, "in_review", "in_progress")
-
-	// task_failed rows are archived for both recipients.
-	for _, recipient := range []string{testUserID, subID} {
-		active, archived := countInboxByTypeForRecipient(t, recipient, "task_failed")
-		if active != 0 {
-			t.Fatalf("recipient %s: expected 0 active task_failed rows after terminal status, got %d", recipient, active)
-		}
-		if archived != 2 {
-			t.Fatalf("recipient %s: expected 2 archived task_failed rows after terminal status, got %d", recipient, archived)
-		}
+	bus.Publish(events.Event{Type: protocol.EventTaskFailed, WorkspaceID: testWorkspaceID,
+		ActorType: "system", Payload: map[string]any{"issue_id": issueID, "agent_id": "00000000-0000-0000-0000-aaaaaaaaaaaa"}})
+	active, archived := countInboxByTypeForRecipient(t, testUserID, "task_failed")
+	if active != 1 || archived != 0 || archivedEvents != 0 {
+		t.Fatalf("hidden history changed: active=%d archived=%d archive events=%d", active, archived, archivedEvents)
 	}
-
-	// Sibling notification on the same issue is untouched.
-	if active, _ := countInboxByTypeForRecipient(t, testUserID, "new_comment"); active != 1 {
-		t.Fatalf("expected sibling new_comment row to remain active, got %d active", active)
+	items := inboxItemsForRecipient(t, queries, testUserID)
+	if len(items) == 0 {
+		t.Fatal("status notifications were lost with the hidden failure history")
 	}
-
-	// One inbox:batch-archived event per affected recipient.
-	if len(batchArchived) != 2 {
-		t.Fatalf("expected 2 inbox:batch-archived events (one per recipient), got %d", len(batchArchived))
-	}
-	seenRecipients := map[string]bool{}
-	for _, e := range batchArchived {
-		payload, ok := e.Payload.(map[string]any)
-		if !ok {
-			t.Fatalf("inbox:batch-archived: unexpected payload type %T", e.Payload)
+	for _, item := range items {
+		if item.Type != "status_changed" {
+			t.Fatalf("unexpected visible notification: %s", item.Type)
 		}
-		recipientID, _ := payload["recipient_id"].(string)
-		if recipientID == "" {
-			t.Fatalf("inbox:batch-archived: missing recipient_id in payload %+v", payload)
-		}
-		if payload["issue_id"] != issueID {
-			t.Fatalf("inbox:batch-archived: expected issue_id %q, got %v", issueID, payload["issue_id"])
-		}
-		if payload["reason"] != "issue_status_terminal" {
-			t.Fatalf("inbox:batch-archived: expected reason 'issue_status_terminal', got %v", payload["reason"])
-		}
-		if count, _ := payload["count"].(int64); count != 2 {
-			t.Fatalf("inbox:batch-archived: expected count=2 for recipient %s, got %v", recipientID, payload["count"])
-		}
-		seenRecipients[recipientID] = true
-	}
-	if !seenRecipients[testUserID] || !seenRecipients[subID] {
-		t.Fatalf("expected batch-archived events for both creator and sub, got %v", seenRecipients)
 	}
 }
 
-// TestNotification_StatusChange_NonTerminalKeepsTaskFailed verifies that a
-// transition to a non-terminal status (e.g. in_progress) does NOT archive
-// existing task_failed inbox rows.
-func TestNotification_StatusChange_NonTerminalKeepsTaskFailed(t *testing.T) {
+// TestNotification_StatusChange_NonTerminalPreservesHiddenFailureHistory keeps hidden history unchanged while delivering status notifications.
+func TestNotification_StatusChange_NonTerminalPreservesHiddenFailureHistory(t *testing.T) {
 	queries := db.New(testPool)
 	bus := newNotificationBus(t, queries)
 
@@ -1256,35 +1153,34 @@ func TestNotification_StatusChange_NonTerminalKeepsTaskFailed(t *testing.T) {
 
 	addTestSubscriber(t, issueID, "member", testUserID, "creator")
 
-	bus.Publish(events.Event{
-		Type:        protocol.EventTaskFailed,
-		WorkspaceID: testWorkspaceID,
-		ActorType:   "system",
-		Payload: map[string]any{
-			"task_id":  "00000000-0000-0000-0000-bbbbbbbbbbbb",
-			"agent_id": "00000000-0000-0000-0000-aaaaaaaaaaaa",
-			"issue_id": issueID,
-		},
-	})
-
-	if active, _ := countInboxByTypeForRecipient(t, testUserID, "task_failed"); active != 1 {
-		t.Fatalf("precondition: expected 1 active task_failed row, got %d", active)
+	// Seed an old row directly: current notification writes reject this type.
+	if _, err := testPool.Exec(context.Background(), `INSERT INTO inbox_item
+		(workspace_id, recipient_type, recipient_id, type, severity, issue_id, title)
+		VALUES ($1, 'member', $2, 'task_failed', 'info', $3, 'historical failure')`, testWorkspaceID, testUserID, issueID); err != nil {
+		t.Fatal(err)
 	}
-
+	var archivedEvents int
+	bus.Subscribe(protocol.EventInboxBatchArchived, func(events.Event) { archivedEvents++ })
 	publishStatusChange(bus, issueID, "in_progress", "todo")
-
-	// task_failed row stays active because in_progress is not terminal.
+	bus.Publish(events.Event{Type: protocol.EventTaskFailed, WorkspaceID: testWorkspaceID,
+		ActorType: "system", Payload: map[string]any{"issue_id": issueID, "agent_id": "00000000-0000-0000-0000-aaaaaaaaaaaa"}})
 	active, archived := countInboxByTypeForRecipient(t, testUserID, "task_failed")
-	if active != 1 || archived != 0 {
-		t.Fatalf("expected task_failed row to remain active after non-terminal transition, got active=%d archived=%d", active, archived)
+	if active != 1 || archived != 0 || archivedEvents != 0 {
+		t.Fatalf("hidden history changed: active=%d archived=%d archive events=%d", active, archived, archivedEvents)
+	}
+	items := inboxItemsForRecipient(t, queries, testUserID)
+	if len(items) == 0 {
+		t.Fatal("status notifications were lost with the hidden failure history")
+	}
+	for _, item := range items {
+		if item.Type != "status_changed" {
+			t.Fatalf("unexpected visible notification: %s", item.Type)
+		}
 	}
 }
 
-// TestNotification_StatusChange_ReopenSurfacesNewTaskFailed verifies that
-// after a terminal-status auto-archive, a status flip back to in_progress
-// followed by a new task failure produces a fresh, visible task_failed row.
-// This guards the "reopen and rerun" path described in the design.
-func TestNotification_StatusChange_ReopenSurfacesNewTaskFailed(t *testing.T) {
+// TestNotification_StatusChange_ReopenDoesNotRestoreFailureInbox keeps hidden history unchanged while delivering status notifications.
+func TestNotification_StatusChange_ReopenDoesNotRestoreFailureInbox(t *testing.T) {
 	queries := db.New(testPool)
 	bus := newNotificationBus(t, queries)
 
@@ -1296,44 +1192,29 @@ func TestNotification_StatusChange_ReopenSurfacesNewTaskFailed(t *testing.T) {
 
 	addTestSubscriber(t, issueID, "member", testUserID, "creator")
 
-	agentID := "00000000-0000-0000-0000-aaaaaaaaaaaa"
-
-	bus.Publish(events.Event{
-		Type:        protocol.EventTaskFailed,
-		WorkspaceID: testWorkspaceID,
-		ActorType:   "system",
-		Payload: map[string]any{
-			"task_id":  "00000000-0000-0000-0000-bbbbbbbbbbbb",
-			"agent_id": agentID,
-			"issue_id": issueID,
-		},
-	})
-
-	// First terminal transition archives the original failure.
+	// Seed an old row directly: current notification writes reject this type.
+	if _, err := testPool.Exec(context.Background(), `INSERT INTO inbox_item
+		(workspace_id, recipient_type, recipient_id, type, severity, issue_id, title)
+		VALUES ($1, 'member', $2, 'task_failed', 'info', $3, 'historical failure')`, testWorkspaceID, testUserID, issueID); err != nil {
+		t.Fatal(err)
+	}
+	var archivedEvents int
+	bus.Subscribe(protocol.EventInboxBatchArchived, func(events.Event) { archivedEvents++ })
 	publishStatusChange(bus, issueID, "in_review", "in_progress")
-	if active, archived := countInboxByTypeForRecipient(t, testUserID, "task_failed"); active != 0 || archived != 1 {
-		t.Fatalf("after terminal transition: expected active=0 archived=1, got active=%d archived=%d", active, archived)
-	}
-
-	// Reviewer kicks the issue back; a rerun fails again.
 	publishStatusChange(bus, issueID, "in_progress", "in_review")
-	bus.Publish(events.Event{
-		Type:        protocol.EventTaskFailed,
-		WorkspaceID: testWorkspaceID,
-		ActorType:   "system",
-		Payload: map[string]any{
-			"task_id":  "00000000-0000-0000-0000-cccccccccccc",
-			"agent_id": agentID,
-			"issue_id": issueID,
-		},
-	})
-
-	// The new failure is visible; the old archived row stays archived.
+	bus.Publish(events.Event{Type: protocol.EventTaskFailed, WorkspaceID: testWorkspaceID,
+		ActorType: "system", Payload: map[string]any{"issue_id": issueID, "agent_id": "00000000-0000-0000-0000-aaaaaaaaaaaa"}})
 	active, archived := countInboxByTypeForRecipient(t, testUserID, "task_failed")
-	if active != 1 {
-		t.Fatalf("expected 1 active task_failed row after reopen+fail, got %d", active)
+	if active != 1 || archived != 0 || archivedEvents != 0 {
+		t.Fatalf("hidden history changed: active=%d archived=%d archive events=%d", active, archived, archivedEvents)
 	}
-	if archived != 1 {
-		t.Fatalf("expected 1 archived task_failed row preserved from prior cycle, got %d", archived)
+	items := inboxItemsForRecipient(t, queries, testUserID)
+	if len(items) == 0 {
+		t.Fatal("status notifications were lost with the hidden failure history")
+	}
+	for _, item := range items {
+		if item.Type != "status_changed" {
+			t.Fatalf("unexpected visible notification: %s", item.Type)
+		}
 	}
 }
