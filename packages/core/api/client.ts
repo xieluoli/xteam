@@ -1,3 +1,4 @@
+import { MCPKeyListSchema, CreatedMCPKeySchema, type MCPKey, type CreateMCPKeyRequest } from "./mcp-keys-schema";
 import { ProjectContextSchema, type ProjectContext } from "../projects/context-schema";
 import type { ZodType } from "zod";
 import type { IssueWakeup, IssueWakeupInput, IssueWakeupSummaryRow, PausedWakeup, SystemWakeup, WakeupRun, WorkspaceSystemWakeup } from "../types/issue-wakeup";
@@ -4010,6 +4011,24 @@ export class ApiClient {
   async getAttachmentBlob(id: string): Promise<Blob> {
     const res = await this.fetchRaw(`/api/attachments/${id}/download`);
     return res.blob();
+  }
+
+  async listMCPKeys(): Promise<MCPKey[]> {
+    const raw = await this.fetch<unknown>("/api/mcp-keys");
+    const parsed = parseWithFallback<MCPKey[] | null>(raw, MCPKeyListSchema, null, { endpoint: "listMCPKeys" });
+    if (!parsed) throw new Error("Malformed MCP key listing");
+    return parsed;
+  }
+
+  async createMCPKey(input: CreateMCPKeyRequest): Promise<MCPKey & { token: string }> {
+    const raw = await this.fetch<unknown>("/api/mcp-keys", { method: "POST", body: JSON.stringify(input) });
+    const parsed = parseWithFallback<(MCPKey & { token: string }) | null>(raw, CreatedMCPKeySchema, null, { endpoint: "createMCPKey" });
+    if (!parsed) throw new Error("Malformed MCP key response");
+    return parsed;
+  }
+
+  async revokeMCPKey(id: string): Promise<void> {
+    await this.fetch(`/api/mcp-keys/${id}`, { method: "DELETE" });
   }
 
   // Projects

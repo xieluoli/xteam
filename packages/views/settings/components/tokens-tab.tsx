@@ -1,5 +1,6 @@
 "use client";
 
+import { MCPKeysSection } from "./mcp-keys-section";
 import { useEffect, useState, useCallback } from "react";
 import { Trash2, Copy, Check, Info } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@multica/ui/components/ui/tooltip";
@@ -131,7 +132,9 @@ export function TokensTab() {
 
   return (
     <SettingsTab title={t(($) => $.tokens.title)} description={t(($) => $.tokens.purpose)} scope="account">
+      <MCPKeysSection />
       <SettingsSection
+        title={t(($) => $.tokens.title)}
         description={t(($) => $.tokens.security_note)}
       >
         <details className="text-caption text-muted-foreground">

@@ -680,6 +680,12 @@ DELETE FROM agent WHERE agent.workspace_id = $1;
 
 -- name: DeleteWorkspaceRuntimesAndProjects :exec
 WITH
+deleted_mcp_requests AS (
+ DELETE FROM mcp_issue_request WHERE key_id IN (SELECT id FROM mcp_key WHERE workspace_id=$1)
+),
+deleted_mcp_keys AS (
+ DELETE FROM mcp_key WHERE workspace_id=$1
+),
 deleted_context AS (
     DELETE FROM project_context WHERE project_id IN (SELECT id FROM project WHERE workspace_id = $1)
 ),

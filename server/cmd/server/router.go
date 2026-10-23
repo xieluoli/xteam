@@ -1433,6 +1433,7 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 
 	// Health / readiness checks
 	r.Get("/health", health.liveHandler)
+	r.With(middleware.RateLimit(rdb, 120, time.Minute, middleware.ParseTrustedProxies(os.Getenv("RATE_LIMIT_TRUSTED_PROXIES")))).Handle("/mcp", http.HandlerFunc(h.ServeMCP))
 	r.Get("/readyz", health.readyHandler)
 	r.Get("/healthz", health.readyHandler)
 
@@ -1914,6 +1915,12 @@ func NewRouterWithOptions(pool *pgxpool.Pool, hub *realtime.Hub, bus *events.Bus
 		r.Post("/api/invitations/{id}/decline", h.DeclineInvitation)
 		r.Post("/api/share-links/join", h.JoinByShareLink)
 
+		r.Route("/api/mcp-keys", func(r chi.Router) {
+			r.Use(handler.RequireHumanActor)
+			r.Get("/", h.ListMCPKeys)
+			r.Post("/", h.CreateMCPKey)
+			r.Delete("/{id}", h.RevokeMCPKey)
+		})
 		r.Route("/api/tokens", func(r chi.Router) {
 			r.Get("/", h.ListPersonalAccessTokens)
 			r.Post("/", h.CreatePersonalAccessToken)

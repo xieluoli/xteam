@@ -131,6 +131,7 @@ export function runtimeRewriteDestination(
   if (pathname === "/uploads" || pathname.startsWith("/uploads/")) {
     return appendPath(remoteApiUrl, pathname);
   }
+  if (pathname === "/mcp") return appendPath(remoteApiUrl, "/mcp");
   if (pathname === "/ws") {
     return appendPath(remoteApiUrl, "/ws");
   }
