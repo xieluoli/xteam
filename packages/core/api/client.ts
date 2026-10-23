@@ -1,3 +1,4 @@
+import { ImportedUsageListSchema, type ImportedUsage } from "../issues/imported-usage-schema";
 import { MCPKeyListSchema, CreatedMCPKeySchema, type MCPKey, type CreateMCPKeyRequest } from "./mcp-keys-schema";
 import { ProjectContextSchema, type ProjectContext } from "../projects/context-schema";
 import type { ZodType } from "zod";
@@ -2818,6 +2819,15 @@ export class ApiClient {
     await this.fetch(`/api/issues/${issueId}/tasks/${taskId}/supplements/${commentId}/retry`, {
       method: "POST",
     });
+  }
+
+  async listIssueImportedUsage(issueId: string): Promise<ImportedUsage[]> {
+    const raw = await this.fetch<unknown>(`/api/issues/${issueId}/imported-usage`);
+    const result = parseWithFallback<ImportedUsage[] | null>(raw, ImportedUsageListSchema, null, {
+      endpoint: "GET /api/issues/:id/imported-usage",
+    });
+    if (!result) throw new Error("Invalid historical usage response");
+    return result;
   }
 
   async getIssueUsage(issueId: string): Promise<IssueUsageSummary> {

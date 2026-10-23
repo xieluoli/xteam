@@ -198,7 +198,7 @@ func TestMCPNativeSDKClient(t *testing.T) {
 	}
 	defer session.Close()
 	tools, err := session.ListTools(context.Background(), nil)
-	if err != nil || len(tools.Tools) != 7 {
+	if err != nil || len(tools.Tools) != 9 {
 		t.Fatalf("tools: %v %v", tools, err)
 	}
 	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{Name: "xteam_identity", Arguments: map[string]any{}})
@@ -324,5 +324,57 @@ func TestMCPRejectsForeignProjectWrites(t *testing.T) {
 	result = mcpTool(t, token, "xteam_issue_update", map[string]any{"id": issue, "changes": map[string]any{"project_id": project}})
 	if result["isError"] != true {
 		t.Fatal("foreign project update succeeded")
+	}
+}
+
+func TestMCPParentRelationships(t *testing.T) {
+	token, _ := createMCPFixtureKey(t, []string{"issues:read", "issues:write"})
+	parent := dbfx.Issue(t, "MCP parent", testutil.Cols{"number": -10})
+	child := mcpOutput(t, mcpTool(t, token, "xteam_issue_create", map[string]any{"request_id": "parent-create", "title": "MCP child", "parent_issue_id": parent}))
+	childID := child["id"].(string)
+	t.Cleanup(func() { dbfx.Exec(t, "DELETE FROM issue WHERE id=$1", childID) })
+	if child["parent_issue_id"] != parent {
+		t.Fatalf("parent missing: %v", child["parent_issue_id"])
+	}
+	for _, change := range []struct {
+		id     string
+		parent string
+	}{{parent, childID}, {childID, childID}} {
+		result := mcpTool(t, token, "xteam_issue_update", map[string]any{"id": change.id, "changes": map[string]any{"parent_issue_id": change.parent}})
+		if result["isError"] != true {
+			t.Fatal("invalid parent accepted")
+		}
+	}
+	foreign := dbfx.Workspace(t, "MCP foreign parent", "mcp-foreign-parent")
+	foreignParent := dbfx.Issue(t, "Foreign parent", testutil.Cols{"workspace_id": foreign})
+	result := mcpTool(t, token, "xteam_issue_update", map[string]any{"id": childID, "changes": map[string]any{"parent_issue_id": foreignParent}})
+	if result["isError"] != true {
+		t.Fatal("foreign parent accepted")
+	}
+	cleared := mcpOutput(t, mcpTool(t, token, "xteam_issue_update", map[string]any{"id": childID, "changes": map[string]any{"parent_issue_id": nil}}))
+	if cleared["parent_issue_id"] != nil {
+		t.Fatal("parent not cleared")
+	}
+	updated := mcpOutput(t, mcpTool(t, token, "xteam_issue_update", map[string]any{"id": childID, "changes": map[string]any{"parent_issue_id": parent}}))
+	if updated["parent_issue_id"] != parent {
+		t.Fatal("parent not restored")
+	}
+	var count int
+	dbfx.QueryRow(t, "SELECT count(*) FROM agent_task_queue WHERE issue_id=$1", childID).Scan(&count)
+	if count != 0 {
+		t.Fatal("parent write dispatched a task")
+	}
+}
+
+func TestMCPRejectsDeepParentCycle(t *testing.T) {
+	token, _ := createMCPFixtureKey(t, []string{"issues:read", "issues:write"})
+	root := dbfx.Issue(t, "Cycle root")
+	parent := root
+	for depth := 0; depth < 12; depth++ {
+		parent = dbfx.Issue(t, "Cycle descendant", testutil.Cols{"parent_issue_id": parent})
+	}
+	result := mcpTool(t, token, "xteam_issue_update", map[string]any{"id": root, "changes": map[string]any{"parent_issue_id": parent}})
+	if result["isError"] != true {
+		t.Fatal("cycle deeper than ten ancestors was accepted")
 	}
 }

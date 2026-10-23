@@ -1,4 +1,17 @@
 {
+  "imported_usage": {
+    "title": "インポートした過去のトークン",
+    "separate": "元のスナップショットです。ローカル実行の消費には含まれません。",
+    "captured": "取得日時",
+    "input": "入力",
+    "output": "出力",
+    "cache_read": "キャッシュ読み取り",
+    "cache_write": "キャッシュ書き込み",
+    "metered_runs": "使用量のある実行",
+    "coverage": "完了した実行 {{total}} 件中 {{metered}} 件報告済み、{{missing}} 件未報告。",
+    "unknown_coverage": "報告の網羅性は不明です。0 は実際の消費がないことを意味しません。",
+    "load_error": "過去のトークン使用量を読み込めませんでした。"
+  },
   "working_filter_error": {
     "title": "エージェントが作業中のタスクを読み込めませんでした"
   },

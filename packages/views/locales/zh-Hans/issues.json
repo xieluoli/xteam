@@ -1,4 +1,17 @@
 {
+  "imported_usage": {
+    "title": "导入的历史 Token",
+    "separate": "仅为源端快照，不计入本地执行消耗。",
+    "captured": "快照时间",
+    "input": "输入",
+    "output": "输出",
+    "cache_read": "缓存读取",
+    "cache_write": "缓存写入",
+    "metered_runs": "有用量记录的运行",
+    "coverage": "已结束运行 {{total}} 次，已上报 {{metered}} 次，缺报 {{missing}} 次。",
+    "unknown_coverage": "上报覆盖情况未知；统计为 0 不代表实际零消耗。",
+    "load_error": "历史 Token 用量加载失败。"
+  },
   "working_filter_error": {
     "title": "无法加载智能体正在处理的任务"
   },

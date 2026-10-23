@@ -3902,13 +3902,16 @@ func (h *Handler) UpdateIssue(w http.ResponseWriter, r *http.Request) {
 			}
 			// Cycle detection: walk up from the new parent to ensure we don't reach this issue.
 			cursor := newParentID
-			for depth := 0; depth < 10; depth++ {
-				ancestor, err := h.Queries.GetIssue(r.Context(), cursor)
-				if err != nil || !ancestor.ParentIssueID.Valid {
-					break
-				}
-				if ancestor.ParentIssueID == prevIssue.ID {
+			visited := map[pgtype.UUID]bool{prevIssue.ID: true}
+			for cursor.Valid {
+				if visited[cursor] {
 					writeError(w, http.StatusBadRequest, "circular parent relationship detected")
+					return
+				}
+				visited[cursor] = true
+				ancestor, err := h.Queries.GetIssueInWorkspace(r.Context(), db.GetIssueInWorkspaceParams{ID: cursor, WorkspaceID: prevIssue.WorkspaceID})
+				if err != nil {
+					writeError(w, http.StatusBadRequest, "parent issue not found in this workspace")
 					return
 				}
 				cursor = ancestor.ParentIssueID

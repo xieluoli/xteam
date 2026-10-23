@@ -41,15 +41,15 @@ func (h *Handler) ServeMCP(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = h.Queries.TouchMCPKey(r.Context(), principal.Key.ID)
 	server := mcp.NewServer(&mcp.Implementation{Name: "xteam", Version: "1"}, nil)
-	for _, name := range []string{"xteam_identity", "xteam_issue_list", "xteam_issue_search", "xteam_issue_get", "xteam_issue_create", "xteam_issue_update", "xteam_issue_delete"} {
+	for _, name := range []string{"xteam_identity", "xteam_issue_list", "xteam_issue_search", "xteam_issue_get", "xteam_issue_create", "xteam_issue_update", "xteam_issue_delete", "xteam_issue_usage_list", "xteam_issue_usage_import"} {
 		schema := mcpToolSchema(name)
-		readOnly := name != "xteam_issue_create" && name != "xteam_issue_update" && name != "xteam_issue_delete"
+		readOnly := name != "xteam_issue_create" && name != "xteam_issue_update" && name != "xteam_issue_delete" && name != "xteam_issue_usage_import"
 		tool := &mcp.Tool{
 			Name: name, Description: mcpToolDescription(name), InputSchema: schema,
 			Annotations: &mcp.ToolAnnotations{
 				ReadOnlyHint:    readOnly,
-				DestructiveHint: boolPointer(name == "xteam_issue_delete" || name == "xteam_issue_update"),
-				IdempotentHint:  name == "xteam_issue_create",
+				DestructiveHint: boolPointer(name == "xteam_issue_delete" || name == "xteam_issue_update" || name == "xteam_issue_usage_import"),
+				IdempotentHint:  name == "xteam_issue_create" || name == "xteam_issue_usage_import",
 			},
 		}
 		mcp.AddTool(server, tool, func(ctx context.Context, req *mcp.CallToolRequest, args map[string]any) (*mcp.CallToolResult, any, error) {
@@ -78,9 +78,13 @@ func mcpToolDescription(name string) string {
 	case "xteam_issue_get":
 		return "Get issue by id (UUID or readable issue identifier)."
 	case "xteam_issue_create":
-		return "Create unassigned issue. Required request_id (stable across retries) and title; optional description,status,priority,project_id,start_date,due_date. No execution or assignment."
+		return "Create unassigned issue. Required request_id (stable across retries) and title; optional description,status,priority,project_id,start_date,due_date,parent_issue_id. No execution or assignment."
 	case "xteam_issue_update":
-		return "Update issue: id plus changes object containing title,description,status,priority,project_id,start_date,due_date. Does not start assigned agents."
+		return "Update issue: id plus changes object containing title,description,status,priority,project_id,start_date,due_date,parent_issue_id. Does not start assigned agents."
+	case "xteam_issue_usage_list":
+		return "List imported historical usage snapshots for an issue. Does not include local execution usage."
+	case "xteam_issue_usage_import":
+		return "Replace a source-identified historical usage snapshot. Does not create runs, billing or local execution consumption."
 	case "xteam_issue_delete":
 		return "Destructive: delete issue and its normal dependents after explicit user authorization. Requires id and confirmed=true. Never infer human consent from this flag."
 	}
@@ -96,7 +100,7 @@ func (h *Handler) callMCPTool(ctx context.Context, principal mcpPrincipal, name 
 		return nil, errors.New("workspace access revoked")
 	}
 	scope := "issues:read"
-	if name == "xteam_issue_create" || name == "xteam_issue_update" {
+	if name == "xteam_issue_create" || name == "xteam_issue_update" || name == "xteam_issue_usage_import" {
 		scope = "issues:write"
 	}
 	if name == "xteam_issue_delete" {
@@ -177,13 +181,28 @@ func (h *Handler) callMCPTool(ctx context.Context, principal mcpPrincipal, name 
 		}
 		path += "/" + url.PathEscape(id)
 		handler = h.GetIssue
+		if name == "xteam_issue_usage_list" || name == "xteam_issue_usage_import" {
+			path += "/imported-usage"
+			handler = h.ListIssueImportedUsage
+			if name == "xteam_issue_usage_import" {
+				snapshotArgs := make(map[string]json.RawMessage, len(args)-1)
+				for field, value := range args {
+					if field != "id" {
+						snapshotArgs[field] = value
+					}
+				}
+				body, _ = json.Marshal(snapshotArgs)
+				method = "PUT"
+				handler = h.ImportIssueUsage
+			}
+		}
 		if name == "xteam_issue_update" {
 			changes := map[string]json.RawMessage{}
 			if json.Unmarshal(args["changes"], &changes) != nil || len(changes) == 0 {
 				return nil, errors.New("changes is required")
 			}
 			for field := range changes {
-				if field != "title" && field != "description" && field != "status" && field != "priority" && field != "project_id" && field != "start_date" && field != "due_date" {
+				if field != "title" && field != "description" && field != "status" && field != "priority" && field != "project_id" && field != "start_date" && field != "due_date" && field != "parent_issue_id" {
 					return nil, fmt.Errorf("unsupported change %q", field)
 				}
 			}

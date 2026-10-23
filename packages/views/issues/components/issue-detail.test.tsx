@@ -312,6 +312,7 @@ const mockApiObj = vi.hoisted(() => ({
   deleteIssue: vi.fn(),
   updateIssue: vi.fn(),
   listIssueSubscribers: vi.fn().mockResolvedValue([]),
+  listIssueImportedUsage: vi.fn().mockResolvedValue([]),
   subscribeToIssue: vi.fn().mockResolvedValue(undefined),
   unsubscribeFromIssue: vi.fn().mockResolvedValue(undefined),
   unsubscribeFromIssueSubtree: vi.fn().mockResolvedValue(undefined),
@@ -656,6 +657,7 @@ describe("IssueDetail (shared)", () => {
     mockApiObj.listTimeline.mockResolvedValue(mockTimeline);
     mockApiObj.listIssueReactions.mockResolvedValue([]);
     mockApiObj.listIssueSubscribers.mockResolvedValue([]);
+    mockApiObj.listIssueImportedUsage.mockResolvedValue([]);
     mockApiObj.listChildIssues.mockResolvedValue({ issues: [] });
     mockApiObj.getChildIssueProgress.mockResolvedValue({ progress: [] });
     mockApiObj.getAgentTaskSnapshot.mockResolvedValue([]);
