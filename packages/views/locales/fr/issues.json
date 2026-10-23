@@ -1,4 +1,17 @@
 {
+  "imported_usage": {
+    "title": "Tokens historiques importés",
+    "separate": "Instantané de la source, non inclus dans la consommation des exécutions locales.",
+    "captured": "Date de capture",
+    "input": "Entrée",
+    "output": "Sortie",
+    "cache_read": "Lecture du cache",
+    "cache_write": "Écriture du cache",
+    "metered_runs": "Exécutions avec consommation",
+    "coverage": "{{metered}} / {{total}} exécutions terminées déclarées ; {{missing}} non déclarées.",
+    "unknown_coverage": "Couverture des déclarations inconnue ; zéro ne prouve pas une consommation nulle.",
+    "load_error": "Impossible de charger les tokens historiques."
+  },
   "working_filter_error": {
     "title": "Impossible de charger les tâches en cours de traitement par les agents"
   },

@@ -21,6 +21,7 @@ test("creates a scoped key from settings, calls real MCP and revokes an existing
   const page = await context.newPage();
   let keyId: string | undefined;
   let issueId: string | undefined;
+  let parentId: string | undefined;
   try {
     await page.goto(`${origin}/${workspace.slug}/settings?tab=tokens`);
     await page.getByLabel("Key name", { exact: true }).fill("Codex acceptance");
@@ -53,17 +54,40 @@ test("creates a scoped key from settings, calls real MCP and revokes an existing
       expect(result.isError).not.toBe(true);
       return JSON.parse(result.content[0].text);
     };
-    expect((await rpc("tools/list", {})).tools).toHaveLength(7);
+    expect((await rpc("tools/list", {})).tools).toHaveLength(9);
     expect((await tool("xteam_identity", {})).workspace_id).toBe(workspace.id);
-    const input = { request_id: `e2e-${stamp}`, title: `MCP acceptance ${stamp}` };
+    const parent = await tool("xteam_issue_create", { request_id: `parent-${stamp}`, title: `MCP parent ${stamp}` });
+    parentId = parent.id;
+    const input = { request_id: `e2e-${stamp}`, title: `MCP acceptance ${stamp}`, parent_issue_id: parent.id };
     const issue = await tool("xteam_issue_create", input);
     issueId = issue.id;
+    expect(issue.parent_issue_id).toBe(parent.id);
     expect((await tool("xteam_issue_create", input)).id).toBe(issue.id);
     expect((await tool("xteam_issue_update", { id: issue.identifier, changes: { priority: "high" } })).priority).toBe("high");
     expect((await tool("xteam_issue_get", { id: issue.id })).priority).toBe("high");
+    const historical = {
+      id: issue.id, source_workspace_id: "source-workspace", source_issue_id: "source-issue",
+      source_issue_identifier: "OLD-1", source_name: "Original workspace", captured_at: "2026-10-23T08:00:00Z",
+      input_tokens: 120, output_tokens: 30, cache_read_tokens: 500, cache_write_tokens: 0, task_count: 2,
+    };
+    await tool("xteam_issue_usage_import", historical);
+    await tool("xteam_issue_usage_import", historical);
+    expect(await tool("xteam_issue_usage_list", { id: issue.id })).toHaveLength(1);
+    await page.goto(`${origin}/${workspace.slug}/issues/${issue.id}`);
+    await expect(page.getByText(`MCP parent ${stamp}`, { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Original workspace · OLD-1", { exact: true })).toBeVisible();
+    await expect(page.getByText(/Reporting coverage unknown/)).toBeVisible();
+    await expect(page.getByText("120", { exact: true })).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("historical-usage.png") });
+
+    await page.goto(`${origin}/${workspace.slug}/issues/${parent.id}`);
+    await expect(page.getByText(`MCP acceptance ${stamp}`, { exact: true }).first()).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath("parent-child.png") });
     await tool("xteam_issue_delete", { id: issue.id, confirmed: true });
     issueId = undefined;
-    await page.reload();
+    await tool("xteam_issue_delete", { id: parent.id, confirmed: true });
+    parentId = undefined;
+    await page.goto(`${origin}/${workspace.slug}/settings?tab=tokens`);
     await expect(page.getByText(key.token, { exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "Revoke Codex acceptance", exact: true }).click();
     await page.getByRole("button", { name: "Confirm revocation", exact: true }).click();
@@ -79,6 +103,7 @@ test("creates a scoped key from settings, calls real MCP and revokes an existing
   } finally {
     await context.close();
     if (issueId) await api.deleteIssue(issueId);
+    if (parentId) await api.deleteIssue(parentId);
     if (keyId) await api.revokeMCPKey(keyId);
     await api.cleanup();
     await api.deleteWorkspace();

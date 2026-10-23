@@ -868,6 +868,16 @@ type IssueDependency struct {
 	Type             string      `json:"type"`
 }
 
+type IssueImportedUsage struct {
+	WorkspaceID       pgtype.UUID        `json:"workspace_id"`
+	IssueID           pgtype.UUID        `json:"issue_id"`
+	SourceWorkspaceID string             `json:"source_workspace_id"`
+	SourceIssueID     string             `json:"source_issue_id"`
+	CapturedAt        pgtype.Timestamptz `json:"captured_at"`
+	Snapshot          []byte             `json:"snapshot"`
+	ImportedAt        pgtype.Timestamptz `json:"imported_at"`
+}
+
 type IssueLabel struct {
 	ID           pgtype.UUID        `json:"id"`
 	WorkspaceID  pgtype.UUID        `json:"workspace_id"`

@@ -54,3 +54,19 @@ bearer_token_env_var = "XTEAM_MCP_KEY"
 - `e2e/mcp-keys.spec.ts`：原生 TestApiClient 夹具创建并清理工作区，在真实页面创建 Key、调用同源 MCP、撤销后拒绝。
 
 官方 SDK/协议客户端验收与真实 Codex 客户端调用分开记录。未经明确授权，不调用用户已安装的真实 Agent CLI/账号或付费模型。可以先在隔离配置中检查 Codex 接入；没有运行就明确 Not run，不能把 TOML 可复制视为 Codex 已连接。
+
+## 父子关系与历史用量快照
+
+Issue 创建/修改支持 `parent_issue_id`（目标工作区的 Issue UUID）；修改传 `null` 可解除父级。服务端复用真实父子关系，拒绝跨工作区、自引用及祖先循环。不提供指派或执行工具；已有子任务规则仍属于原业务事件，批量迁移应先核对目标父 Issue 没有会触发运行的规则。
+
+新增两个工具：
+- `xteam_issue_usage_list`：`id`（UUID 或编号），需要 `issues:read`，返回该 Issue 的导入历史快照数组。
+- `xteam_issue_usage_import`：需要 `issues:write`，替换一份来源确定的历史快照，不创建平台运行或计费记录。
+
+导入字段：`id`、`source_workspace_id`、`source_issue_id`、`source_issue_identifier`、`source_name`、`captured_at`（RFC3339）、`input_tokens`、`output_tokens`、`cache_read_tokens`、`cache_write_tokens`、`task_count`（有用量记录的运行数）。计数必须是非负安全整数。
+
+`coverage` 可省略或为 `null`，表示源端未提供覆盖情况，未知不能解释为零。已知时提供 `terminal_task_count`、`metered_task_count`、`unreported_task_count`，结束数必须等于已上报数加缺报数。四类 Token 保留源端计量语义，不擅自相加成账单；此接口不导入费用或模型明细。
+
+快照以「目标工作区 + 目标 Issue + 来源工作区 + 来源 Issue」唯一标识：同一快照重试不累计，新时间替换旧值，旧时间或同时间不同内容返回冲突。不同来源分别展示，不默认合计，避免交叉来源重复计数。保存时与 Issue 删除串行化，Issue/工作区删除会清理快照。
+
+详情显示“导入的历史 Token”、来源、快照时间、四类计数及覆盖情况；独立于当前 XTeam 的本地运行消耗，不改变原 `/usage` 统计。只读详情 API 为 `GET /api/issues/:id/imported-usage`；写入只通过 MCP 权限入口。本轮不自动采集会话、不注册 hooks，不冒充实际执行用量或账单凭证。

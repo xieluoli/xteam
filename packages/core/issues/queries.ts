@@ -643,3 +643,12 @@ export function issueAttachmentsOptions(issueId: string) {
     queryFn: () => api.listAttachments(issueId),
   });
 }
+
+export function issueImportedUsageOptions(wsId: string, issueId: string) {
+  return queryOptions({
+    queryKey: [...issueKeys.all(wsId), "imported-usage", issueId],
+    queryFn: () => api.listIssueImportedUsage(issueId),
+    enabled: !!wsId && !!issueId,
+    staleTime: 30_000,
+  });
+}

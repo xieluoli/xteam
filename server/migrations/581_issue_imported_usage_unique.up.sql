@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS issue_imported_usage_source_uidx ON issue_imported_usage(workspace_id,issue_id,source_workspace_id,source_issue_id);

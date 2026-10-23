@@ -1,4 +1,17 @@
 {
+  "imported_usage": {
+    "title": "Imported historical tokens",
+    "separate": "Source snapshot only; not included in local execution consumption.",
+    "captured": "Captured",
+    "input": "Input",
+    "output": "Output",
+    "cache_read": "Cache read",
+    "cache_write": "Cache write",
+    "metered_runs": "Runs with usage",
+    "coverage": "Reported {{metered}} / {{total}} completed runs; {{missing}} unreported.",
+    "unknown_coverage": "Reporting coverage unknown; zero counts do not prove zero consumption.",
+    "load_error": "Could not load historical token usage."
+  },
   "working_filter_error": {
     "title": "Couldn't load issues with working agents"
   },

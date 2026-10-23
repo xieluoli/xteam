@@ -81,6 +81,7 @@ import { QuickActionsSection } from "./quick-actions-section";
 import { PluginPanelSection } from "../../plugins";
 import { PullRequestsSection } from "./pull-requests-section";
 import { useGitHubSettings } from "@multica/core/github";
+import { ImportedUsageSection } from "./imported-usage-section";
 import { DeliverablesSection } from "./deliverables/deliverables-section";
 import { DeliverablesOverview } from "./deliverables/deliverables-overview";
 import {
@@ -1560,6 +1561,7 @@ export function IssueDetail({ issueId, onDelete, onDone, defaultSidebarOpen = tr
       )}
 
       <IssueDuplicatesSection issueId={issue.id} />
+      <ImportedUsageSection issueId={issue.id} />
 
       {/* Pull requests — hidden when the workspace disables the PR sidebar
           (or the GitHub master switch is off). Backend data is kept either

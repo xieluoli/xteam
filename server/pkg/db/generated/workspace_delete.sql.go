@@ -600,6 +600,9 @@ func (q *Queries) DeleteWorkspacePullRequests(ctx context.Context, workspaceID p
 
 const deleteWorkspaceRuntimesAndProjects = `-- name: DeleteWorkspaceRuntimesAndProjects :exec
 WITH
+deleted_imported_usage AS (
+ DELETE FROM issue_imported_usage WHERE workspace_id=$1
+),
 deleted_mcp_requests AS (
  DELETE FROM mcp_issue_request WHERE key_id IN (SELECT id FROM mcp_key WHERE workspace_id=$1)
 ),
