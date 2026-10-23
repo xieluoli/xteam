@@ -7710,6 +7710,7 @@ func IssueToMap(issue db.Issue, issuePrefix string) map[string]any {
 		"identifier":   IssueIdentifier(issuePrefix, issue.Number),
 		"title":        issue.Title,
 		"description":  util.TextToPtr(issue.Description),
+		"conclusion":   issue.Conclusion,
 		"status":       issue.Status,
 		// Mirrors handler.IssueResponse.StatusCategory. Built-ins map to a
 		// public lifecycle category without a catalog lookup; custom statuses

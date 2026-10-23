@@ -94,14 +94,12 @@ func TestQuickCreateFailure_DoesNotSubscribeRequester(t *testing.T) {
 	}
 }
 
-// TestQuickCreateFailure_SurfacesAgentOutput locks in the fix for GH #5885: when
-// a quick-create agent's `multica issue create` call fails (e.g. the active-
-// duplicate guard rejects it), the failure inbox must carry the agent's real
-// final output — which the prompt requires to be the CLI error — instead of the
-// opaque "agent finished without creating an issue".
+// The real failure detail is still sanitized before the database suppresses
+// the quick-create notification; completion itself must remain committed.
 func TestQuickCreateFailure_SurfacesAgentOutput(t *testing.T) {
 	ctx := context.Background()
-	queries := db.New(testPool)
+	outcomes := &quickCreateOutcomeDB{DBTX: testPool}
+	queries := db.New(outcomes)
 	bus := events.New()
 	taskSvc := service.NewTaskService(queries, testPool, nil, bus)
 
@@ -151,7 +149,7 @@ func TestQuickCreateFailure_SurfacesAgentOutput(t *testing.T) {
 		t.Fatalf("CompleteTask: %v", err)
 	}
 
-	body, errDetail, _ := requireQuickCreateOutcomeInbox(t, task.ID, "quick_create_failed")
+	body, errDetail, _ := requireSuppressedQuickCreateOutcome(t, outcomes, task.ID, "quick_create_failed")
 
 	if !strings.Contains(errDetail, "JKY-30") {
 		t.Fatalf("expected failure detail to carry the agent's real error, got %q", errDetail)
@@ -164,16 +162,12 @@ func TestQuickCreateFailure_SurfacesAgentOutput(t *testing.T) {
 	}
 }
 
-// TestQuickCreateLookupFault_WritesUnconfirmedInbox is the regression for the
-// silent-drop path: when the completion lookup itself faults (transient DB
-// error rather than pgx.ErrNoRows), the task is already completed and nothing
-// re-runs this reconciliation. Returning without writing would strand the
-// requester with NO inbox result at all. The run must still end with a
-// terminal notification — and one that does NOT assert a failure we never
-// observed, nor reuse the agent's output as if it were the confirmed reason.
-func TestQuickCreateLookupFault_WritesUnconfirmedInbox(t *testing.T) {
+// Lookup failure must retain the neutral outcome, never claim a confirmed
+// failure from unverified agent output, and must not undo task completion.
+func TestQuickCreateLookupFault_SuppressesUnconfirmedInbox(t *testing.T) {
 	ctx := context.Background()
-	queries := db.New(testPool)
+	outcomes := &quickCreateOutcomeDB{DBTX: testPool}
+	queries := db.New(outcomes)
 	bus := events.New()
 	taskSvc := service.NewTaskService(queries, testPool, nil, bus)
 
@@ -217,10 +211,10 @@ func TestQuickCreateLookupFault_WritesUnconfirmedInbox(t *testing.T) {
 
 	// Completion runs against a Queries whose origin lookup always faults. The
 	// completion transaction is unaffected (runInTx binds queries to the tx),
-	// and the inbox write still goes to the real pool — so a missing inbox row
-	// can only mean the code dropped the notification.
+	// and the captured notification payload still reaches the real database
+	// filter. Suppression must not change the neutral wording.
 	faulting := service.NewTaskService(
-		db.New(failGetIssueByOriginDB{DBTX: testPool, err: errors.New("simulated transient db fault")}),
+		db.New(failGetIssueByOriginDB{DBTX: outcomes, err: errors.New("simulated transient db fault")}),
 		testPool, nil, bus,
 	)
 
@@ -233,7 +227,7 @@ func TestQuickCreateLookupFault_WritesUnconfirmedInbox(t *testing.T) {
 		t.Fatalf("CompleteTask: %v", err)
 	}
 
-	body, errDetail, title := requireQuickCreateOutcomeInbox(t, task.ID, "quick_create_unconfirmed")
+	body, errDetail, title := requireSuppressedQuickCreateOutcome(t, outcomes, task.ID, "quick_create_unconfirmed")
 
 	if !strings.Contains(body, "Couldn't confirm") {
 		t.Fatalf("expected the neutral unconfirmed wording, got body %q", body)
@@ -250,11 +244,12 @@ func TestQuickCreateLookupFault_WritesUnconfirmedInbox(t *testing.T) {
 
 // TestQuickCreateFailure_RedactsAgentOutput locks in that the newly-surfaced
 // data source (the agent's final output) is scrubbed before it is stored on the
-// inbox row. Agent output is untrusted text that can contain whatever the run
-// echoed, so credentials must never land in the notification.
+// notification boundary. Agent output is untrusted text that can contain whatever the run
+// echoed, so credentials must be scrubbed even when the inbox type is suppressed.
 func TestQuickCreateFailure_RedactsAgentOutput(t *testing.T) {
 	ctx := context.Background()
-	queries := db.New(testPool)
+	outcomes := &quickCreateOutcomeDB{DBTX: testPool}
+	queries := db.New(outcomes)
 	bus := events.New()
 	taskSvc := service.NewTaskService(queries, testPool, nil, bus)
 
@@ -305,25 +300,22 @@ func TestQuickCreateFailure_RedactsAgentOutput(t *testing.T) {
 		t.Fatalf("CompleteTask: %v", err)
 	}
 
-	body, errDetail, _ := requireQuickCreateOutcomeInbox(t, task.ID, "quick_create_failed")
+	body, errDetail, _ := requireSuppressedQuickCreateOutcome(t, outcomes, task.ID, "quick_create_failed")
 
 	if strings.Contains(body, fakeToken) || strings.Contains(errDetail, fakeToken) {
-		t.Fatal("agent output reached the inbox row unredacted")
+		t.Fatal("agent output reached the notification boundary unredacted")
 	}
 	if !strings.Contains(body, "[REDACTED GITHUB TOKEN]") {
 		t.Fatalf("expected the token to be replaced by a redaction placeholder, got %q", body)
 	}
 }
 
-// TestQuickCreateLookupCancelled_StillWritesUnconfirmedInbox covers the
-// cancel/timeout shape of the lookup fault, which the plain-error case cannot:
-// when GetIssueByOrigin fails because the caller's context was cancelled or
-// timed out, reusing that same context for the notification write would fail it
-// for the identical reason and leave the user with nothing. The terminal write
-// must be detached from the caller's cancellation.
-func TestQuickCreateLookupCancelled_StillWritesUnconfirmedInbox(t *testing.T) {
+// Cancellation during reconciliation must not leak into the terminal outcome
+// write, even though the current inbox policy suppresses that row.
+func TestQuickCreateLookupCancelled_SuppressesUnconfirmedInbox(t *testing.T) {
 	setupCtx := context.Background()
-	queries := db.New(testPool)
+	outcomes := &quickCreateOutcomeDB{DBTX: testPool}
+	queries := db.New(outcomes)
 	bus := events.New()
 	taskSvc := service.NewTaskService(queries, testPool, nil, bus)
 
@@ -370,7 +362,7 @@ func TestQuickCreateLookupCancelled_StillWritesUnconfirmedInbox(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	faulting := service.NewTaskService(
-		db.New(cancelOnGetIssueByOriginDB{DBTX: testPool, cancel: cancel}),
+		db.New(cancelOnGetIssueByOriginDB{DBTX: outcomes, cancel: cancel}),
 		testPool, nil, bus,
 	)
 
@@ -382,34 +374,59 @@ func TestQuickCreateLookupCancelled_StillWritesUnconfirmedInbox(t *testing.T) {
 		t.Fatal("test setup is wrong: the context should have been cancelled during the lookup")
 	}
 
-	body, _, _ := requireQuickCreateOutcomeInbox(t, task.ID, "quick_create_unconfirmed")
+	body, _, _ := requireSuppressedQuickCreateOutcome(t, outcomes, task.ID, "quick_create_unconfirmed")
 	if !strings.Contains(body, "Couldn't confirm") {
 		t.Fatalf("expected the neutral unconfirmed wording, got %q", body)
 	}
 }
 
-// requireQuickCreateOutcomeInbox returns (body, details.error, title) for the
-// quick-create outcome notification of the given type belonging to taskID,
-// failing the test when none exists. Scoping by task id keeps
-// concurrent/ordering-sensitive cases from reading a sibling test's row; the
-// type is asserted because the failed and unconfirmed outcomes must never
-// collapse into one another (clients frame them differently).
-func requireQuickCreateOutcomeInbox(t *testing.T, taskID pgtype.UUID, inboxType string) (string, string, string) {
-	t.Helper()
-	var body, errDetail, title string
-	err := testPool.QueryRow(context.Background(), `
-		SELECT COALESCE(body, ''), COALESCE(details->>'error', ''), title
-		FROM inbox_item
-		WHERE recipient_type = 'member' AND recipient_id = $1
-		  AND type = $3
-		  AND details->>'task_id' = $2::text
-		ORDER BY created_at DESC
-		LIMIT 1
-	`, testUserID, taskID, inboxType).Scan(&body, &errDetail, &title)
-	if err != nil {
-		t.Fatalf("expected a %s notification for the task, got none: %v", inboxType, err)
+// quickCreateOutcomeDB records the actual serialized outcome before forwarding
+// it to Postgres, where the inbox allowlist suppresses quick-create rows. This
+// keeps the neutral-wording, redaction and detached-context boundary covered.
+type quickCreateOutcomeDB struct {
+	db.DBTX
+	outcomes []struct {
+		kind, body, title string
+		details           []byte
+		contextErr        error
 	}
-	return body, errDetail, title
+}
+
+func (d *quickCreateOutcomeDB) QueryRow(ctx context.Context, query string, args ...any) pgx.Row {
+	if strings.Contains(query, "name: CreateInboxItem") {
+		d.outcomes = append(d.outcomes, struct {
+			kind, body, title string
+			details           []byte
+			contextErr        error
+		}{args[3].(string), args[7].(pgtype.Text).String, args[6].(string), args[10].([]byte), ctx.Err()})
+	}
+	return d.DBTX.QueryRow(ctx, query, args...)
+}
+
+func requireSuppressedQuickCreateOutcome(t *testing.T, outcomes *quickCreateOutcomeDB, taskID pgtype.UUID, kind string) (string, string, string) {
+	t.Helper()
+	if len(outcomes.outcomes) != 1 || outcomes.outcomes[0].kind != kind {
+		t.Fatalf("outcomes = %+v, want one %s attempt", outcomes.outcomes, kind)
+	}
+	outcome := outcomes.outcomes[0]
+	if outcome.contextErr != nil {
+		t.Fatalf("terminal outcome inherited cancelled request: %v", outcome.contextErr)
+	}
+	var count int
+	if err := testPool.QueryRow(context.Background(), `SELECT count(*) FROM inbox_item WHERE details->>'task_id' = $1::text`, taskID).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("quick-create inbox rows = %d, error = %v", count, err)
+	}
+	var status string
+	if err := testPool.QueryRow(context.Background(), `SELECT status FROM agent_task_queue WHERE id = $1`, taskID).Scan(&status); err != nil || status != "completed" {
+		t.Fatalf("task status = %q, error = %v", status, err)
+	}
+	var details struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(outcome.details, &details); err != nil {
+		t.Fatal(err)
+	}
+	return outcome.body, details.Error, outcome.title
 }
 
 func deleteInboxForTask(taskID pgtype.UUID) {
@@ -420,7 +437,7 @@ func deleteInboxForTask(taskID pgtype.UUID) {
 // failGetIssueByOriginDB delegates every statement to the real pool except the
 // quick-create completion lookup, which it fails with a non-ErrNoRows error to
 // simulate a transient DB fault on exactly that query. Everything else —
-// including the inbox write the assertion depends on — still hits the real DB.
+// including the captured inbox write — still hits the real DB.
 type failGetIssueByOriginDB struct {
 	db.DBTX
 	err error
