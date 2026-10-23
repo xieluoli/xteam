@@ -133,6 +133,7 @@ func fullyPopulatedIssue(t *testing.T) db.Issue {
 		WorkspaceID:    parseUUID("22222222-2222-2222-2222-222222222222"),
 		Number:         42,
 		Title:          "Fix login",
+		Conclusion:     "Login now works",
 		Description:    pgtype.Text{String: "details", Valid: true},
 		Status:         "todo",
 		Priority:       "high",

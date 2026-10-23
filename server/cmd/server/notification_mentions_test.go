@@ -1,18 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/multica-ai/multica/server/internal/events"
 	"github.com/multica-ai/multica/server/internal/handler"
 	"github.com/multica-ai/multica/server/internal/testutil"
-	"github.com/multica-ai/multica/server/internal/util"
 	db "github.com/multica-ai/multica/server/pkg/db/generated"
 	"github.com/multica-ai/multica/server/pkg/protocol"
 )
 
-func TestNotification_MalformedMemberMentionPreservesValidRecipients(t *testing.T) {
+func TestNotification_MalformedMemberMentionDoesNotCreateInbox(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
 		mentionAll bool
@@ -75,26 +73,11 @@ func TestNotification_MalformedMemberMentionPreservesValidRecipients(t *testing.
 				},
 			})
 
-			items := inboxItemsForRecipient(t, queries, recipientID)
-			if len(items) != 1 {
-				t.Fatalf("valid recipient got %d inbox items, want 1", len(items))
+			if count := fx.Count(t, `SELECT count(*) FROM inbox_item WHERE issue_id = $1`, issueID); count != 0 {
+				t.Fatalf("member mention created %d inbox items, want zero", count)
 			}
-			if items[0].Type != "mentioned" || util.UUIDToString(items[0].IssueID) != issueID {
-				t.Fatalf("unexpected mention inbox item: %+v", items[0])
-			}
-			var details map[string]string
-			if err := json.Unmarshal(items[0].Details, &details); err != nil || details["comment_id"] != commentID {
-				t.Fatalf("mention details = %s, error = %v; want comment_id %s", items[0].Details, err, commentID)
-			}
-			if count := fx.Count(t, `SELECT count(*) FROM inbox_item WHERE issue_id = $1`, issueID); count != 1 {
-				t.Fatalf("issue has %d inbox items, want only the valid, unmuted recipient", count)
-			}
-			if len(inboxEvents) != 1 {
-				t.Fatalf("got %d inbox:new events, want 1", len(inboxEvents))
-			}
-			item := inboxEvents[0].Payload.(map[string]any)["item"].(map[string]any)
-			if item["recipient_id"] != recipientID || item["type"] != "mentioned" || item["issue_status"] != "todo" {
-				t.Fatalf("unexpected inbox:new item: %+v", item)
+			if len(inboxEvents) != 0 {
+				t.Fatalf("got %d inbox:new events for a suppressed member mention", len(inboxEvents))
 			}
 		})
 	}

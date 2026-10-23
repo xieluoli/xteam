@@ -4492,6 +4492,7 @@ func TestRunIssueListFieldsFiltersJSONOutput(t *testing.T) {
 		{"assignee pair", "assignee_type,assignee_id", []string{"assignee_type", "assignee_id"}},
 		{"single field", "identifier", []string{"identifier"}},
 		{"description explicitly requested", "id,description", []string{"id", "description"}},
+		{"conclusion explicitly requested", "id,conclusion", []string{"id", "conclusion"}},
 		{"whitespace around names", " id , title ", []string{"id", "title"}},
 	}
 	for _, tc := range cases {
