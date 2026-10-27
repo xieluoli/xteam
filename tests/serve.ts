@@ -1,0 +1,10 @@
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { openDatabase, provisionUser } from '../server/store.js';
+import { createApp } from '../server/app.js';
+const path = join(mkdtempSync(join(tmpdir(), 'xteam-browser-')), 'test.db');
+const database = openDatabase(path);
+provisionUser(database, 'browser@example.com', 'browser-test-password');
+database.close();
+createApp({ database: path, origin: 'http://127.0.0.1:3199', secure: false }).listen(3199, '127.0.0.1');

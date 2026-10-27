@@ -1,58 +1,11 @@
-node_modules
-dist
-*.log
-.DS_Store
-.envrc
-
-# build outputs
-.turbo
-.next
-out
-build
-bin
-*.tsbuildinfo
-# env
-.env*
-!.env.example
-# test coverage
-coverage
-
-# Go
-server/bin/
-server/tmp/
-server/migrate
-server/daemon
-server/multica
-
-# Test artifacts
-test-results/
-apps/web/test-results/
-
-# context (agent workspace)
-.context
-.agent_context/
-.multica/
-
-# local settings
-.claude/
-.tool-versions
-
-# feature tracking
-_features/
-
-# runtime
-*.pid
-
-# platform specific
-*.dmg
-*.app
-server/server
+node_modules/
+.local/
+dist/
 data/
-.kilo
-.idea
-.gstack/
+.env
+*.db*
+test-results/
+playwright-report/
 
-# Python (agent tooling)
-__pycache__/
-*.pyc
-perf-report/
+.DS_Store
+._*

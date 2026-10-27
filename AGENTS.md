@@ -1,117 +1,15 @@
-# Repository Instructions
+# XTEAM
 
-Multica is a task management platform where people and agents collaborate on issues. These instructions apply to all coding agents working in this repository.
+Independent MIT implementation of a single shared team resource space. Do not copy Multica source or introduce its packages.
 
-## Scope and Reading Order
+- `server/`: Express, SQLite, authentication, shared resource service, MCP. Web and MCP must share the same resource rules.
+- `web/`: React UI. Keep resource content as plain text; never execute templates or skills.
+- `scripts/`: server-admin account management and consistent SQLite backup.
+- `tests/`: Node integration tests and browser acceptance tests.
+- `docs/`: approved scope, operations, and delivery evidence.
 
-- For naming, translations, or Chinese UI/docs copy, read [conventions.mdx](apps/docs/content/docs/developers/conventions.mdx) and [conventions.zh.mdx](apps/docs/content/docs/developers/conventions.zh.mdx).
-- Maintain repository rules here. `CLAUDE.md` files only import them. Update instructions in the same change that alters the referenced workflow or boundary; do not add incident timelines, dependency version lists, or duplicate rules.
+Run `pnpm test`, `pnpm build`, `pnpm test:e2e`. Tests use temporary databases and never production accounts. No real AI execution or paid model calls in default tests.
 
-## Sharing Rules and Package Boundaries
+Keep secrets, data, local archives and credentials outside Git. Preserve old database volumes and Git history. Do not restore old routes/engines, add dependencies, deploy or push without authorization.
 
-| Location | Responsibility and constraints |
-| --- | --- |
-| `server/` | Go backend; Chi, sqlc, WebSocket |
-| `packages/core/` | Headless logic, API client, Query hooks, shared Zustand stores. No UI libraries, `react-dom`, `localStorage`, or `process.env`; use `StorageAdapter` for persistence. |
-| `packages/ui/` | UI primitives and shared styles. No business logic or `@multica/core` imports. |
-| `packages/views/` | Web pages and business components. No store definitions, `next/*`, or `react-router-dom`; use `NavigationAdapter`, `useNavigation()`, and `<AppLink>`. |
-| `apps/web/` | Next.js routes/layouts and web-only UI. Framework APIs stay here; shared navigation adapters live in `apps/web/platform/`. |
-| `apps/docs/` | Fumadocs documentation site |
-
-- Dependency direction is `views -> core + ui`; core and ui remain independent. Shared packages export raw TypeScript compiled by consuming apps.
-- Keep reusable logic in the appropriate shared package and Next.js APIs in the app layer.
-- Wire shared features into web routes. Reuse existing guards/providers such as `DashboardGuard` in `packages/views/layout/`.
-- Each workspace declares its directly imported external dependencies. Use `catalog:` for shared dependencies.
-
-## Development and Verification
-
-This checkout is web-only: `apps/desktop/` and `apps/mobile/` are removed. Do not recreate client-specific build, release, or development entry points; retain the backend, CLI, and daemon execution engine. OS-installed software, daemon state, and personal data are outside this source cleanup.
-
-Use `Makefile`, workspace `package.json` files, and `pnpm-workspace.yaml` for current commands and versions. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and worktree operations.
-
-- Use the checkout's managed environment: `make up`, `make status`, `make down`. `make down` preserves data; `make destroy` removes the environment and its data.
-- Worktrees share PostgreSQL but have isolated databases/ports. Use the environment scripts and `.env.worktree`; do not copy the main checkout's `.env` or manually create a database through an assumed PostgreSQL instance.
-- Regenerate sqlc with `make sqlc` after SQL changes.
-- Run the narrowest useful checks while iterating, then broaden when risk warrants it. Report what actually ran and any skipped checks.
-
-Run these from the repository root:
-
-| Scope | Checks |
-| --- | --- |
-| Frontend | `pnpm typecheck`, `pnpm lint`, `pnpm test` |
-| Go backend | `make test` |
-| End-to-end | `pnpm exec playwright test` |
-| Combined web/backend verification | `make check` |
-
-Docs-only changes can use link/reference checks and `git diff --check`; state that code tests were not run.
-
-## State Rules
-
-- TanStack Query owns API/server data. Zustand owns client state such as filters, drafts, modals, and tab layout; persist only durable preferences/drafts/layout, not server data or ephemeral UI state.
-- Shared web stores live in `packages/core/`. Do not define stores in `packages/views/`.
-- On web, workspace identity is route-driven; platform mirrors exist only for request headers, storage namespaces, and reconnects. React Context is for platform plumbing, not a second server-state store.
-- Among stores, only auth/workspace stores may call `api.*` directly; other server interactions belong in queries/mutations.
-- Workspace-scoped query keys include `wsId`; account-level keys remain account-scoped. Hooks needing workspace context accept `wsId` unless guaranteed to run under its provider.
-- Zustand selectors return stable references; use shallow comparison for allocated objects/arrays.
-- WebSocket events patch or invalidate Query caches, not server payloads in Zustand. Clearing client-owned pointers is allowed with one responder and a self-initiated guard when this client can cause the event.
-- Optimistic field patches require a predictable result, rare failure, trivial rollback, and staying on the current screen. Snapshot before patching, roll back on failure, and invalidate uncertain projections on settle.
-- Create/delete/leave and confirmation flows await the server before navigation or cleanup; do not optimistically delete entities.
-- Message sends use visible pending state and retry on failure.
-
-## API Compatibility
-
-Preserve response compatibility at the API boundary; the Go backend and execution engine remain supported.
-
-- UI-consumed JSON passes through a zod schema and `parseWithFallback`, not an `as T` cast. Use `packages/core/api/schema.ts`.
-- Provide defaults for optional fields and fallbacks for unknown server enums. Prefer explicit boolean checks; avoid tying critical affordances to a single backend flag when other contract signals are available.
-- When adding/changing an endpoint, update its schema and malformed-response tests.
-
-## Database and Migration Rules
-
-- Do not add foreign keys, cascading deletes, or cascading updates. Validate relationships and clean up dependents in application code, using a transaction when the operation must be atomic.
-- Every migration-created index, including indexes on new tables, uses `CREATE [UNIQUE] INDEX CONCURRENTLY`. Each concurrent index build gets its own single-statement migration file; the runner executes files outside an explicit transaction.
-- Conditionally skipped migrations are still recorded in `schema_migrations`. Later DDL touching conditional objects must be idempotent (`IF EXISTS` / `IF NOT EXISTS`); document recovery if the missing object would break runtime behavior.
-
-## Backend UUID Rules
-
-In `server/internal/handler/`, distinguish UUID sources before using them in writes:
-
-- UUID-or-human-readable resource params: resolve with loaders such as `loadIssueForUser`, `loadSkillForUser`, `loadAgentForUser`, or `requireDaemonRuntimeAccess`, then write using the resolved `entity.ID`.
-- Pure UUID request input: `parseUUIDOrBadRequest(w, s, fieldName)`; return immediately when `ok=false`.
-- Trusted sqlc/test-fixture round-trips: `parseUUID(s)`, which panics on invalid input.
-- Outside handlers: `util.ParseUUID(s)` and check the error.
-
-Workspace-scoped queries filter by `workspace_id`; membership gates access and `X-Workspace-ID` selects the workspace. Assignees are polymorphic: interpret `assignee_id` together with `assignee_type`.
-
-## UI Copy
-
-- Descriptions are optional and omitted by default. Do not restate titles, labels, values, statuses, or button actions. Add help only for a non-obvious choice, constraint, consequence, or next step; state each fact once beside the relevant control.
-- Keep permissions, cost, destructive consequences, execution prerequisites, and error recovery visible when relevant. Put advanced usage and diagnostics in accessible, explicit help. Preserve labels and accessible names; do not move redundant prose wholesale into `sr-only` text.
-- Review copy with its surrounding controls and all supported translations. Follow the UI copy rules in the existing conventions pages; a description prop is not a requirement to write a paragraph.
-
-## Web UI Rules
-
-- For Button and Dialog usage, read `packages/ui/docs/button.md` and `packages/ui/docs/dialog.md`. These component contracts also power UI Lab documentation.
-
-- Prefer existing shadcn/Base UI primitives. Add components with `pnpm ui:add <component>`.
-- For `pnpm ui:add @reui/<name>`, decline overwrite prompts. Keep `REUI_LICENSE_KEY` in the environment, never in repo files. Adapt vendored primitives into `packages/ui/components/ui/` and compositions into `packages/views/`.
-- Use shared semantic tokens in `packages/ui/styles/`. Typography uses the role-named `--text-*` scale in `packages/ui/styles/tokens.css`, not Tailwind's default size ramp.
-- Selected states remain identifiable on hover. Handle overflow, long text, and scrolling deliberately; avoid unnecessary local state and dividers.
-
-## Testing
-
-- Tests live beside their implementation: shared logic in core, shared components in views, platform wiring in apps, E2E in `e2e/`, Go tests in server. Do not test shared behavior in app suites.
-- Give each behavior one canonical test layer: helper tests own parsing/state matrices; component tests cover wiring, accessibility, happy paths, and named regressions. Prefer a failing regression test before behavioral fixes.
-- DOM-free `.test.ts` files start with `// @vitest-environment node`; do not use it if it would silently switch the code under test to an SSR path.
-- Views tests must not mock `next/*` or `react-router-dom`. Mock stores with their Zustand callable shape plus `getState`; mock API calls at `@multica/core/api`.
-- E2E setup/teardown uses `TestApiClient`.
-- DB-backed Go tests use `server/internal/testutil` fixtures (`dbfx.Issue`, `dbfx.Task`, `dbfx.Insert`) and `testutil.Call(h, req).Want(status).JSON(&out)`. Keep product assertions and case-specific diagnostics in the test, not fixture helpers.
-- Default tests must not resolve or execute user-installed agent CLIs; pass test-created fake or missing executable paths. New default agent commands go in `scripts/agent-cli-command-names.txt`.
-- Only run real-agent smoke tests when explicitly authorized. Gate them behind `agentintegration` and check `MULTICA_RUN_REAL_AGENT_SMOKE=1` before executable lookup/account access. Run the specific test: `(cd server && MULTICA_RUN_REAL_AGENT_SMOKE=1 go test -tags=agentintegration ./pkg/agent -run '<test-name>' -count=1 -v)`.
-
-## Change and Delivery Rules
-
-- Keep changes scoped; reuse existing patterns. Code comments are English.
-- Do not add internal compatibility shims, dual writes, fallback paths, or legacy adapters unless requested. This does not relax API response compatibility above.
-- New global pre-workspace routes use a single word or `/{noun}/{verb}`, not hyphenated root names. Update `server/internal/handler/reserved_slugs.json`, run `pnpm generate:reserved-slugs`, and commit `packages/core/paths/reserved-slugs.ts` when changing reserved slugs.
-- Use atomic conventional commits and the repository PR template. For releases, follow [.github/RELEASING.md](.github/RELEASING.md); default to a patch bump unless specified otherwise.
+Use TDD for behavior changes. Follow the existing simple code style, clean up only code made obsolete by the change, and verify before reporting completion.

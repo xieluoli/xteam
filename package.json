@@ -1,51 +1,42 @@
 {
-  "name": "multica",
-  "version": "0.2.0",
+  "name": "xteam",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev:web": "turbo dev --filter=@multica/web",
-    "dev:docs": "turbo dev --filter=@multica/docs",
-    "build": "turbo build",
-    "typecheck": "turbo typecheck",
-    "test": "turbo test",
-    "lint": "turbo lint",
-    "knip": "knip",
-    "check:ui-exports": "node scripts/check-ui-wildcard-exports.mjs",
-    "check:ui-radii": "node scripts/check-ui-radius-tokens.mjs",
-    "clean": "turbo clean && rm -rf node_modules",
-    "ui:add": "cd packages/ui && npx shadcn@latest add",
-    "generate:reserved-slugs": "node scripts/generate-reserved-slugs.mjs",
-    "dev:ui-lab": "pnpm --filter @multica/ui-lab dev"
-  },
+  "license": "MIT",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
-  "packageManager": "pnpm@10.28.2",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ],
-    "overrides": {
-      "@types/react": "catalog:",
-      "@types/react-dom": "catalog:",
-      "@xmldom/xmldom": "^0.8.13",
-      "postcss": "8.5.26",
-      "uuid": "11.1.1",
-      "shell-quote": "1.9.0",
-      "minimatch@3>brace-expansion": "1.1.18",
-      "minimatch@5>brace-expansion": "2.1.4",
-      "minimatch@9>brace-expansion": "2.1.4",
-      "minimatch@10>brace-expansion": "5.0.9"
-    }
+  "scripts": {
+    "dev": "tsx watch server/main.ts",
+    "build": "tsc --noEmit && vite build",
+    "start": "tsx server/main.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "admin": "tsx scripts/admin.ts",
+    "backup": "tsx scripts/backup.ts",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "better-sqlite3": "^13.0.3",
+    "express": "^5.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7",
+    "tsx": "^4.23.15"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
-    "@types/node": "catalog:",
-    "@types/pg": "^8.20.0",
-    "knip": "^6.32.2",
-    "pg": "^8.20.0",
-    "turbo": "^2.5.4",
-    "typescript": "catalog:"
-  }
+    "@modelcontextprotocol/inspector": "^2.12.0",
+    "@playwright/test": "^1.64.1",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  },
+  "packageManager": "pnpm@11.22.0"
 }
