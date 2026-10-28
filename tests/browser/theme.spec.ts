@@ -1,0 +1,76 @@
+import { test, expect } from '@playwright/test';
+
+test('Japan Blues reaches login and editable controls, including focus, hover and disabled states', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#90a1b9');
+    const login = page.getByRole('button', { name: '登录', exact: true });
+    await expect(login).toHaveCSS('background-color', 'oklch(0.704 0.04 256.788)');
+    await expect(login).toHaveCSS('border-radius', '5px');
+    await expect(login).not.toHaveCSS('box-shadow', 'none');
+    const email = page.getByLabel('邮箱', { exact: true });
+    await page.screenshot({ path: '.local/japan-blues-login.png', fullPage: true });
+    await email.focus();
+    await expect(email).toHaveCSS('border-color', 'oklch(0.554 0.046 257.417)');
+    await expect(email).not.toHaveCSS('box-shadow', 'none');
+    await login.hover();
+    await expect(login).not.toHaveCSS('background-color', 'oklch(0.704 0.04 256.788)');
+    await email.fill('browser@example.com');
+    await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
+    await login.click();
+    await page.getByRole('button', { name: '新建项目' }).click();
+    const modal = page.getByRole('dialog');
+    await expect(modal).toHaveCSS('background-color', 'oklch(1 0 0)');
+    await expect(modal).toHaveCSS('border-radius', '7px');
+    await expect(modal).not.toHaveCSS('box-shadow', 'none');
+    await page.getByLabel('名称', { exact: true }).fill('主题控件验证');
+    await page.getByRole('button', { name: '保存', exact: true }).click();
+    const card = page.locator('.card').filter({ has: page.getByRole('button', { name: '主题控件验证', exact: true }) });
+    await expect(card).toHaveCSS('background-color', 'oklch(0.9818 0.0054 95.0986)');
+    await expect(card).toHaveCSS('border-radius', '11px');
+    const selected = page.getByRole('link', { name: '项目', exact: true });
+    await expect(selected).toHaveCSS('background-color', 'oklch(0.869 0.022 252.894)');
+    await selected.hover();
+    await expect(selected).toHaveCSS('background-color', 'oklch(0.869 0.022 252.894)');
+    await page.getByRole('button', { name: '主题控件验证', exact: true }).click();
+    await page.getByRole('button', { name: '添加链接', exact: true }).click();
+    const selector = page.getByRole('combobox');
+    await expect(selector).toHaveCSS('border-radius', '5px');
+    await expect(selector).toHaveCSS('border-color', 'oklch(0.922 0 0)');
+    await page.screenshot({ path: '.local/japan-blues-controls.png', fullPage: true });
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: '添加 Todo', exact: true }).click();
+    await page.getByLabel('标题', { exact: true }).fill('主题复选框');
+    await page.getByRole('button', { name: '保存', exact: true }).click();
+    const checkbox = page.getByRole('checkbox', { name: '主题复选框' });
+    await checkbox.click();
+    await expect(checkbox).toBeChecked();
+    await expect(checkbox).toHaveCSS('background-color', 'oklch(0.704 0.04 256.788)');
+    await page.getByRole('button', { name: '添加 Todo', exact: true }).click();
+    await page.getByLabel('标题', { exact: true }).fill('Pending save');
+    let releaseRequest: () => void = () => {};
+    const pending = new Promise<void>(resolve => { releaseRequest = resolve; });
+    await page.route('**/api/todos', async route => { await pending; await route.continue(); });
+    await page.getByRole('button', { name: '保存', exact: true }).click();
+    const saving = page.getByRole('button', { name: '保存中…', exact: true });
+    await expect(saving).toBeDisabled();
+    await expect(saving).toHaveCSS('opacity', '0.5');
+    releaseRequest();
+    await expect(modal).toHaveCount(0);
+    for (const width of [1440, 390]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.screenshot({ path: `.local/japan-blues-project-${width}.png`, fullPage: true });
+        await page.getByRole('button', { name: '添加链接', exact: true }).click();
+        const heading = modal.getByRole('heading');
+        const cancel = modal.getByRole('button', { name: '取消', exact: true }).first();
+        const headingBox = (await heading.boundingBox())!;
+        const cancelBox = (await cancel.boundingBox())!;
+        expect(headingBox.x + headingBox.width).toBeLessThanOrEqual(cancelBox.x);
+        for (const field of await modal.locator('input,select').all()) {
+            const box = (await field.boundingBox())!;
+            expect(box.x).toBeGreaterThanOrEqual(0);
+            expect(box.x + box.width).toBeLessThanOrEqual(width);
+        }
+        await page.screenshot({ path: `.local/japan-blues-dialog-${width}.png`, fullPage: true });
+        await page.keyboard.press('Escape');
+    }
+});
