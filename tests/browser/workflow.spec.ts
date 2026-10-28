@@ -5,7 +5,7 @@ test('member creates reusable resources, project context and a completed result 
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();
     await expect(page.getByRole('heading', { name: '项目', exact: true })).toBeVisible();
-    for (const name of ['Agent 模板', 'Skill 库']) {
+    for (const name of ['Agent 模板']) {
         await page.getByRole('link', { name, exact: true }).click();
         await page.getByRole('button', { name: '新建', exact: true }).click();
         await page.getByLabel('名称', { exact: true }).fill('浏览器资源 ' + name);
@@ -39,8 +39,8 @@ test('member creates reusable resources, project context and a completed result 
     await page.getByLabel('令牌名称').fill('浏览器测试');
     await page.getByRole('button', { name: '创建令牌' }).click();
     await expect(page.getByLabel('新令牌')).toHaveValue(/^xt_/);
-    page.once('dialog', dialog => dialog.accept());
     await page.getByRole('button', { name: '撤销', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
     await expect(page.getByRole('button', { name: '撤销', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '退出登录' }).click();
     await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible();
@@ -51,7 +51,9 @@ test('failed saves retain drafts and small screens retain account actions', asyn
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();
+    await page.getByRole('button', { name: '切换侧边栏', exact: true }).click();
     await expect(page.getByRole('button', { name: '退出登录' })).toBeVisible();
+    await page.keyboard.press('Escape');
     await page.getByRole('button', { name: '新建项目' }).click();
     await page.getByLabel('名称', { exact: true }).fill('保留我的草稿');
     await page.route('**/api/projects', route => route.request().method() === 'POST' ? route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: '保存失败测试' }) }) : route.continue());

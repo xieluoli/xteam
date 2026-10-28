@@ -32,6 +32,11 @@ export function openDatabase(path: string) {
     CREATE INDEX IF NOT EXISTS links_project ON links(project_id);
     CREATE INDEX IF NOT EXISTS todos_project ON todos(project_id);
   `);
+    const columns = new Set((database.prepare('PRAGMA table_info(skills)').all() as { name: string }[]).map(column => column.name));
+    for (const column of ['source_url', 'source_type', 'created_at', 'created_by', 'updated_by'])
+        if (!columns.has(column)) database.exec(`ALTER TABLE skills ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
+    if (!columns.has('labels')) database.exec("ALTER TABLE skills ADD COLUMN labels TEXT NOT NULL DEFAULT '[]'");
+    database.exec('CREATE TABLE IF NOT EXISTS skill_files (skill_id TEXT NOT NULL, path TEXT NOT NULL, content TEXT NOT NULL, PRIMARY KEY(skill_id,path))');
     return database;
 }
 export function provisionUser(database: Database.Database, email: string, password: string) {

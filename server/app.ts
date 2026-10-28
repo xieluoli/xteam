@@ -3,6 +3,8 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { openDatabase, hashToken, passwordHash, passwordMatches } from './store.js';
 import { resources, resourceKinds, ResourceError } from './resources.js';
+import { skills } from './skills.js';
+import type { SkillFetch } from './skill-source.js';
 import { attachMcp } from './mcp.js';
 type Member = {
     id: string;
@@ -17,6 +19,7 @@ export function createApp(options: {
     database: string;
     origin: string;
     secure?: boolean;
+    skillFetch?: SkillFetch;
 }) {
     const database = openDatabase(options.database);
     const app = express();
@@ -26,7 +29,7 @@ export function createApp(options: {
         response.set({ 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'self'; style-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" });
         next();
     });
-    app.use(express.json({ limit: '256kb' }));
+    app.use(express.json({ limit: '2mb' }));
     app.get('/health', (_request, response) => response.json({ ok: true, version: process.env.XTEAM_VERSION ?? 'development' }));
     const attempts = new Map<string, {
         count: number;
@@ -110,6 +113,16 @@ export function createApp(options: {
     });
     const service = resources(database);
     app.get('/api/projects/:id/context', (request, response) => response.json(service.context(String(request.params.id))));
+    const skillService = skills(database, options.skillFetch);
+    app.post('/api/skills/import', async (request, response) => { const result = await skillService.importUrl(request.body, response.locals.member.id); response.status(result.status === 'conflict' ? 409 : result.status === 'created' ? 201 : 200).json(result); });
+    app.get('/api/skills', (request, response) => response.json(skillService.list(typeof request.query.q === 'string' ? request.query.q : '')));
+    app.post('/api/skills', () => { throw new ResourceError('新增 Skill 仅支持 URL 导入，请使用 /api/skills/import'); });
+    app.get('/api/skills/:id', (request, response) => response.json(skillService.get(String(request.params.id))));
+    app.patch('/api/skills/:id', (request, response) => response.json(skillService.update(String(request.params.id), request.body, response.locals.member.id)));
+    app.delete('/api/skills/:id', (request, response) => response.json(skillService.remove(String(request.params.id))));
+    app.post('/api/skills/:id/refresh', async (request, response) => response.json(await skillService.refresh(String(request.params.id), response.locals.member.id)));
+    app.put('/api/skills/:id/files', (request, response) => response.json(skillService.file(String(request.params.id), String(request.body.path ?? ''), request.body.content, response.locals.member.id)));
+    app.delete('/api/skills/:id/files', (request, response) => response.json(skillService.file(String(request.params.id), String(request.body.path ?? ''), undefined, response.locals.member.id, true)));
     for (const kind of resourceKinds) {
         app.get(`/api/${kind}`, (request, response) => response.json(service.list(kind, typeof request.query.q === 'string' ? request.query.q : '', typeof request.query.project_id === 'string' ? request.query.project_id : undefined)));
         app.get(`/api/${kind}/:id`, (request, response) => response.json(service.get(kind, String(request.params.id))));
@@ -133,7 +146,7 @@ export function createApp(options: {
             throw new ResourceError('令牌不存在', 404);
         response.json({ ok: true });
     });
-    attachMcp(app, database, options.origin);
+    attachMcp(app, database, options.origin, options.skillFetch);
     app.use(express.static(resolve('dist')));
     app.get('/{*path}', (request, response, next) => { if (request.path.startsWith('/api/') || request.path === '/mcp') {
         next();
