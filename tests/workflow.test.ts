@@ -36,7 +36,7 @@ test('members share CRUD, context and persisted results without cross-project de
     const context = await fixture();
     try {
         const request = await context.login();
-        for (const entity of ['agents', 'skills']) {
+        for (const entity of ['agents']) {
             const created = await request('/api/' + entity, 'POST', { name: 'Writer', description: 'Team resource', content: '# Instructions' });
             assert.equal(created.status, 201);
             assert.equal((await request(`/api/${entity}?q=absent`)).data.length, 0);

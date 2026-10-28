@@ -1,0 +1,65 @@
+@layer theme, base, legacy, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "tw-animate-css";
+@source "./components";
+@source "./skills.tsx";
+@source "./main.tsx";
+@source "./hooks";
+
+@custom-variant dark (&:is(.dark *));
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Theme tokens are shared by all shadcn controls and body-level portals. */
+@layer components {
+    :where([data-slot]) { border: 0 solid var(--border); box-sizing: border-box; }
+    :where(button[data-slot], input[data-slot], textarea[data-slot]) {
+        margin: 0; font: inherit; background: transparent; padding: 0;
+        border-radius: 0; box-shadow: none; color: inherit; outline: none;
+    }
+    :where([data-slot="button"], [data-slot="select-trigger"], [data-slot="tabs-trigger"], [data-slot="checkbox"]) {
+        width: auto; min-width: 0; font-size: 0.875rem; line-height: 1.25rem;
+    }
+    :where([data-slot="alert-dialog-content"], [data-slot="sheet-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="dialog-content"]) {
+        color: var(--foreground); font-family: var(--font-sans); font-size: 0.875rem; line-height: 1.5;
+    }
+    :where([data-slot="sidebar-menu"]) { list-style: none; margin: 0; padding: 0; }
+    :where([data-slot="sidebar-menu-button"]) { text-decoration: none; }
+    :where([data-slot="sidebar-menu-button"]:hover) { text-decoration: none; }
+    :where([data-slot] svg) { display: block; vertical-align: middle; }
+    :where([data-slot="dialog-header"] h2, [data-slot="dialog-header"] p) { margin: 0; }
+    :where([data-slot="select-item"], [data-slot="dropdown-menu-item"]) { text-decoration: none; }
+    :where([data-slot="select-item"]:hover, [data-slot="dropdown-menu-item"]:hover) { text-decoration: none; }
+}

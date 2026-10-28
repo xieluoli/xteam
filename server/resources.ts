@@ -1,14 +1,13 @@
 import type Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-export const resourceKinds = ['projects', 'agents', 'skills', 'links', 'todos'] as const;
+export const resourceKinds = ['projects', 'agents', 'links', 'todos'] as const;
 export type ResourceKind = typeof resourceKinds[number];
 const name = z.string().trim().min(1, '名称不能为空').max(200);
 const description = z.string().max(50000).default('');
 export const schemas = {
     projects: z.object({ name, description }),
     agents: z.object({ name, description, content: z.string().max(100000).default('') }),
-    skills: z.object({ name, description, content: z.string().max(100000).default('') }),
     links: z.object({ project_id: z.string().min(1), title: name, url: z.url().max(4000).refine(value => ['https:', 'http:'].includes(new URL(value).protocol), '仅支持 http/https 链接'), category: z.enum(['dingtalk', 'feishu', 'gitee', 'github', 'other']).default('other') }),
     todos: z.object({ project_id: z.string().min(1), title: name, description, completed: z.boolean().default(false) }),
 };

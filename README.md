@@ -20,6 +20,7 @@ pnpm start
 - [操作与部署](docs/operations.md)：配置、账号、备份恢复、容器及回滚。
 - [MCP 接入](docs/mcp.md)：令牌、客户端示例、工具及权限边界。
 - [功能与验收](docs/scope.md)：已批准范围与使用闭环。
+- [Skill 本地交付与联网限制](docs/skill-delivery.md)。
 - [开发规则](AGENTS.md)：目录与验证命令。
 - [MIT 许可证](LICENSE)。
 
