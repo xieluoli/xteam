@@ -25,10 +25,16 @@ export function resources(database: Database.Database) {
             throw new ResourceError('资源不存在或已删除', 404);
         return normalize(row);
     }
-    function list(kind: ResourceKind, query = '', projectId?: string) {
+    function list(kind: ResourceKind, query = '', projectId?: string, completed?: unknown) {
         const label = kind === 'links' || kind === 'todos' ? 'title' : 'name';
         const scoped = (kind === 'links' || kind === 'todos') && projectId !== undefined;
-        const rows = database.prepare(`SELECT * FROM ${kind} WHERE instr(lower(${label}),lower(?))>0 ${scoped ? 'AND project_id=?' : ''} ORDER BY updated_at DESC,id DESC`).all(...(scoped ? [query, projectId!] : [query])) as Record<string, unknown>[];
+        const filterCompleted = kind === 'todos' && completed !== undefined;
+        if (filterCompleted && completed !== true && completed !== false && completed !== 'true' && completed !== 'false')
+            throw new ResourceError('completed 必须为 true 或 false');
+        const values: (string | number)[] = [query];
+        if (scoped) values.push(projectId);
+        if (filterCompleted) values.push(Number(completed === true || completed === 'true'));
+        const rows = database.prepare(`SELECT * FROM ${kind} WHERE instr(lower(${label}),lower(?))>0 ${scoped ? 'AND project_id=?' : ''} ${filterCompleted ? 'AND completed=?' : ''} ORDER BY updated_at DESC,id DESC`).all(...values) as Record<string, unknown>[];
         return rows.map(normalize);
     }
     function save(kind: ResourceKind, input: unknown, id?: string) {
@@ -60,6 +66,6 @@ export function resources(database: Database.Database) {
         })();
         return { ok: true };
     }
-    const context = (id: string) => ({ project: get('projects', id), links: list('links', '', id), todos: list('todos', '', id) });
+    const context = (id: string, completed?: unknown) => ({ project: get('projects', id), links: list('links', '', id), todos: list('todos', '', id, completed) });
     return { get, list, save, update, remove, context };
 }

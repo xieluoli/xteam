@@ -31,6 +31,28 @@ Skill 使用独立的同一共享服务（网页与 MCP 同规则）：
 
 不再提供手动 `create_skill`；旧 HTTP 手动新增返回 400 并指向 URL 导入。标签通过 update_skill 的 labels 数组维护。来源导入会访问受限的公网 GitHub API，不执行远程文本。
 
-先 `list_projects` 获取稳定 ID，再 `get_project_context`。使用 `list_agents` / `list_skills` 找到资源并用 get 读取正文。在外部完成工作后，用 `update_todo` 写入 `description`（摘要/结果链接）和 `completed`。
+## 按需读取
+
+| 工具 | 可选筛选 | 默认与组合语义 |
+| --- | --- | --- |
+| `list_todos` | `completed`（布尔值） | 不传返回全部；`false` 仅未完成、`true` 仅已完成；可与 `project_id`、标题 `q` 同时使用 |
+| `get_project_context` | `completed`（布尔值） | 只筛选返回的 Todo，项目简介和链接保持完整；不传仍返回全部 Todo |
+| `list_skills` | `label`（单个标签） | 非空、最多 100 字符，去掉首尾空白后精确匹配；可组合名称 `q`；仅返回元数据 |
+
+网页 API 使用相同规则：`GET /api/todos?project_id=<项目ID>&completed=false`、`GET /api/projects/<项目ID>/context?completed=false` 和 `GET /api/skills?label=<已编码标签>&q=<已编码名称>`。HTTP `completed` 仅接受 `true` / `false` 字符串；空值、其他值或重复参数报错。MCP 传 JSON 布尔值。
+
+## 外部 agent 接续示例
+
+以下为工具参数示意，先取得真实 ID，再替换占位符：
+
+1. `list_projects`：`{"q":"项目名称"}`，找到稳定项目 ID。
+2. `get_project_context`：`{"id":"<项目ID>","completed":false}`，读取简介、链接及尚未完成的行动。
+3. `list_agents` 查找工作准则；`list_skills`：`{"q":"review","label":"研发"}`，按名称与实际已有标签找到方法，再用 `get_agent` / `get_skill` 的 `{"id":"<资源ID>"}` 读取正文及必要文本文件。
+4. 在外部完成工作后，`update_todo`：`{"id":"<Todo ID>","description":"已完成的内容、验证结果、交付链接与遗留问题","completed":true}`。`description` 会整体替换；补充进展时先读取并合并需要保留的既有说明，再回写新文本，省略 `completed` 可保留完成状态。
+5. `get_project_context`：`{"id":"<项目ID>","completed":true}` 查看已完成结果。网页项目详情点击“刷新项目”可看到外部回写，无需重新登录。
+
+网页 Todo 区可选择全部、未完成或已完成；总计仍表示整个项目。点击“复制项目上下文”导出纯文本 Markdown，包含项目简介、稳定 ID、链接和全部 Todo 的状态及说明/结果，供外部客户端阅读；网页显示筛选不截断这份复制内容。复制不抓取链接正文，也不包含 MCP 令牌。
+
+当前 Todo 仍只有未完成/已完成；未提供工作会话、心跳或 Token 采集，也没有实时推送。刷新项目是显式读取操作。
 
 删除工具是永久操作，客户端应确认用户意图；项目删除连同其链接、Todo 删除。文档 URL 不代表有第三方访问权限。MCP 不执行模板、脚本、命令，也不访问服务器文件。
