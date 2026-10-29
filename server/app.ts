@@ -112,10 +112,10 @@ export function createApp(options: {
         response.json({ ok: true });
     });
     const service = resources(database);
-    app.get('/api/projects/:id/context', (request, response) => response.json(service.context(String(request.params.id))));
+    app.get('/api/projects/:id/context', (request, response) => response.json(service.context(String(request.params.id), request.query.completed)));
     const skillService = skills(database, options.skillFetch);
     app.post('/api/skills/import', async (request, response) => { const result = await skillService.importUrl(request.body, response.locals.member.id); response.status(result.status === 'conflict' ? 409 : result.status === 'created' ? 201 : 200).json(result); });
-    app.get('/api/skills', (request, response) => response.json(skillService.list(typeof request.query.q === 'string' ? request.query.q : '')));
+    app.get('/api/skills', (request, response) => response.json(skillService.list(typeof request.query.q === 'string' ? request.query.q : '', request.query.label)));
     app.post('/api/skills', () => { throw new ResourceError('新增 Skill 仅支持 URL 导入，请使用 /api/skills/import'); });
     app.get('/api/skills/:id', (request, response) => response.json(skillService.get(String(request.params.id))));
     app.patch('/api/skills/:id', (request, response) => response.json(skillService.update(String(request.params.id), request.body, response.locals.member.id)));
@@ -124,7 +124,7 @@ export function createApp(options: {
     app.put('/api/skills/:id/files', (request, response) => response.json(skillService.file(String(request.params.id), String(request.body.path ?? ''), request.body.content, response.locals.member.id)));
     app.delete('/api/skills/:id/files', (request, response) => response.json(skillService.file(String(request.params.id), String(request.body.path ?? ''), undefined, response.locals.member.id, true)));
     for (const kind of resourceKinds) {
-        app.get(`/api/${kind}`, (request, response) => response.json(service.list(kind, typeof request.query.q === 'string' ? request.query.q : '', typeof request.query.project_id === 'string' ? request.query.project_id : undefined)));
+        app.get(`/api/${kind}`, (request, response) => response.json(service.list(kind, typeof request.query.q === 'string' ? request.query.q : '', typeof request.query.project_id === 'string' ? request.query.project_id : undefined, request.query.completed)));
         app.get(`/api/${kind}/:id`, (request, response) => response.json(service.get(kind, String(request.params.id))));
         app.post(`/api/${kind}`, (request, response) => response.status(201).json(service.save(kind, request.body)));
         app.patch(`/api/${kind}/:id`, (request, response) => response.json(service.update(kind, String(request.params.id), request.body)));

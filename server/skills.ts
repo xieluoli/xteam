@@ -30,8 +30,10 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
         if (!row) throw new ResourceError('Skill 不存在或已删除', 404);
         return { ...row, labels: JSON.parse(row.labels), files: database.prepare('SELECT path,content FROM skill_files WHERE skill_id=? ORDER BY path').all(id) as SkillFile[] };
     }
-    function list(query = '') {
-        return (database.prepare(`SELECT skills.id,skills.name,skills.description,skills.source_url,skills.source_type,skills.created_at,skills.created_by,skills.updated_by,skills.updated_at,skills.labels,creator.email AS created_by_email,editor.email AS updated_by_email,(SELECT count(*) + 1 FROM skill_files WHERE skill_id=skills.id) AS file_count FROM skills LEFT JOIN users creator ON creator.id=skills.created_by LEFT JOIN users editor ON editor.id=skills.updated_by WHERE instr(lower(skills.name),lower(?))>0 ORDER BY skills.updated_at DESC,skills.id DESC`).all(query) as (Record<string, unknown> & { labels: string })[]).map(row => ({ ...row, labels: JSON.parse(row.labels) }));
+    function list(query = '', label?: unknown) {
+        if (label !== undefined && (typeof label !== 'string' || !label.trim() || label.length > 100)) throw new ResourceError('label 需为 1–100 个字符的标签');
+        const values = label === undefined ? [query] : [query, (label as string).trim()];
+        return (database.prepare(`SELECT skills.id,skills.name,skills.description,skills.source_url,skills.source_type,skills.created_at,skills.created_by,skills.updated_by,skills.updated_at,skills.labels,creator.email AS created_by_email,editor.email AS updated_by_email,(SELECT count(*) + 1 FROM skill_files WHERE skill_id=skills.id) AS file_count FROM skills LEFT JOIN users creator ON creator.id=skills.created_by LEFT JOIN users editor ON editor.id=skills.updated_by WHERE instr(lower(skills.name),lower(?))>0 ${label === undefined ? '' : 'AND EXISTS (SELECT 1 FROM json_each(skills.labels) WHERE json_each.value=?)'} ORDER BY skills.updated_at DESC,skills.id DESC`).all(...values) as (Record<string, unknown> & { labels: string })[]).map(row => ({ ...row, labels: JSON.parse(row.labels) }));
     }
     function persist(skill: Skill) {
         contentFields(skill.content, skill.name, skill.description);
