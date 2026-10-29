@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { useEffect, useState, lazy, Suspense, type FormEvent } from 'react';
+import { useEffect, useRef, useState, lazy, Suspense, type FormEvent } from 'react';
 import './theme.css';
 import './style.css';
 import './themes.css';
@@ -59,6 +59,7 @@ function App() {
     const [query, setQuery] = useState('');
     const [sort, setSort] = useState('updated');
     const [lastRefreshed, setLastRefreshed] = useState('');
+    const contextRead = useRef({ projectId: null as string | null, version: 0 });
     const [context, setContext] = useState<{
         project: Entry;
         links: Entry[];
@@ -82,18 +83,20 @@ function App() {
     useEffect(() => { api('/me').then(value => { csrf = value.csrf; setUser(value.user); }).catch(() => { }).finally(() => setBooting(false)); }, []);
     useEffect(() => {
         let active = true;
+        const readVersion = ++contextRead.current.version;
+        contextRead.current.projectId = user && view === 'projects' ? projectId : null;
         if (!user || view === 'skills')
             return;
         setLoading(true);
         setError('');
         const load = view === 'mcp' ? api('/tokens') : view === 'projects' && projectId ? api(`/projects/${projectId}/context`) : api(`/${view}?q=${encodeURIComponent(query)}`);
-        load.then(value => { if (!active)
+        load.then(value => { if (!active || readVersion !== contextRead.current.version)
             return; if (view === 'mcp')
             setTokens(value);
         else if (view === 'projects' && projectId)
             { setContext(value); setLastRefreshed(new Date().toLocaleTimeString('zh-CN', { hour12: false })); }
         else
-            setItems(value); }).catch(error => { if (active)
+            setItems(value); }).catch(error => { if (active && readVersion === contextRead.current.version)
             setError(error.message); }).finally(() => { if (active)
             setLoading(false); });
         return () => { active = false; };
@@ -103,8 +106,13 @@ function App() {
         if (view === 'mcp')
             setTokens(await api('/tokens'));
         else if (view === 'projects' && projectId) {
-            setContext(await api(`/projects/${projectId}/context`));
-            setLastRefreshed(new Date().toLocaleTimeString('zh-CN', { hour12: false }));
+            if (contextRead.current.projectId !== projectId) return;
+            const readVersion = ++contextRead.current.version;
+            const value = await api(`/projects/${projectId}/context`);
+            if (readVersion === contextRead.current.version) {
+                setContext(value);
+                setLastRefreshed(new Date().toLocaleTimeString('zh-CN', { hour12: false }));
+            }
         }
         else
             setItems(await api(`/${view}?q=${encodeURIComponent(query)}`));
@@ -155,7 +163,7 @@ function App() {
         '## 关联链接', context.links.length ? context.links.map(link => `- ${link.title}：${link.url}`).join('\n') : '暂无链接',
         '## Todo', context.todos.length ? context.todos.map(todo => `- [${todo.completed ? 'x' : ' '}] ${todo.title}${todo.description ? '\n' + todo.description.split('\n').map(line => '  ' + line).join('\n') : ''}`).join('\n') : '暂无 Todo',
     ].join('\n\n') : '';
-    return <SidebarProvider><a className="skip-link" href="#main-content">跳到主要内容</a><AppSidebar view={view} email={user.email} navigate={navigate} password={() => setPasswordDialog(true)} logout={() => void act(async () => { await api('/logout', 'POST'); setUser(null); setNewToken(''); csrf = ''; })}/><SidebarInset className="min-w-0 bg-card"><header className="topbar"><SidebarTrigger aria-label="切换侧边栏"/><nav aria-label="当前位置" className="breadcrumb"><span>团队空间</span><span className="slash">/</span><a aria-label={'返回' + labels[view] + '列表'} href={'#' + view} onClick={event => { event.preventDefault(); navigate(view); }}>{labels[view]}</a>{projectId && <><span className="slash">/</span><span aria-current="page">{currentProject?.id === projectId ? currentProject.name : '项目详情'}</span></>}</nav><ThemeChoice/></header><div className="content" id="main-content" tabIndex={-1}>{error && <Alert variant="destructive"><AlertDescription>{error}<Button variant="ghost" size="sm" onClick={() => setError('')}>关闭提示</Button>{!projectId && <Button disabled={loading} onClick={() => setRefreshVersion(version => version + 1)}>重试</Button>}</AlertDescription></Alert>}{notice && !(view === 'projects' && projectId) && <Alert role="status"><AlertDescription>{notice}</AlertDescription></Alert>}
+    return <SidebarProvider><a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>跳到主要内容</a><AppSidebar view={view} email={user.email} navigate={navigate} password={() => setPasswordDialog(true)} logout={() => void act(async () => { await api('/logout', 'POST'); setUser(null); setNewToken(''); csrf = ''; })}/><SidebarInset className="min-w-0 bg-card"><header className="topbar"><SidebarTrigger aria-label="切换侧边栏"/><nav aria-label="当前位置" className="breadcrumb"><span>团队空间</span><span className="slash">/</span><a aria-label={'返回' + labels[view] + '列表'} href={'#' + view} onClick={event => { event.preventDefault(); navigate(view); }}>{labels[view]}</a>{projectId && <><span className="slash">/</span><span aria-current="page">{currentProject?.id === projectId ? currentProject.name : '项目详情'}</span></>}</nav><ThemeChoice/></header><div className="content" id="main-content" tabIndex={-1}>{error && <Alert variant="destructive"><AlertDescription>{error}<Button variant="ghost" size="sm" onClick={() => setError('')}>关闭提示</Button>{!projectId && <Button disabled={loading} onClick={() => setRefreshVersion(version => version + 1)}>重试</Button>}</AlertDescription></Alert>}{notice && !(view === 'projects' && projectId) && <Alert role="status"><AlertDescription>{notice}</AlertDescription></Alert>}
   {view === 'skills' && <Suspense fallback={<p>正在打开 Skill 库…</p>}><Skills api={api}/></Suspense> }
   {view !== 'mcp' && view !== 'skills' && !projectId && <>
     <div className="page-heading"><div><h1>{labels[view]}</h1><p className="muted">{view === 'projects' ? '把项目背景、资料和 Todo 放在一起。' : '可复制、可通过 MCP 读取的团队指令模板。'}</p></div><Button variant="default" onClick={() => setEditor({ kind: view, data: {} })}>{view === 'projects' ? '新建项目' : '新建'}</Button></div>

@@ -30,6 +30,6 @@
 
 ## 验证
 
-[主题及持久化](tests/browser/theme-switch.spec.ts)、[双主题响应式](tests/browser/theme-responsive.spec.ts)、[项目排序与刷新](tests/browser/project-layout.spec.ts)、[资源失败恢复](tests/browser/resource-states.spec.ts)，并保留原有[浏览器工作流](tests/browser/workflow.spec.ts)和[Skill 回归](tests/browser/skills.spec.ts)。
+[主题及持久化](tests/browser/theme-switch.spec.ts)、[双主题响应式](tests/browser/theme-responsive.spec.ts)、[项目排序与刷新](tests/browser/project-layout.spec.ts)、[资源失败恢复](tests/browser/resource-states.spec.ts)、[迟到响应与键盘草稿保护](tests/browser/release-regressions.spec.ts)，并保留原有[浏览器工作流](tests/browser/workflow.spec.ts)和[Skill 回归](tests/browser/skills.spec.ts)。
 
 运行 `pnpm test`、`pnpm build`、`pnpm test:e2e`。视觉证据使用临时测试数据；不为截图改动生产资源。
