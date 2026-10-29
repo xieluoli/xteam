@@ -35,7 +35,7 @@ test('shared sidebar supports mobile navigation and all editors use themed compo
     await expect(page.getByLabel('新令牌')).toHaveValue(/^xt_/);
     await page.getByRole('button', { name: '撤销', exact: true }).click();
     await expect(page.getByRole('alertdialog')).toContainText('立即不能访问');
-    await page.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '撤销令牌', exact: true }).click();
     await expect(page.getByRole('button', { name: '撤销', exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
@@ -82,7 +82,8 @@ test('desktop pages share the Sidebar and existing project, link, Todo, template
     await page.getByLabel('说明 / 结果', { exact: true }).fill('已更新的结果');
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await expect(page.getByText('已更新的结果', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: '删除项目', exact: true }).click();
+    await page.getByRole('button', { name: '更多项目操作' }).click();
+    await page.getByRole('menuitem', { name: '删除项目', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
     await expect(page.getByRole('heading', { name: '统一组件验收项目', exact: true })).toBeVisible();
     await page.getByRole('link', { name: 'Agent 模板', exact: true }).click();

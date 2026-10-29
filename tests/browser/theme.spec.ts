@@ -26,14 +26,14 @@ test('Japan Blues reaches login and editable controls, including focus, hover an
     await page.getByRole('button', { name: '保存', exact: true }).click();
     const card = page.locator('[data-slot=card]').filter({ has: page.getByRole('button', { name: '主题控件验证', exact: true }) });
     await expect(card).toHaveCSS('background-color', 'oklch(0.9818 0.0054 95.0986)');
-    await expect(card).toHaveCSS('border-radius', '11px');
+    await expect(card).toHaveCSS('border-radius', '0px');
     const selected = page.getByRole('link', { name: '项目', exact: true });
     await expect(selected).toHaveCSS('background-color', 'oklch(0.9245 0.0138 92.9892)');
     await selected.hover();
     await expect(selected).toHaveCSS('background-color', 'oklch(0.9245 0.0138 92.9892)');
     await page.getByRole('button', { name: '主题控件验证', exact: true }).click();
     await page.getByRole('button', { name: '添加链接', exact: true }).click();
-    const selector = page.getByRole('combobox');
+    const selector = page.getByRole('combobox', { name: '类别', exact: true });
     await expect(selector).toHaveCSS('border-radius', '5px');
     await expect(selector).toHaveCSS('border-color', 'oklch(0.922 0 0)');
     await page.screenshot({ path: '.local/japan-blues-controls.png', fullPage: true });
@@ -61,7 +61,7 @@ test('Japan Blues reaches login and editable controls, including focus, hover an
         await page.screenshot({ path: `.local/japan-blues-project-${width}.png`, fullPage: true });
         await page.getByRole('button', { name: '添加链接', exact: true }).click();
         const heading = modal.getByRole('heading');
-        const cancel = modal.getByRole('button', { name: '取消', exact: true }).first();
+        const cancel = modal.getByRole('button', { name: '关闭', exact: true });
         const headingBox = (await heading.boundingBox())!;
         const cancelBox = (await cancel.boundingBox())!;
         expect(headingBox.x + headingBox.width).toBeLessThanOrEqual(cancelBox.x);

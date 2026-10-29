@@ -78,12 +78,12 @@ test('conflicts, filter/sort and partial batch refresh retain individual failure
     await page.getByRole('checkbox', { name: '选择 writer', exact: true }).check();
     await page.getByRole('checkbox', { name: '选择 writer-2', exact: true }).check();
     await page.getByRole('button', { name: '更新所选', exact: true }).click();
-    await page.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '确认更新', exact: true }).click();
     await expect(page.getByRole('region', { name: '操作结果' })).toContainText('writer：已更新');
     await expect(page.getByRole('region', { name: '操作结果' })).toContainText('writer-2：失败');
     await expect(page.getByRole('link', { name: 'writer-2', exact: true })).toBeVisible();
     await page.getByRole('button', { name: '删除所选', exact: true }).click();
-    await page.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '删除 Skill', exact: true }).click();
     await expect(page.getByRole('link', { name: 'writer', exact: true })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'writer-2', exact: true })).toHaveCount(0);
     await expect(page.getByText('Add to agent', { exact: true })).toHaveCount(0);
@@ -119,10 +119,10 @@ test('row menu opens a new tab and single source update and deletion work from d
     const popup = await popupEvent;
     await expect(popup.getByRole('heading', { name: 'single', exact: true })).toBeVisible();
     await popup.getByRole('button', { name: '从来源更新', exact: true }).click();
-    await popup.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
+    await popup.getByRole('alertdialog').getByRole('button', { name: '确认更新', exact: true }).click();
     await expect(popup.getByRole('region', { name: '操作结果' })).toContainText('single：已更新');
     await popup.getByRole('button', { name: '删除 Skill', exact: true }).click();
-    await popup.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
+    await popup.getByRole('alertdialog').getByRole('button', { name: '删除 Skill', exact: true }).click();
     await expect(popup.getByRole('heading', { name: 'Skill 库', exact: true })).toBeVisible();
     await expect(popup.getByRole('link', { name: 'single', exact: true })).toHaveCount(0);
     await popup.close();

@@ -40,7 +40,7 @@ test('member creates reusable resources, project context and a completed result 
     await page.getByRole('button', { name: '创建令牌' }).click();
     await expect(page.getByLabel('新令牌')).toHaveValue(/^xt_/);
     await page.getByRole('button', { name: '撤销', exact: true }).click();
-    await page.getByRole('alertdialog').getByRole('button', { name: '确认', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: '撤销令牌', exact: true }).click();
     await expect(page.getByRole('button', { name: '撤销', exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: '退出登录' }).click();
     await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible();
