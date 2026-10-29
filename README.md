@@ -22,6 +22,7 @@ pnpm start
 - [功能与验收](docs/scope.md)：已批准范围与使用闭环。
 - [Skill 本地交付与联网限制](docs/skill-delivery.md)。
 - [开发规则](AGENTS.md)：目录与验证命令。
+- [界面约定](DESIGN.md)：主题切换、页面布局与公共交互。
 - [MIT 许可证](LICENSE)。
 
 ## 开发验证
