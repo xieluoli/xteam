@@ -5,7 +5,7 @@
 ## 接入与边界
 
 - `web/components/ui/`：取自 [shadcn 官方 new-york-v4 registry](https://ui.shadcn.com/r/styles/new-york-v4/button.json) 的 Button、Input、Textarea、Select、Checkbox、Tabs、Dialog、DropdownMenu、Table。保留 [MIT 许可](../web/components/ui/LICENSE.md)，仅调整本地 import 路径。
-- [主题映射](../web/theme.css)：Japan Blues 语义变量转 Tailwind utilities，弹出到 body 的菜单、选择器、弹窗也使用同一主题。已有 token 保留在 [全局样式](../web/style.css)。
+- [主题映射](../web/theme.css)：语义变量转 Tailwind utilities，弹出到 body 的菜单、选择器、弹窗也使用同一主题。当前 token 位于独立[主题配置](../web/themes.css)，双主题与后续布局约定见[界面约定](../DESIGN.md)。
 - 不启用全局 Tailwind preflight；旧样式放入 legacy layer，组件 utilities 优先，登录/项目/模板/MCP 页保持既有风格。无全站组件迁移或新业务布局。
 - [Skill 页面](../web/skills.tsx) 采用真实 Radix 状态、焦点管理、键盘选择、菜单和标签页；删除自写焦点陷阱、原生下拉、手写菜单及其废弃控件 CSS。保留文件树和预览的页面布局规则。
 - [Vite 配置](../vite.config.ts) 接入 Tailwind 插件和 `@` 别名；[组件配置](../components.json) 为 React 非 RSC。Skill 按需加载，避免登录等入口一并加载组件及 Markdown 包。
