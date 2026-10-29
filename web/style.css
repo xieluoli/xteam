@@ -21,7 +21,7 @@ a:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
 .login-story { background: var(--sidebar); padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
 .login-story h1 { font-size: clamp(32px,4vw,56px); font-weight: 600; line-height: 1.35; letter-spacing: -1.5px; }
 .login-story p:not(.eyebrow), .login-story small { color: var(--muted-foreground); }
-.login-panel { position: relative; display: flex; align-items: center; justify-content: center; padding: 80px 32px 32px; }
+.login-panel { position: relative; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 80px 32px 32px; }
 .login-panel > .theme-choice { position: absolute; top: 20px; right: 24px; }
 .theme-choice { margin-left: auto; display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 12px; }
 .theme-choice > [data-slot="select-trigger"] { width: 150px; }

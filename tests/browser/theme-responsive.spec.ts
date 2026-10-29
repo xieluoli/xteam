@@ -1,6 +1,20 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
+for (const theme of ['Japan Blues', 'cyberpunk']) test(`${theme} login fits narrow screens`, async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('combobox', { name: '界面主题' }).click();
+    await page.getByRole('option', { name: theme, exact: true }).click();
+    for (const width of [390, 375, 320]) {
+        await page.setViewportSize({ width, height: 844 });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+        const email = (await page.getByLabel('邮箱', { exact: true }).boundingBox())!;
+        expect(email.x).toBeGreaterThanOrEqual(0);
+        expect(email.x + email.width).toBeLessThanOrEqual(width);
+        await expect(page.getByRole('button', { name: '登录', exact: true })).toBeVisible();
+    }
+});
+
 for (const theme of ['Japan Blues', 'cyberpunk']) test(`${theme} preserves project state and has usable mobile controls and portals`, async ({ page }) => {
     await page.goto('/');
     await page.getByRole('combobox', { name: '界面主题' }).click();
