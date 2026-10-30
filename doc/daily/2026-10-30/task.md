@@ -74,7 +74,7 @@
 
 ### SKILL-001：从一个 GitHub 仓库选择并导入多个 Skill
 
-- 当前状态：来源限流修复已获批准并开发验证通过，待PR/CI、main合入、VPS更新及真实来源验收，completed=false。此前PR #13已发布，17:03确认后续403来自匿名API配额耗尽；历史记录保留，最新修复结果如下。
+- 当前状态：已完成。来源限流修复PR #15已合入main并部署f35f175b36df2e56b7184b8a2b90781271828eee，真实域名五项导入、同名处理/重试、来源刷新、SDK回读及桌面390/320px截图通过。生产本次仍为匿名链路，未配置Token；配额和第三方可用性边界保留。历史诊断与实施记录如下。
 - 403诊断：当前main、持久源码worktree、运行镜像和真实域名health均为53f7b003335f05c150330ca409294d00d8db7d43；17:03:04在运行容器用同一公开API、相同Accept/User-Agent且无认证请求，返回403、API rate limit exceeded、limit=60、used=60、remaining=0、resource=core；响应给出的本窗口恢复时间为2026-10-30 17:09:12。恢复时间只说明该窗口配额，未预写之后导入成功。
 - 请求量复核：基于当前pmspec树069089c7da4ff86746e2bcbaf4aa8f45e7b082b4，以实际来源函数和离线正文夹具计数，5项候选读取7次、批量下载37次（含35个blob），合计44次；并非本次真实入库。现有Map仅在单批内复用，发现、导入和刷新之间重复读取；不能仅凭此将此前60次全部归因于XTEAM。
 - 诊断时初稿（已由下方批准方案替代）：先考虑有界缓存/并发合并，后经实测增加固定树SHA的Raw正文下载和可选服务端Token。缓存只能减少重复消耗，仍保留匿名60次/小时限制；生产Token启用与能力交付分开记录。
@@ -85,6 +85,11 @@
 - 方案依据：经gh只读核对Multica 0249e8609e6ae983dc0ae208c69af76199380881的Raw正文/Tree目录/可选服务端Token模式，仅参考行为，独立实现；VPS匿名只读实测树SHA069089c7da4ff86746e2bcbaf4aa8f45e7b082b4的Raw文件返回200。无需新增协议字段、依赖或数据库结构。生产先验匿名链路，不复制本机gh凭据；Token配置能力交付与真实Token启用分别记录。
 - 17:35开发验证完成：pnpm test 48/48、pnpm build成功、pnpm test:e2e 37/37、diff检查通过。新增先红/后绿覆盖Raw固定快照、公有仓库、Token仅API主机、缓存/并发/失效/容量、主次限流和DNS保护；窄屏限流提示保留输入且可重试。五项/35文件的发现、导入及刷新回归为3次REST、35次Raw。原始日志在.local/xteam-cycle/2026-10-30-skill-source-fix/，未当作线上通过。
 - 返工：首轮build发现新增测试fixture的EventEmitter类型推断错误，修正后构建通过；限流恢复时间断言固定测试时钟，避免跨秒偶发失败。未改依赖清单/锁文件，未改变数据库结构。
+- 发布闭环：[PR #15](https://github.com/xieluoli/xteam/pull/15)最终head 9cedc0ae7539c924bafa732632f1ee6bbcd5b0d8的push与PR两组check均SUCCESS（41035186292、41035295207），校验预期head后于2026-10-30合入；merge SHA f35f175b36df2e56b7184b8a2b90781271828eee已fetch与远端main核对。部署同一完整SHA，镜像内48/48，公网health.version一致。
+- 部署保护：在线SQLite备份 /opt/xteam-rewrite/backups/xteam-before-skill-source-20261030-f35f175b36df.db，integrity_check=ok、权限600；切换前后projects=1、todos=56、links=7、agents=0、skills=0一致。旧镜像53f7b003335f05c150330ca409294d00d8db7d43及容器xteam-rewrite-before-skill-source-20261030-f35f175b36df保留，bridge/xteam_default与反代别名恢复。失败仅恢复旧应用，不覆盖新数据；本次未发生回退。
+- 真实来源与SDK：VPS无Token只读调用新来源函数，pmspec树069089c7da4ff86746e2bcbaf4aa8f45e7b082b4五项发现/下载/刷新实测3次REST、35次Raw且每个固定文件仅一次。真实域名全选五项成功，SDK读取5份独立正文及30份附属文件；pmspec-init网页来源刷新成功且7份附属文本哈希一致；同名默认暂停、跳过重试、SDK重命名/覆盖/刷新通过。原库为空，本轮专用样例按自身ID清理，不改无关资源。
+- 截图清单：当日screenshots/下skill-source-candidates-desktop、skill-source-import-success-desktop、skill-source-refresh-success-desktop、skill-source-conflicts-mobile-390、skill-source-retry-mobile-390、skill-source-files-mobile-390、skill-source-files-mobile-320各jpg；manifest逐图记任务、URL、时间、完整SHA、场景、断言、实测视口。首次浏览器缩放使目标390实为433，单独标非390验收并重拍；最终实测390/320均无页面横向溢出。原图不上传Git或PR。
+- 平台同步：2026-10-30T09:56:31.394Z已更新并回读同一SKILL-001 Todo efd2c2aa-fe2c-492a-b1aa-9d252c9836ea，completed=true；09:56:35Z项目回读56项、53完成、3未完，仅UPG-001和DEC-001/DEC-002保留。PR #15关联链接已按URL去重回读，6个专用Skill样例已清理且原库为空。共享交付记录由独立文档分支codex/2026-10-30-skill-source-record同步，最终PR/CI/合入状态以该分支及远端main核对；纯文档不再触发VPS部署，不新增任务/执行日/教训事件。
 - 优先级：今日清单推进；UPG-001 的 P0 优先级与生产验收缺口保留。
 - 用户目标：输入 `https://github.com/xieluoli/pmspec` 即可发现并选择多个 Skill，一次确认批量入库，不再要求用户逐一拼接精确目录 URL。
 - 价值：让外部 agent 可从团队 Skill 库读取同一套方法的多个独立技能及附属文本，减少重复导入操作；不是安装或运行 PMSpec。
