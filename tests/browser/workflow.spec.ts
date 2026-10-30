@@ -7,7 +7,7 @@ test('member creates reusable resources, project context and a completed result 
     await expect(page.getByRole('heading', { name: '项目', exact: true })).toBeVisible();
     for (const name of ['Agent 模板']) {
         await page.getByRole('link', { name, exact: true }).click();
-        await page.getByRole('button', { name: '新建', exact: true }).click();
+        await page.getByRole('button', { name: '新建 Agent 模板', exact: true }).click();
         await page.getByLabel('名称', { exact: true }).fill('浏览器资源 ' + name);
         await page.getByLabel('正文', { exact: true }).fill('# 安全的团队指令');
         await page.getByRole('button', { name: '保存', exact: true }).click();
@@ -28,7 +28,7 @@ test('member creates reusable resources, project context and a completed result 
     await expect(page.getByRole('link', { name: '代码仓库' })).toHaveAttribute('href', 'https://github.com/example/repo');
     await page.getByRole('button', { name: '添加 Todo', exact: true }).click();
     await page.getByLabel('标题', { exact: true }).fill('发布验收');
-    await page.getByLabel('说明 / 结果', { exact: true }).fill('结果：https://example.com/done');
+    await page.getByLabel('行动说明', { exact: true }).fill('结果：https://example.com/done');
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await page.getByRole('checkbox', { name: '发布验收' }).click();
     await expect(page.getByRole('checkbox', { name: '发布验收' })).toBeChecked();

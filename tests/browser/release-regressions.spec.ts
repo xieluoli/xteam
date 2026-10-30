@@ -79,11 +79,10 @@ test('a save finishing after navigation cannot invalidate the destination list',
     });
     await page.getByRole('checkbox', { name, exact: true }).click();
     await page.getByRole('link', { name: 'Agent 模板', exact: true }).click();
-    await page.getByRole('button', { name: '新建', exact: true }).click();
-    const saveButton = page.getByRole('dialog').getByRole('button', { name: '保存中…', exact: true });
-    await expect(saveButton).toBeDisabled();
+    await page.getByRole('button', { name: '新建 Agent 模板', exact: true }).click();
+    const saveButton = page.getByRole('dialog').getByRole('button', { name: '保存', exact: true });
+    await expect(saveButton).toBeEnabled();
     releaseSave();
-    await expect(page.getByRole('dialog').getByRole('button', { name: '保存', exact: true })).toBeEnabled();
     await page.getByRole('dialog').getByRole('button', { name: '取消', exact: true }).click();
     releaseList();
     await expect(page.getByRole('button', { name: name + '-模板', exact: true })).toBeVisible();

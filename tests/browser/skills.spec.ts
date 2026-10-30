@@ -24,7 +24,7 @@ test('Skill URL import, independent detail, properties, file tree and safe previ
     await page.getByLabel('简介', { exact: true }).fill('Updated by browser');
     await page.getByLabel('标签', { exact: true }).fill('Team, Review');
     await page.getByRole('button', { name: '保存属性', exact: true }).click();
-    await page.getByRole('tab', { name: /Files/ }).click();
+    await page.getByRole('tab', { name: /文件/ }).click();
     await expect(page.getByRole('heading', { name: 'Review guide', exact: true })).toBeVisible();
     await expect(page.locator('.skill-preview img')).toHaveCount(0);
     expect(await page.evaluate(() => (globalThis as { __skillExecuted?: boolean }).__skillExecuted)).toBeUndefined();
@@ -46,7 +46,7 @@ test('Skill URL import, independent detail, properties, file tree and safe previ
     const detailURL = page.url();
     await page.reload();
     await expect(page.getByRole('heading', { name: 'review-local', exact: true })).toBeVisible();
-    await page.getByRole('tab', { name: 'Overview', exact: true }).click();
+    await page.getByRole('tab', { name: '概览', exact: true }).click();
     await expect(page.getByLabel('简介', { exact: true })).toHaveValue('From main file');
     await expect(page.getByLabel('标签', { exact: true })).toHaveValue('Team, Review');
     await page.screenshot({ path: '.local/skill-overview.png', fullPage: true });
@@ -104,7 +104,7 @@ test('import dialog retains keyboard focus while typing and Skill detail fits a 
     await expect(dialog).toHaveCount(0);
     await importSkill(page, 'mobile');
     await page.getByRole('link', { name: 'mobile', exact: true }).click();
-    await page.getByRole('tab', { name: /Files/ }).click();
+    await page.getByRole('tab', { name: /文件/ }).click();
     await expect(page.getByRole('heading', { name: 'Writer guide' })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     await page.screenshot({ path: '.local/skill-mobile.png', fullPage: true });
