@@ -6,6 +6,7 @@ import { resources, resourceKinds, ResourceError } from './resources.js';
 import { skills } from './skills.js';
 import type { SkillFetch } from './skill-source.js';
 import { attachMcp } from './mcp.js';
+import { attachUpdates, type UpgradeOptions } from './updates.js';
 type Member = {
     id: string;
     email: string;
@@ -20,6 +21,7 @@ export function createApp(options: {
     origin: string;
     secure?: boolean;
     skillFetch?: SkillFetch;
+    upgrade?: UpgradeOptions;
 }) {
     const database = openDatabase(options.database);
     const app = express();
@@ -111,9 +113,12 @@ export function createApp(options: {
         response.clearCookie('xteam_session', { path: '/' });
         response.json({ ok: true });
     });
+    attachUpdates(app, options.upgrade);
     const service = resources(database);
     app.get('/api/projects/:id/context', (request, response) => response.json(service.context(String(request.params.id), request.query.completed)));
     const skillService = skills(database, options.skillFetch);
+    app.post('/api/skills/discover', async (request, response) => { response.json(await skillService.discover(request.body)); });
+    app.post('/api/skills/import-batch', async (request, response) => { response.json(await skillService.importMany(request.body, response.locals.member.id)); });
     app.post('/api/skills/import', async (request, response) => { const result = await skillService.importUrl(request.body, response.locals.member.id); response.status(result.status === 'conflict' ? 409 : result.status === 'created' ? 201 : 200).json(result); });
     app.get('/api/skills', (request, response) => response.json(skillService.list(typeof request.query.q === 'string' ? request.query.q : '', request.query.label)));
     app.post('/api/skills', () => { throw new ResourceError('新增 Skill 仅支持 URL 导入，请使用 /api/skills/import'); });

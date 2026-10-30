@@ -4,6 +4,7 @@ import './theme.css';
 import './style.css';
 import './themes.css';
 import { ThemeChoice } from './components/theme-choice';
+import { SystemUpdates } from './system-updates';
 import { Button as ShadcnButton } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
@@ -30,13 +31,13 @@ type Entry = {
     completed?: boolean;
     updated_at?: string;
 };
-type View = 'projects' | 'agents' | 'skills' | 'mcp';
+type View = 'projects' | 'agents' | 'skills' | 'mcp' | 'settings';
 type Editor = {
-    kind: Exclude<View, 'mcp' | 'skills'> | 'links' | 'todos';
+    kind: Exclude<View, 'mcp' | 'skills' | 'settings'> | 'links' | 'todos';
     data: Partial<Entry>;
 };
 type Feedback = { message: string; failed?: boolean; fallback?: string };
-const labels = { projects: '项目', agents: 'Agent 模板', skills: 'Skill 库', mcp: 'MCP 接入' };
+const labels = { projects: '项目', agents: 'Agent 模板', skills: 'Skill 库', mcp: 'MCP 接入', settings: '设置' };
 const categories: Record<string, string> = { github: 'GitHub', gitee: 'Gitee', dingtalk: '钉钉', feishu: '飞书', other: '其他' };
 let csrf = '';
 async function api(path: string, method = 'GET', body?: unknown) {
@@ -58,8 +59,10 @@ function App() {
         email: string;
     } | null>(null);
     const [booting, setBooting] = useState(true);
+    const [currentVersion, setCurrentVersion] = useState('');
+    const [updateCheckSignal, setUpdateCheckSignal] = useState(0);
     const [error, setError] = useState('');
-    const [view, setView] = useState<View>(location.hash.startsWith('#skill') ? 'skills' : 'projects');
+    const [view, setView] = useState<View>(location.hash === '#settings' ? 'settings' : location.hash.startsWith('#skill') ? 'skills' : 'projects');
     const [projectId, setProjectId] = useState<string | null>(location.hash.startsWith('#project/') ? location.hash.slice(9) : null);
     const [items, setItems] = useState<Entry[]>([]);
     const [query, setQuery] = useState('');
@@ -92,13 +95,15 @@ function App() {
     const focusNextPage = useRef(false);
     const newTokenRef = useRef<HTMLInputElement>(null);
     useEffect(() => { setTodoFilter('all'); setLastRefreshed(''); }, [projectId]);
+    useEffect(() => { if (!user) { setCurrentVersion(''); return; } let active = true; void fetch('/health').then(response => response.json()).then(value => { if (active && typeof value.version === 'string') setCurrentVersion(value.version); }).catch(() => {}); return () => { active = false; }; }, [user?.email]);
     useEffect(() => { const expire = () => { setUser(null); setContext(null); setItems([]); setTokens([]); setEditor(null); setDetail(null); setNewToken(''); csrf = ''; }; window.addEventListener('xteam-session-expired', expire); return () => window.removeEventListener('xteam-session-expired', expire); }, []);
     useEffect(() => { api('/me').then(value => { csrf = value.csrf; setUser(value.user); }).catch(() => { }).finally(() => setBooting(false)); }, []);
     useEffect(() => {
         let active = true;
         const readVersion = ++contextRead.current.version;
         contextRead.current.projectId = user && view === 'projects' ? projectId : null;
-        if (!user || view === 'skills')
+        if (view === 'settings') { setLoading(false); setError(''); }
+        if (!user || view === 'skills' || view === 'settings')
             return;
         setLoading(true);
         setError('');
@@ -114,8 +119,8 @@ function App() {
             setLoading(false); });
         return () => { active = false; };
     }, [user, view, projectId, query, refreshVersion]);
-    useEffect(() => { const sync = () => { focusNextPage.current = true; if (location.hash.startsWith('#skill')) { setView('skills'); setProjectId(null); } else if (location.hash.startsWith('#project/')) { setView('projects'); setProjectId(location.hash.slice(9)); } else if (['#projects', '#agents', '#mcp'].includes(location.hash)) { setView(location.hash.slice(1) as View); setProjectId(null); } }; window.addEventListener('hashchange', sync); return () => window.removeEventListener('hashchange', sync); }, []);
-    useEffect(() => { if (!focusNextPage.current || loading) return; const timer = window.setTimeout(() => { document.querySelector<HTMLElement>('#main-content h1')?.focus(); focusNextPage.current = false; }, 0); return () => window.clearTimeout(timer); }, [view, projectId, loading]);
+    useEffect(() => { const sync = () => { focusNextPage.current = true; if (location.hash.startsWith('#skill')) { setView('skills'); setProjectId(null); } else if (location.hash.startsWith('#project/')) { setView('projects'); setProjectId(location.hash.slice(9)); } else if (['#projects', '#agents', '#mcp', '#settings'].includes(location.hash)) { setView(location.hash.slice(1) as View); setProjectId(null); } }; window.addEventListener('hashchange', sync); return () => window.removeEventListener('hashchange', sync); }, []);
+    useEffect(() => { if (!focusNextPage.current || loading) return; const timer = window.setTimeout(() => { document.querySelector<HTMLElement>('#main-content h1')?.focus(); focusNextPage.current = false; }, 0); return () => window.clearTimeout(timer); }, [view, projectId, loading, updateCheckSignal]);
     async function refresh() {
         if (view === 'mcp')
             setTokens(await api('/tokens'));
@@ -182,9 +187,11 @@ function App() {
         '## 关联链接', context.links.length ? context.links.map(link => `- ${link.title}：${link.url}`).join('\n') : '暂无链接',
         '## Todo', context.todos.length ? context.todos.map(todo => `- [${todo.completed ? 'x' : ' '}] ${todo.title}${todo.description ? '\n' + todo.description.split('\n').map(line => '  ' + line).join('\n') : ''}`).join('\n') : '暂无 Todo',
     ].join('\n\n') : '';
-    return <SidebarProvider><a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>跳到主要内容</a><AppSidebar view={view} email={user.email} navigate={navigate} password={() => setPasswordDialog(true)} logout={() => void act(async () => { await api('/logout', 'POST'); setUser(null); setNewToken(''); csrf = ''; })}/><SidebarInset className="min-w-0 bg-card"><header className="topbar"><SidebarTrigger aria-label="切换侧边栏"/><nav aria-label="当前位置" className="breadcrumb"><span>团队空间</span><span className="slash">/</span><a aria-label={'返回' + labels[view] + '列表'} href={'#' + view} onClick={event => { event.preventDefault(); navigate(view); }}>{labels[view]}</a>{projectId && <><span className="slash">/</span><span aria-current="page">{currentProject?.id === projectId ? currentProject.name : '项目详情'}</span></>}</nav><ThemeChoice/></header><div className="content" id="main-content" tabIndex={-1}>{error && <Alert variant="destructive"><AlertDescription>{error}<Button variant="ghost" size="sm" onClick={() => setError('')}>关闭提示</Button>{!projectId && <Button disabled={loading} onClick={() => setRefreshVersion(version => version + 1)}>重试</Button>}</AlertDescription></Alert>}{notice && !(view === 'projects' && projectId) && <Alert role="status"><AlertDescription>{notice}</AlertDescription></Alert>}
+    return <SidebarProvider><a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>跳到主要内容</a><AppSidebar view={view} email={user.email} version={currentVersion} checkUpdates={() => { navigate('settings'); setUpdateCheckSignal(value => value + 1); }} navigate={navigate} password={() => setPasswordDialog(true)} logout={() => void act(async () => { await api('/logout', 'POST'); setUser(null); setNewToken(''); csrf = ''; })}/><SidebarInset className="min-w-0 bg-card"><header className="topbar"><SidebarTrigger aria-label="切换侧边栏"/><nav aria-label="当前位置" className="breadcrumb"><span>团队空间</span><span className="slash">/</span><a aria-label={view === 'settings' ? '返回设置' : '返回' + labels[view] + '列表'} href={'#' + view} onClick={event => { event.preventDefault(); navigate(view); }}>{labels[view]}</a>{projectId && <><span className="slash">/</span><span aria-current="page">{currentProject?.id === projectId ? currentProject.name : '项目详情'}</span></>}</nav></header><div className="content" id="main-content" tabIndex={-1}>{error && <Alert variant="destructive"><AlertDescription>{error}<Button variant="ghost" size="sm" onClick={() => setError('')}>关闭提示</Button>{!projectId && <Button disabled={loading} onClick={() => setRefreshVersion(version => version + 1)}>重试</Button>}</AlertDescription></Alert>}{notice && !(view === 'projects' && projectId) && <Alert role="status"><AlertDescription>{notice}</AlertDescription></Alert>}
+  {view === 'settings' && <section className="settings-page" aria-labelledby="settings-title"><div className="page-heading"><h1 id="settings-title" tabIndex={-1}>设置</h1></div><ThemeChoice/></section>}
+  <SystemUpdates visible={view === 'settings'} currentVersion={currentVersion} checkSignal={updateCheckSignal} onVersion={setCurrentVersion} api={api}/>
   {view === 'skills' && <Suspense fallback={<p>正在打开 Skill 库…</p>}><Skills api={api}/></Suspense> }
-  {view !== 'mcp' && view !== 'skills' && !projectId && <>
+  {(view === 'projects' || view === 'agents') && !projectId && <>
     <div className="page-heading"><div><h1 tabIndex={-1}>{labels[view]}</h1><p className="muted">{view === 'projects' ? '把项目背景、资料和 Todo 放在一起。' : '可复制、可通过 MCP 读取的团队指令模板。'}</p></div><Button variant="default" onClick={() => openEditor({ kind: view, data: {} })}>{view === 'projects' ? '新建项目' : '新建 Agent 模板'}</Button></div>
     <div className="list-toolbar"><Label className="search"><Search className="size-4" aria-hidden="true"/><Input className="pl-9" aria-label="按名称查找" placeholder="按名称查找…" value={query} onChange={event => setQuery(event.target.value)}/></Label><div className="actions">{view === 'projects' && (items.length > 0 || query) && <Choice label="项目排序" value={sort} onChange={setSort} options={[{ value: 'updated', label: '项目信息更新时间' }, { value: 'name', label: '名称 A–Z' }]}/>}<span className="muted">{items.length} 个{view === 'agents' ? ' Agent 模板' : '项目'}</span></div></div>
     {view === 'projects' && items.length > 0 && <p className="footnote">项目信息时间仅反映名称和简介的修改，不包含 Todo 或链接变更。</p>}

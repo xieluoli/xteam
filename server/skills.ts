@@ -2,7 +2,7 @@ import type Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import { parseDocument, isMap } from 'yaml';
 import { ResourceError } from './resources.js';
-import { bundleLimit, downloadSkill, fileLimit, validFilePath, type SkillFetch, type SkillFile } from './skill-source.js';
+import { bundleLimit, discoverSkillSource, downloadSkill, fetchSkillSource, fileLimit, validFilePath, type SkillFetch, type SkillFile } from './skill-source.js';
 export type Skill = { id: string; name: string; description: string; content: string; source_url: string; source_type: string; created_at: string; created_by: string; updated_by: string; updated_at: string; created_by_email?: string; updated_by_email?: string; labels: string[]; files: SkillFile[] };
 function frontmatter(content: string) {
     const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
@@ -67,11 +67,8 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
         }
         return persist({ ...skill, ...fields, content, labels, updated_by: member, updated_at: new Date().toISOString() });
     }
-    async function importUrl(input: Record<string, unknown>, member: string) {
-        if (typeof input.url !== 'string') throw new ResourceError('请填写 Skill URL');
-        const strategy = input.on_conflict ?? 'fail';
+    function importBundle(bundle: Awaited<ReturnType<typeof downloadSkill>>, strategy: unknown, member: string) {
         if (!['fail', 'overwrite', 'rename', 'skip'].includes(String(strategy))) throw new ResourceError('冲突选项无效');
-        const bundle = await downloadSkill(input.url, fetcher);
         const fields = contentFields(bundle.content, bundle.fallbackName);
         bundle.content = setProperties(bundle.content, fields.name, fields.description);
         const existing = sameName(fields.name);
@@ -81,6 +78,40 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
         const now = new Date().toISOString();
         const skill = persist({ id: old?.id ?? randomUUID(), ...fields, ...bundle, labels: old?.labels ?? [], created_at: old?.created_at ?? now, created_by: old?.created_by ?? member, updated_by: member, updated_at: now });
         return { status: old ? 'updated' : 'created', skill };
+    }
+    async function importUrl(input: Record<string, unknown>, member: string) {
+        if (typeof input?.url !== 'string') throw new ResourceError('请填写 Skill URL');
+        if (!['fail', 'skip', 'rename', 'overwrite'].includes(String(input.on_conflict ?? 'fail'))) throw new ResourceError('冲突选项无效');
+        return importBundle(await downloadSkill(input.url, fetcher), input.on_conflict ?? 'fail', member);
+    }
+    async function discover(input: Record<string, unknown>) {
+        if (typeof input?.url !== 'string') throw new ResourceError('请填写 Skill URL');
+        const source = await discoverSkillSource(input.url, fetcher);
+        return { sha: source.sha, ref: source.ref, candidates: source.candidates.map(candidate => {
+            const fields = contentFields(candidate.content, candidate.fallbackName);
+            return { path: candidate.path, ...fields, existing_skill: sameName(fields.name) };
+        }) };
+    }
+    async function importMany(input: Record<string, unknown>, member: string) {
+        if (typeof input?.url !== 'string' || typeof input.sha !== 'string' || !/^[a-f0-9]{40}$/.test(input.sha) || !Array.isArray(input.items) || !input.items.length || input.items.length > 20) throw new ResourceError('请先读取来源并选择 1–20 个 Skill');
+        const items = input.items as { path: string; on_conflict?: string }[];
+        if (items.some(item => !item || typeof item.path !== 'string' || item.path.length > 1000 || item.path && item.path.split('/').some(part => !part || part.startsWith('.') || /[\\\x00-\x20]/.test(part)) || !['fail', 'skip', 'rename', 'overwrite'].includes(item.on_conflict ?? 'fail')) || new Set(items.map(item => item.path)).size !== items.length) throw new ResourceError('选择的目录或冲突选项无效，不能重复选择');
+        // One request shares immutable tree/blob responses; no background import queue is needed.
+        const cache = new Map<string, Promise<Buffer>>();
+        const cached: SkillFetch = url => { if (!cache.has(url)) cache.set(url, (fetcher ?? fetchSkillSource)(url)); return cache.get(url)!; };
+        let total = 0;
+        const results = [];
+        for (const item of items) {
+            try {
+                if (total > 32 * fileLimit) throw new ResourceError('本批文本超过 32 MiB，请拆分导入', 413);
+                const bundle = await downloadSkill(input.url, cached, { sha: input.sha, path: item.path });
+                total += Buffer.byteLength(bundle.content) + bundle.files.reduce((size, file) => size + Buffer.byteLength(file.content), 0);
+                if (total > 32 * fileLimit) throw new ResourceError('本批文本超过 32 MiB，请拆分导入', 413);
+                const result = importBundle(bundle, item.on_conflict ?? 'fail', member);
+                results.push({ path: item.path, status: result.status, skill: result.skill ? { id: result.skill.id, name: result.skill.name } : undefined, existing_skill: result.existing_skill, error: result.reason });
+            } catch (error) { results.push({ path: item.path, status: 'failed', error: (error as Error).message }); }
+        }
+        return { sha: input.sha, results };
     }
     async function refresh(id: string, member: string) {
         const original = get(id);
@@ -102,5 +133,5 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
         return persist({ ...skill, files, updated_at: new Date().toISOString(), updated_by: member });
     }
     function remove(id: string) { get(id); database.transaction(() => { database.prepare('DELETE FROM skill_files WHERE skill_id=?').run(id); database.prepare('DELETE FROM skills WHERE id=?').run(id); })(); return { ok: true }; }
-    return { get, list, update, importUrl, refresh, file, remove };
+    return { get, list, update, importUrl, discover, importMany, refresh, file, remove };
 }

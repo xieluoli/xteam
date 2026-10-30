@@ -50,4 +50,39 @@ for (const theme of ['Japan Blues', 'cyberpunk']) test(`${theme} preserves proje
         }
         await page.screenshot({ path: `.local/design-${theme}-${width}.png`, fullPage: true });
     }
+    await page.getByRole('button', { name: '切换侧边栏', exact: true }).click();
+    await page.getByRole('link', { name: '设置', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeFocused();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('.topbar').getByRole('combobox', { name: '界面主题' })).toHaveCount(0);
+    const nextTheme = theme === 'Japan Blues' ? 'cyberpunk' : 'Japan Blues';
+    await page.getByRole('combobox', { name: '界面主题' }).click();
+    await page.getByRole('option', { name: nextTheme, exact: true }).click();
+    const expectedTheme = nextTheme === 'cyberpunk' ? 'cyberpunk' : 'japan-blues';
+    await expect(page.locator('html')).toHaveAttribute('data-theme', expectedTheme);
+    await page.reload();
+    await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', expectedTheme);
+    for (const width of [1280, 390, 320]) {
+        await page.setViewportSize({ width, height: 844 });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+        const settings = page.getByRole('region', { name: '设置', exact: true });
+        await settings.scrollIntoViewIfNeeded();
+        const settingsBox = (await settings.boundingBox())!;
+        const headingBox = (await settings.getByRole('heading', { name: '设置', exact: true }).boundingBox())!;
+        const labelBox = (await settings.getByText('主题', { exact: true }).boundingBox())!;
+        const selector = (await page.getByRole('combobox', { name: '界面主题' }).boundingBox())!;
+        expect(settingsBox.width).toBeLessThanOrEqual(720);
+        expect(settingsBox.x).toBeGreaterThanOrEqual(16);
+        expect(settingsBox.x + settingsBox.width).toBeLessThanOrEqual(width - 16);
+        expect(labelBox.x).toBeCloseTo(headingBox.x, 0);
+        expect(labelBox.x + labelBox.width).toBeLessThan(selector.x);
+        expect(selector.x + selector.width).toBeCloseTo(settingsBox.x + settingsBox.width, 0);
+        expect(selector.height).toBeGreaterThanOrEqual(44);
+        expect((await settings.locator('.theme-choice').boundingBox())!.height).toBeGreaterThanOrEqual(64);
+        await page.screenshot({ path: `.local/settings-${expectedTheme}-${width}.png`, fullPage: true });
+    }
+    await page.getByRole('button', { name: '切换侧边栏', exact: true }).click();
+    await page.getByRole('link', { name: '项目', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '项目', exact: true })).toBeFocused();
 });

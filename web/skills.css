@@ -43,6 +43,16 @@
     .skill-sources small { display: block; margin-top: 6px; }
     .skill-conflict { padding: 12px; border-radius: var(--radius-md); background: var(--muted); }
     .skill-conflict button { margin: 4px; }
+    .skill-import-select { display: flex; align-items: start; gap: 12px; min-height: 44px; padding-block: 10px; cursor: pointer; }
+    .skill-import-select > [role=checkbox] { flex: none; margin-top: 2px; }
+    .skill-import-select > span { display: grid; min-width: 0; gap: 4px; overflow-wrap: anywhere; }
+    .skill-import-select small, .skill-import-select code { font-size: 12px; }
+    .skill-import-candidates { max-height: 42dvh; overflow-y: auto; overscroll-behavior: contain; border-block: 1px solid var(--border); }
+    .skill-import-candidate { padding: 8px 4px; }
+    .skill-import-candidate + .skill-import-candidate { border-top: 1px solid var(--border); }
+    .skill-import-candidate fieldset, .skill-import-candidate p { min-width: 0; margin: 4px 0 4px 28px; overflow-wrap: anywhere; }
+    .skill-import-candidate fieldset { padding: 0; border: 0; }
+    .skill-import-candidate fieldset button { width: 100%; }
     [data-slot="dialog-content"] form { display: grid; gap: 12px; }
     [data-slot="dialog-content"] .modal-footer { margin-top: 8px; }
     @media (max-width: 700px) {

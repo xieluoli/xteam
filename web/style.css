@@ -25,6 +25,18 @@ a:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
 .login-panel > .theme-choice { position: absolute; top: 20px; right: 24px; }
 .theme-choice { margin-left: auto; display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 12px; }
 .theme-choice > [data-slot="select-trigger"] { width: 150px; }
+.settings-page { width: 100%; max-width: 720px; margin: 0 auto; }
+.settings-page .theme-choice { margin-left: 0; min-height: 64px; justify-content: space-between; border-bottom: 1px solid var(--border); font-size: 14px; }
+.system-updates { margin-top: 32px; }
+.system-updates h2 { font-size: 18px; font-weight: 600; margin: 0 0 12px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; border-bottom: 1px solid var(--border); }
+.setting-row > :last-child { min-width: 0; overflow-wrap: anywhere; text-align: right; }
+.release-version { display: grid; gap: 4px; }
+.release-version code { color: var(--muted-foreground); font-size: 12px; }
+.system-updates > p { overflow-wrap: anywhere; margin: 16px 0; }
+.system-updates [role="alert"] { color: var(--destructive); }
+.update-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sidebar-update { margin-top: auto; }
 .login-panel form { width: 360px; max-width: 100%; display: grid; gap: 20px; }
 .login-panel h2 { margin: 0; font-size: 26px; }
 .login-panel p { margin: 0; }
