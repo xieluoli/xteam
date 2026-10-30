@@ -1,6 +1,27 @@
 import { test, expect } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
 
+test('rate-limit recovery stays in the import dialog and preserves the URL on a narrow screen', async ({ page }) => {
+    await page.goto('/#skills');
+    await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
+    await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
+    await page.getByRole('button', { name: '登录', exact: true }).click();
+    await page.getByRole('link', { name: 'Skill 库', exact: true }).click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.route('**/api/skills/discover', route => route.fulfill({ status: 429, json: { error: 'GitHub 来源请求已限流，请在 2026/10/30 18:00:00（北京时间）后重试' } }));
+    await page.getByRole('button', { name: '从 URL 导入', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Skill URL').fill('https://github.com/example/pmspec');
+    await dialog.getByRole('button', { name: '导入', exact: true }).click();
+    await expect(dialog).toContainText('2026/10/30 18:00:00（北京时间）');
+    await expect(dialog.getByLabel('Skill URL')).toHaveValue('https://github.com/example/pmspec');
+    await expect(dialog.getByRole('button', { name: '导入', exact: true })).toBeEnabled();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    await page.unroute('**/api/skills/discover');
+    await dialog.getByRole('button', { name: '导入', exact: true }).click();
+    await expect(dialog.getByRole('checkbox', { name: '导入 pmspec-apply', exact: true })).toBeVisible();
+});
+
 test('suite selection, partial failure and retry import independent skills without repeating successes', async ({ page }) => {
     await page.goto('/#skills');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');

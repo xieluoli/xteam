@@ -18,31 +18,60 @@ function publicAddress(address: string) {
     }
     return /^2[0-9a-f]{3}:/i.test(address) && !address.toLowerCase().startsWith('2001:db8:');
 }
-export const fetchSkillSource: SkillFetch = url => new Promise((resolve, reject) => {
+// Bounded process cache: mutable refs live for 30 seconds; SHA content for 15 minutes.
+const sourceResponses = new Map<string, { body: Buffer; expires: number }>();
+const sourceRequests = new Map<string, Promise<Buffer>>();
+export const fetchSkillSource: SkillFetch = async url => {
     const target = new URL(url);
-    if (target.protocol !== 'https:' || target.hostname !== 'api.github.com' || target.port || target.username || target.password) {
-        reject(new ResourceError('不支持的抓取地址')); return;
-    }
-    const outgoing = request(target, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'XTEAM-Skill-Import' }, lookup: (hostname, options, callback) => {
-        lookup(hostname, { ...options, all: true }, (error, addresses) => {
-            if (error) { callback(error, []); return; }
-            if (!addresses.length || addresses.some(entry => !publicAddress(entry.address))) { callback(new Error('拒绝访问非公网地址'), []); return; }
-            if (options.all) callback(null, addresses);
-            else callback(null, addresses[0].address, addresses[0].family);
+    const raw = target.hostname === 'raw.githubusercontent.com';
+    if (target.protocol !== 'https:' || !['api.github.com', 'raw.githubusercontent.com'].includes(target.hostname) || target.port || target.username || target.password || target.hash || raw && (target.search || !/^\/[\w.-]+\/[\w.-]+\/[a-f0-9]{40}\/.+/.test(target.pathname))) throw new ResourceError('不支持的抓取地址');
+    const key = target.href, cached = sourceResponses.get(key);
+    if (cached && cached.expires > Date.now()) return cached.body;
+    if (sourceRequests.has(key)) return sourceRequests.get(key)!;
+    if (sourceRequests.size >= 128) throw new ResourceError('来源请求繁忙，请稍后重试', 429);
+    const headers: Record<string, string> = { Accept: raw ? 'application/octet-stream' : 'application/vnd.github+json', 'User-Agent': 'XTEAM-Skill-Import' };
+    const token = process.env.XTEAM_GITHUB_TOKEN?.trim();
+    if (!raw && token) headers.Authorization = 'Bearer ' + token;
+    const pending = new Promise<Buffer>((resolve, reject) => {
+        const outgoing = request(target, { headers, lookup: (hostname, options, callback) => {
+            lookup(hostname, { ...options, all: true }, (error, addresses) => {
+                if (error) { callback(error, []); return; }
+                if (!addresses.length || addresses.some(entry => !publicAddress(entry.address))) { callback(new Error('拒绝访问非公网地址'), []); return; }
+                if (options.all) callback(null, addresses);
+                else callback(null, addresses[0].address, addresses[0].family);
+            });
+        } }, response => {
+            if (response.statusCode !== 200) {
+                response.resume();
+                if (response.statusCode === 429 || response.statusCode === 403 && (response.headers['x-ratelimit-remaining'] === '0' || response.headers['retry-after'] !== undefined)) {
+                    const retry = Number(response.headers['retry-after']), reset = Number(response.headers['x-ratelimit-reset']);
+                    const time = retry > 0 && Number.isFinite(retry) ? Date.now() + retry * 1000 : reset > 0 && Number.isFinite(reset) ? reset * 1000 : 0;
+                    const recovery = time && Number.isFinite(new Date(time).getTime()) ? `，请在 ${new Date(time).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}（北京时间）后重试` : '，请稍后重试';
+                    reject(new ResourceError('GitHub 来源请求已限流' + recovery, 429));
+                } else reject(new ResourceError(`来源请求失败（${response.statusCode}），请确认公开 URL 或稍后重试`, 502));
+                return;
+            }
+            const chunks: Buffer[] = [];
+            let size = 0;
+            response.on('data', (chunk: Buffer) => { size += chunk.length; if (size > (raw ? fileLimit : 16 * fileLimit)) response.destroy(new ResourceError('来源响应过大', 413)); else chunks.push(chunk); });
+            response.on('end', () => resolve(Buffer.concat(chunks)));
+            response.on('error', reject);
         });
-    } }, response => {
-        if (response.statusCode !== 200) { response.resume(); reject(new ResourceError(`来源请求失败（${response.statusCode}），请确认公开 URL 或稍后重试`, 502)); return; }
-        const chunks: Buffer[] = [];
-        let size = 0;
-        response.on('data', (chunk: Buffer) => { size += chunk.length; if (size > 16 * fileLimit) response.destroy(new ResourceError('来源响应过大', 413)); else chunks.push(chunk); });
-        response.on('end', () => resolve(Buffer.concat(chunks)));
-        response.on('error', reject);
+        const timer = setTimeout(() => outgoing.destroy(new ResourceError('来源请求超时', 504)), 15000);
+        outgoing.on('close', () => clearTimeout(timer));
+        outgoing.on('error', reject);
+        outgoing.end();
     });
-    const timer = setTimeout(() => outgoing.destroy(new ResourceError('来源请求超时', 504)), 15000);
-    outgoing.on('close', () => clearTimeout(timer));
-    outgoing.on('error', reject);
-    outgoing.end();
-});
+    sourceRequests.set(key, pending);
+    try {
+        const body = await pending;
+        for (const [address, entry] of sourceResponses) if (entry.expires <= Date.now()) sourceResponses.delete(address);
+        const immutable = raw || /\/git\/trees\/[a-f0-9]{40}$/.test(target.pathname);
+        sourceResponses.set(key, { body, expires: Date.now() + (immutable ? 900_000 : 30_000) });
+        while (sourceResponses.size > 128 || [...sourceResponses.values()].reduce((size, entry) => size + entry.body.length, 0) > 32 * fileLimit) sourceResponses.delete(sourceResponses.keys().next().value!);
+        return body;
+    } finally { sourceRequests.delete(key); }
+};
 async function readSource(input: string, fetcher: SkillFetch, snapshot?: string) {
     let url: URL;
     try { url = new URL(input.includes('://') ? input : 'https://' + input); } catch { throw new ResourceError('请填写有效的 GitHub 或 skills.sh URL'); }
@@ -58,13 +87,16 @@ async function readSource(input: string, fetcher: SkillFetch, snapshot?: string)
     };
     const isSkills = host === 'skills.sh';
     if (isSkills && parts.length !== 3 || !isSkills && parts.length > 2 && !['tree', 'blob'].includes(parts[2])) throw new ResourceError('请使用仓库、tree 目录或 blob SKILL.md URL');
-    const ref = isSkills || parts.length === 2 ? (await json('')).default_branch : parts[3];
+    const repository = await json('');
+    if (repository.private !== false) throw new ResourceError('仅支持公开 GitHub 仓库');
+    const ref = isSkills || parts.length === 2 ? repository.default_branch : parts[3];
     if (typeof ref !== 'string' || !ref) throw new ResourceError('无法确定来源分支', 502);
     let directory = isSkills || parts.length === 2 ? '' : parts.slice(4).join('/');
     if (parts[2] === 'blob') { if (!directory.endsWith('SKILL.md')) throw new ResourceError('blob URL 必须指向 SKILL.md'); directory = directory.slice(0, -8).replace(/\/$/, ''); }
     if (snapshot !== undefined && !/^[a-f0-9]{40}$/.test(snapshot)) throw new ResourceError('来源快照无效');
     const result = await json(`/git/trees/${encodeURIComponent(snapshot ?? ref)}?recursive=1`);
     if (result.truncated || !Array.isArray(result.tree)) throw new ResourceError('来源目录过大或不完整，请使用更小的仓库', 413);
+    if (!/^[a-f0-9]{40}$/.test(result.sha ?? '')) throw new ResourceError('无法确定来源快照', 502);
     const tree = result.tree as { path: string; type: string; sha: string; size?: number; mode?: string }[];
     const all = tree.filter(entry => entry.type === 'blob' && entry.mode !== '120000' && (entry.path === 'SKILL.md' || entry.path.endsWith('/SKILL.md')) && !entry.path.split('/').some(part => part.startsWith('.')));
     let candidates = all;
@@ -73,9 +105,8 @@ async function readSource(input: string, fetcher: SkillFetch, snapshot?: string)
     else if (isSkills) candidates = candidates.filter(entry => entry.path === parts[2] + '/SKILL.md' || entry.path.endsWith('/' + parts[2] + '/SKILL.md'));
     const text = async (entry: typeof tree[number]) => {
         if (entry.size !== undefined && entry.size > fileLimit) throw new ResourceError('单文件超过 1 MiB', 413);
-        const blob = await json('/git/blobs/' + encodeURIComponent(entry.sha));
-        if (blob.encoding !== 'base64' || typeof blob.content !== 'string') throw new ResourceError('来源文件格式无效', 502);
-        const bytes = Buffer.from(blob.content, 'base64');
+        if (entry.path.startsWith('/') || entry.path.includes('\\') || entry.path.split('/').some(part => !part || part === '..' || part === '.')) throw new ResourceError('来源包含越界文件路径');
+        const bytes = await fetcher(`https://raw.githubusercontent.com/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/${result.sha}/${entry.path.split('/').map(encodeURIComponent).join('/')}`);
         if (bytes.length > fileLimit) throw new ResourceError('单文件超过 1 MiB', 413);
         if (bytes.includes(0)) return null;
         try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch { return null; }

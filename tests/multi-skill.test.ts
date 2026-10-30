@@ -110,7 +110,7 @@ test('batch boundaries reject malformed bodies and stop downloads after the text
         const result = await context.request('/skills/import-batch', { url, sha: snapshot, items: ['apply', 'explore', 'init', 'propose', 'review', 'extra-5'].map(name => item(name)) });
         assert.deepEqual(result.data.results.map((value: any) => value.status), ['created', 'created', 'created', 'created', 'failed', 'failed']);
         assert.match(result.data.results[4].error, /32 MiB/);
-        assert.equal(context.network.calls.some(value => value.includes('/git/blobs/extra-5')), false);
+        assert.equal(context.network.calls.some(value => value.includes('/skills/pmspec-extra-5/')), false);
         assert.equal((await context.request('/skills')).data.length, 4);
     } finally { await context.close(); }
 });
