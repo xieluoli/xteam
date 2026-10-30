@@ -41,9 +41,9 @@ test('Skill uses themed accessible selection, menu and dialog components without
     await expect(page.getByRole('toolbar', { name: '所选 Skill 操作' })).toBeVisible();
     await page.getByRole('button', { name: '取消选择', exact: true }).click();
     await page.getByRole('link', { name: 'components', exact: true }).click();
-    await page.getByRole('tab', { name: 'Overview', exact: true }).focus();
+    await page.getByRole('tab', { name: '概览', exact: true }).focus();
     await page.keyboard.press('ArrowRight');
-    await expect(page.getByRole('tab', { name: /Files/ })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('tab', { name: /文件/ })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByRole('tabpanel')).toContainText('Writer guide');
     await expect(page.getByRole('heading', { name: 'Writer guide' })).toBeVisible();
 });

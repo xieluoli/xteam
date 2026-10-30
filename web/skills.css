@@ -17,6 +17,7 @@
     .skill-files aside button { width: 100%; justify-content: start; margin: 2px 0; white-space: normal; text-align: left; }
     .skill-file-content { min-width: 0; padding: 0 24px 24px; }
     .skill-file-content header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .skill-file-content header code { overflow-wrap: anywhere; }
     .skill-file-content pre { white-space: pre-wrap; overflow-wrap: anywhere; }
     .skill-file-content form { display: grid; gap: 12px; }
     .skill-file-content form > button { justify-self: start; }
@@ -48,6 +49,8 @@
         .skill-files { grid-template-columns: minmax(0, 1fr); }
         .skill-files aside { border-right: 0; border-bottom: 1px solid var(--border); max-height: 250px; overflow: auto; }
         .skill-file-content { padding: 20px 0; }
+        .skill-file-content header { align-items: start; }
+        .skill-file-content header code { width: 100%; }
         .skill-title .muted { overflow-wrap: anywhere; }
         .skills-view .list-toolbar { flex-wrap: wrap; align-items: stretch; gap: 12px; }
     }
