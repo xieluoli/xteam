@@ -9,7 +9,7 @@ doc/是共享的任务与接续记录，docs/是正式产品说明。两者随Gi
 1. 完成该设备自己的GitHub认证，执行gh auth status；未登录按gh官方流程认证，不把令牌贴进聊天。Git/GitHub只用git/gh。
 2. 在自己的checkout执行git status --short、git fetch origin，核对当前HEAD与origin/main。首次可用gh repo clone xieluoli/xteam；已有干净main可git pull --ff-only，脏工作区先保留修改，不重置或覆盖。
 3. 依次读AGENTS.md、doc/task.md、doc/workflow.md、doc/lessons.md、doc/code-standards.md，再按Asia/Shanghai日期读当日task及最近实际完成review。尚未合入的文档PR须通过gh核对；main未包含的进度不能当作已同步。
-4. 按任务编号查询已有分支/PR及平台Todo，核对范围、状态、代码可用性、验证与授权。当前SET-001、UPG-001、SKILL-001的未提交代码仅在原开发设备，远端分支HEAD不包含这些成果；先协调转交获准代码，不能从“本地开发完成”推断已可拉取或重新做一遍。
+4. 按任务编号查询已有分支/PR及平台Todo，核对范围、状态、代码可用性、验证与授权。SET-001、UPG-001、SKILL-001源码已由PR #13合入main，可直接获取；UPG首次启用和SKILL来源刷新验收仍未完成，按主入口接续，不重新实现。其他批次的未提交成果仍不能从远端HEAD推断已可拉取。
 5. 写明任务的负责设备/agent标识、开始时间、源码分支/完整HEAD、范围和下一步，更新当日task与主入口；有平台权限时同步认领并回读。已有认领先协调，认领说明和本地锁都不是跨设备原子锁，不要同时改同一任务。
 
 ## 开始与验证
