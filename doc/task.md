@@ -25,10 +25,10 @@ XTEAM 保存团队项目与任务的关键上下文，让任意设备上的外�
 ## 当前接续
 
 - 协调资料：仓库内doc/随Git同步；正式产品文档仍为docs/。设备本机worktree、锁和证据路径保存在.local/xteam-cycle/，不要求其他设备复用个人绝对路径。
-- 当前认领：2026-10-30发布接续agent完成产品发布，正在同步交付记录；待验项按原ID继续，不重复实现。
-- 产品交付：[PR #13](https://github.com/xieluoli/xteam/pull/13)已合入；head为7bdba5dee2205e1518fcbf1862acefa3fd9ed771，merge/main为332e005c6bb239412285fafad29a242ca61a7b67。原31个产品路径已提交，可从远端main获取。
-- 最近验证：本机pnpm test 41/41、build成功、test:e2e36/36；最终head两组CI成功，VPS目标镜像41/41通过。2026-10-30真实域名完成设置/主题/移动导航、项目/Agent/Skill/MCP适用桌面窄屏截图与SDK回写；原设备证据 .local/xteam-cycle/2026-10-30-release-tasks/。
-- 最近线上核对：2026-10-30发布后health.version为332e005c6bb239412285fafad29a242ca61a7b67。SQLite在线备份完整性及权限600通过，资源数量一致，旧镜像/容器和两个网络保留；后续文档提交不改变这份产品验收快照，最新main/线上版本须重新核对。
+- 当前认领：2026-10-30来源修复agent完成SKILL-001产品发布、线上验收及平台回读，交付文档由codex/2026-10-30-skill-source-record同步；其他待验项按原ID接续，不重复实现。
+- 产品交付：[PR #15](https://github.com/xieluoli/xteam/pull/15)已合入；head为9cedc0ae7539c924bafa732632f1ee6bbcd5b0d8，merge/部署为f35f175b36df2e56b7184b8a2b90781271828eee。此前设置、升级入口与多Skill功能由[PR #13](https://github.com/xieluoli/xteam/pull/13)发布。
+- 最近验证：本机pnpm test 48/48、build成功、test:e2e37/37；最终head两组CI成功，VPS镜像48/48通过。真实域名匿名pmspec五项导入、同名处理/重试和来源刷新、SDK正文/文件回读及桌面390/320px截图通过；真实只读计数3次REST、35次Raw，未配置Token。证据 .local/xteam-cycle/2026-10-30-skill-source-fix/。
+- 最近线上核对：health.version为f35f175b36df2e56b7184b8a2b90781271828eee。SQLite在线备份完整性及权限600通过，切换前后资源数量一致，旧镜像/容器和两个网络保留；后续纯文档合入不触发重新部署，产品版本与最新main文档提交分开核对。
 - 2026-10-30用户明确授权清理今日任务并完成main合入和VPS更新；只本地完成或仅合入均不算done。按最终head CI合入再部署完整main SHA，相关功能线上验收通过才关对应任务。
 - 当前预检：已有生产浏览器登录态可用；VPS宿主无Node/gh，尚无升级服务/挂载，升级管理员邮箱未指定。先完成可发布项；不擅自安装新依赖或指定升级权限，不把已上线但未启用的升级入口算UPG完成。
 
@@ -37,11 +37,10 @@ XTEAM 保存团队项目与任务的关键上下文，让任意设备上的外�
 |ID|最新状态|范围与验收记录|
 |---|---|---|
 |UPG-001|代码已合入部署，首次启用阻塞；P0|[Release页面/CLI升级](daily/2026-10-30/task.md)：首次宿主安装/认证、管理员邮箱、正式Release及真实升级/回退/数据保持待验|
-|SKILL-001|来源限流修复开发通过，待发布验收|[多Skill导入](daily/2026-10-30/task.md)：固定树SHA的Raw、可选服务端Token、有界缓存/并发及限流提示；48/48、build、浏览器37/37通过，待最终head CI/main/VPS与真实来源验收|
 |DEC-001|待用户决策，禁止自动实施|工作会话/进行中状态/心跳/Token采集，见[范围与授权](workflow.md)|
 |DEC-002|第三个执行日复盘后再决定|长期频率/任务数/自动化续期，见[试跑与历史复盘](daily/2026-10-29/review.md)|
 
-2026-10-30已关闭SET-001（设置主题即时生效、刷新记忆、390/320px与移动导航）和VERIFY-001（项目/Agent/Skill/MCP线上截图与实际SDK结果）；对应PR已合入且VPS已更新。详情及保留限制见[当日发布批次](daily/2026-10-30/task.md#发布接续批次2026-10-30同日续跑)。
+2026-10-30已关闭SET-001、VERIFY-001和SKILL-001；对应PR均已合入且VPS已更新，真实域名截图与SDK证据通过。SKILL来源仍有匿名配额与第三方可用性边界，可选Token仅为配置能力，生产未启用。平台同步结果见[当日任务](daily/2026-10-30/task.md)；UPG首次启用与两项DEC继续未完成。
 
 ## 试跑与自动化
 
