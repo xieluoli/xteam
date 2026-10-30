@@ -1,5 +1,48 @@
 import { test, expect } from '@playwright/test';
 
+test('settings navigation owns the authenticated theme control and survives direct reload', async ({ page }) => {
+    const settingsRequests: string[] = [];
+    page.on('request', request => { if (request.url().includes('/api/settings')) settingsRequests.push(request.url()); });
+    let releaseProjects = () => {};
+    let markRequested = () => {};
+    const pendingProjects = new Promise<void>(resolve => { releaseProjects = resolve; });
+    const projectsRequested = new Promise<void>(resolve => { markRequested = resolve; });
+    await page.route('**/api/projects?*', async route => { markRequested(); await pendingProjects; await route.continue(); });
+    await page.goto('/');
+    await expect(page.getByRole('combobox', { name: '界面主题' })).toBeVisible();
+    await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
+    await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
+    await page.getByRole('button', { name: '登录', exact: true }).click();
+    await projectsRequested;
+    await page.getByRole('link', { name: '设置', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeFocused();
+    releaseProjects();
+    await expect(page.getByRole('link', { name: '设置', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(page.locator('#main-content').getByRole('combobox', { name: '界面主题' })).toBeVisible();
+    await expect(page.locator('.topbar').getByRole('combobox', { name: '界面主题' })).toHaveCount(0);
+    const settings = page.getByRole('region', { name: '设置', exact: true });
+    const settingsBox = (await settings.boundingBox())!;
+    const contentBox = (await page.locator('#main-content').boundingBox())!;
+    const headingBox = (await settings.getByRole('heading', { name: '设置', exact: true }).boundingBox())!;
+    const labelBox = (await settings.getByText('主题', { exact: true }).boundingBox())!;
+    const selectorBox = (await settings.getByRole('combobox', { name: '界面主题' }).boundingBox())!;
+    expect(settingsBox.width).toBe(720);
+    expect(settingsBox.x + settingsBox.width / 2).toBeCloseTo(contentBox.x + contentBox.width / 2, 0);
+    expect(labelBox.x).toBeCloseTo(headingBox.x, 0);
+    expect(selectorBox.x + selectorBox.width).toBeCloseTo(settingsBox.x + settingsBox.width, 0);
+    expect((await settings.locator('.theme-choice').boundingBox())!.height).toBeGreaterThanOrEqual(64);
+    await page.screenshot({ path: '.local/settings-desktop.png', fullPage: true });
+    await page.reload();
+    await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    expect(settingsRequests).toEqual([]);
+    await page.getByRole('link', { name: '项目', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '项目', exact: true })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: '界面主题' })).toHaveCount(0);
+    await page.goBack();
+    await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
+});
+
 test('theme switches immediately, survives reload and preserves login input', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'japan-blues');
@@ -19,8 +62,17 @@ test('theme switches immediately, survives reload and preserves login input', as
     const dialog = page.getByRole('dialog');
     await expect(dialog).toHaveCSS('background-color', 'oklch(0.1418 0.0662 295.805)');
     await page.keyboard.press('Escape');
+    await expect(page.getByRole('combobox', { name: '界面主题' })).toHaveCount(0);
+    await page.getByRole('link', { name: '设置', exact: true }).click();
     await page.getByRole('combobox', { name: '界面主题' }).click();
     await page.getByRole('option', { name: 'Japan Blues', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'japan-blues');
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#90a1b9');
+    await page.reload();
+    await expect(page.getByRole('heading', { name: '设置', exact: true })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: '界面主题' })).toHaveText('Japan Blues');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'japan-blues');
+    await page.getByRole('link', { name: '项目', exact: true }).click();
     await page.getByRole('button', { name: '新建项目' }).click();
     await expect(dialog).toHaveCSS('background-color', 'oklch(0.9818 0.0054 95.0986)');
 });

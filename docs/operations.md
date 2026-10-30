@@ -9,8 +9,12 @@
 | `HOST` | `127.0.0.1` | 服务监听地址 |
 | `PORT` | `3100` | 端口 |
 | `XTEAM_VERSION` | `development` | `/health` 回显版本 |
+| `XTEAM_UPGRADE_SOCKET` | 未启用 | 宿主升级服务的 Unix socket，应用不访问 Docker socket |
+| `XTEAM_UPGRADE_ADMINS` | 无 | 可触发检查和升级的账号邮箱，逗号分隔 |
 
 单实例运行，数据目录权限限制为服务用户，磁盘/备份按敏感资料保护。应用有登录失败限速；代理后按连接地址计数，同一代理下共享额度。不要把不同公网来源反代到同一实例。会话有效期 7 天，写请求校验 Origin 与 CSRF。
+
+正式 Release 的页面/本机命令行升级、首次启用和回退见 [Release 升级](upgrades.md)。
 
 ## 账号
 

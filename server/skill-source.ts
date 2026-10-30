@@ -43,7 +43,7 @@ export const fetchSkillSource: SkillFetch = url => new Promise((resolve, reject)
     outgoing.on('error', reject);
     outgoing.end();
 });
-export async function downloadSkill(input: string, fetcher: SkillFetch = fetchSkillSource) {
+async function readSource(input: string, fetcher: SkillFetch, snapshot?: string) {
     let url: URL;
     try { url = new URL(input.includes('://') ? input : 'https://' + input); } catch { throw new ResourceError('请填写有效的 GitHub 或 skills.sh URL'); }
     const host = url.hostname.replace(/^www\./, '');
@@ -62,36 +62,70 @@ export async function downloadSkill(input: string, fetcher: SkillFetch = fetchSk
     if (typeof ref !== 'string' || !ref) throw new ResourceError('无法确定来源分支', 502);
     let directory = isSkills || parts.length === 2 ? '' : parts.slice(4).join('/');
     if (parts[2] === 'blob') { if (!directory.endsWith('SKILL.md')) throw new ResourceError('blob URL 必须指向 SKILL.md'); directory = directory.slice(0, -8).replace(/\/$/, ''); }
-    const result = await json(`/git/trees/${encodeURIComponent(ref)}?recursive=1`);
+    if (snapshot !== undefined && !/^[a-f0-9]{40}$/.test(snapshot)) throw new ResourceError('来源快照无效');
+    const result = await json(`/git/trees/${encodeURIComponent(snapshot ?? ref)}?recursive=1`);
     if (result.truncated || !Array.isArray(result.tree)) throw new ResourceError('来源目录过大或不完整，请使用更小的仓库', 413);
     const tree = result.tree as { path: string; type: string; sha: string; size?: number; mode?: string }[];
-    let candidates = tree.filter(entry => entry.type === 'blob' && (entry.path === 'SKILL.md' || entry.path.endsWith('/SKILL.md')) && !entry.path.split('/').some(part => part.startsWith('.')));
-    if (directory) candidates = candidates.filter(entry => entry.path === directory + '/SKILL.md');
+    const all = tree.filter(entry => entry.type === 'blob' && entry.mode !== '120000' && (entry.path === 'SKILL.md' || entry.path.endsWith('/SKILL.md')) && !entry.path.split('/').some(part => part.startsWith('.')));
+    let candidates = all;
+    if (parts[2] === 'blob') candidates = candidates.filter(entry => entry.path === (directory ? directory + '/' : '') + 'SKILL.md');
+    else if (directory) candidates = candidates.filter(entry => entry.path.startsWith(directory + '/'));
     else if (isSkills) candidates = candidates.filter(entry => entry.path === parts[2] + '/SKILL.md' || entry.path.endsWith('/' + parts[2] + '/SKILL.md'));
-    else if (candidates.some(entry => entry.path === 'SKILL.md')) candidates = candidates.filter(entry => entry.path === 'SKILL.md');
-    if (candidates.length !== 1) throw new ResourceError(candidates.length ? '来源包含多个 Skill，请使用精确的目录 URL' : '来源未找到 SKILL.md');
-    const main = candidates[0];
-    directory = main.path.slice(0, -8);
-    let total = 0;
-    const files: SkillFile[] = [];
-    let content = '';
-    for (const entry of tree.filter(entry => entry.type === 'blob' && entry.path.startsWith(directory))) {
-        const path = entry.path.slice(directory.length);
-        if (path.split('/').includes('..') || path.startsWith('/') || path.includes('\\')) throw new ResourceError('来源包含越界文件路径');
-        if (path !== 'SKILL.md' && (path.split('/').some(part => part.startsWith('.') || part.toLowerCase() === 'skill.md') || /^(license|licence|copying)(\.|$)/i.test(path.split('/').at(-1)!) || /\.(png|jpe?g|gif|webp|ico|pdf|zip|gz|woff2?|ttf|mp[34])$/i.test(path) || entry.mode === '120000')) continue;
-        if (path !== 'SKILL.md') validFilePath(path);
+    const text = async (entry: typeof tree[number]) => {
         if (entry.size !== undefined && entry.size > fileLimit) throw new ResourceError('单文件超过 1 MiB', 413);
         const blob = await json('/git/blobs/' + encodeURIComponent(entry.sha));
         if (blob.encoding !== 'base64' || typeof blob.content !== 'string') throw new ResourceError('来源文件格式无效', 502);
         const bytes = Buffer.from(blob.content, 'base64');
-        if (bytes.includes(0)) continue;
-        let text: string;
-        try { text = new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch { continue; }
         if (bytes.length > fileLimit) throw new ResourceError('单文件超过 1 MiB', 413);
-        total += bytes.length;
+        if (bytes.includes(0)) return null;
+        try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch { return null; }
+    };
+    return { url, owner, repo, ref, directory, isSkills, tree, all, candidates, sha: result.sha as string, text };
+}
+export async function discoverSkillSource(input: string, fetcher: SkillFetch = fetchSkillSource) {
+    const source = await readSource(input, fetcher);
+    if (!/^[a-f0-9]{40}$/.test(source.sha ?? '')) throw new ResourceError('无法确定来源快照', 502);
+    if (!source.candidates.length) throw new ResourceError('来源未找到 SKILL.md');
+    if (source.candidates.length > 20) throw new ResourceError('来源超过 20 个 Skill，请使用更小的目录', 413);
+    const candidates = [];
+    for (const entry of source.candidates) {
+        const content = await source.text(entry);
+        if (!content?.trim()) throw new ResourceError('SKILL.md 正文为空或不是 UTF-8 文本');
+        const path = entry.path.slice(0, -8).replace(/\/$/, '');
+        candidates.push({ path, content, fallbackName: path.split('/').at(-1) || source.repo });
+    }
+    return { sha: source.sha, ref: source.ref, candidates };
+}
+export async function downloadSkill(input: string, fetcher: SkillFetch = fetchSkillSource, selection?: { sha: string; path: string }) {
+    const source = await readSource(input, fetcher, selection?.sha);
+    const { url, repo, ref, isSkills, tree } = source;
+    let candidates = source.candidates;
+    if (selection) {
+        if (selection.path && (selection.path.startsWith('/') || selection.path.includes('\\') || selection.path.split('/').some(part => !part || part.startsWith('.') || /[\x00-\x20]/.test(part)))) throw new ResourceError('选择路径无效');
+        if (source.sha !== selection.sha) throw new ResourceError('来源快照不匹配，请重新读取候选');
+        candidates = candidates.filter(entry => entry.path === (selection.path ? selection.path + '/' : '') + 'SKILL.md');
+        if (!candidates.length) throw new ResourceError('选择的目录不在本次来源范围内');
+    } else if (source.directory) candidates = candidates.filter(entry => entry.path === source.directory + '/SKILL.md');
+    else if (!isSkills && candidates.some(entry => entry.path === 'SKILL.md')) candidates = candidates.filter(entry => entry.path === 'SKILL.md');
+    if (candidates.length !== 1) throw new ResourceError(candidates.length ? '来源包含多个 Skill，请使用精确的目录 URL' : '来源未找到 SKILL.md');
+    const main = candidates[0];
+    const directory = main.path.slice(0, -8);
+    let total = 0;
+    const files: SkillFile[] = [];
+    let content = '';
+    for (const entry of tree.filter(entry => entry.type === 'blob' && entry.path.startsWith(directory))) {
+        if (source.all.some(other => other.path !== main.path && other.path.startsWith(directory) && entry.path.startsWith(other.path.slice(0, -8)))) continue;
+        const path = entry.path.slice(directory.length);
+        if (path.split('/').includes('..') || path.startsWith('/') || path.includes('\\')) throw new ResourceError('来源包含越界文件路径');
+        if (path !== 'SKILL.md' && (path.split('/').some(part => part.startsWith('.') || part.toLowerCase() === 'skill.md') || /^(license|licence|copying)(\.|$)/i.test(path.split('/').at(-1)!) || /\.(png|jpe?g|gif|webp|ico|pdf|zip|gz|woff2?|ttf|mp[34])$/i.test(path) || entry.mode === '120000')) continue;
+        if (path !== 'SKILL.md') validFilePath(path);
+        const text = await source.text(entry);
+        if (text === null) continue;
+        total += Buffer.byteLength(text);
         if (total > bundleLimit || files.length >= 256 && path !== 'SKILL.md') throw new ResourceError('Skill 超过 8 MiB 或 256 个附属文件', 413);
         if (path === 'SKILL.md') content = text; else files.push({ path, content: text });
     }
     if (!content.trim()) throw new ResourceError('SKILL.md 正文为空或不是 UTF-8 文本');
-    return { content, files: files.sort((left, right) => left.path.localeCompare(right.path)), source_url: url.href.replace(/\/$/, ''), source_type: isSkills ? 'skills.sh' : 'GitHub', fallbackName: directory.split('/').filter(Boolean).at(-1) || repo };
+    const sourceUrl = selection && !isSkills ? `https://github.com/${source.owner}/${repo}/tree/${encodeURIComponent(ref)}${directory ? '/' + directory.replace(/\/$/, '') : ''}` : url.href.replace(/\/$/, '');
+    return { content, files: files.sort((left, right) => left.path.localeCompare(right.path)), source_url: sourceUrl, source_type: isSkills ? 'skills.sh' : 'GitHub', fallbackName: directory.split('/').filter(Boolean).at(-1) || repo };
 }

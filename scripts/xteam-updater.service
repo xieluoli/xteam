@@ -1,0 +1,23 @@
+[Unit]
+Description=XTEAM Release updater
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/xteam-updater
+ExecStart=/usr/bin/node /opt/xteam-updater/updater.ts
+Environment=XTEAM_UPDATER_GROUP=1000
+UMask=0077
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/opt/xteam-updater /opt/xteam-rewrite/update
+
+[Install]
+WantedBy=multi-user.target
