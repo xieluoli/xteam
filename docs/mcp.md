@@ -31,7 +31,7 @@ Skill 使用独立的同一共享服务（网页与 MCP 同规则）：
 - `write_skill_file` / `delete_skill_file`：按相对 `path` 维护附属文本文件；主文件需用 update_skill。
 - `delete_skill`：删除 Skill 及附属文件，先确认。
 
-不再提供手动 `create_skill`；旧 HTTP 手动新增返回 400 并指向 URL 导入。标签通过 update_skill 的 labels 数组维护。来源导入会访问受限的公网 GitHub API，不执行远程文本。
+不再提供手动 `create_skill`；旧 HTTP 手动新增返回 400 并指向 URL 导入。标签通过 update_skill 的 labels 数组维护。来源导入通过公网 GitHub API 核对公开仓库与目录，正文从固定树 SHA 的 Raw 地址下载，不执行远程文本。限流返回实际恢复时间；可选服务端只读 Token 与缓存边界见[操作说明](operations.md#skill-来源与-github-配额)。
 
 批量导入使用发现时的同一 Git 树快照，不随分支移动更换内容；每项保存精确目录及原 ref，后续 refresh_skill 只更新该目录。每文件 1 MiB、每项 8 MiB/256 个附属文件、本批文本 32 MiB；超限或来源失败逐项报错，已有成功项保留。网页对应 `POST /api/skills/discover` 和 `POST /api/skills/import-batch`，参数与 MCP 相同。
 

@@ -96,7 +96,7 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
         if (typeof input?.url !== 'string' || typeof input.sha !== 'string' || !/^[a-f0-9]{40}$/.test(input.sha) || !Array.isArray(input.items) || !input.items.length || input.items.length > 20) throw new ResourceError('请先读取来源并选择 1–20 个 Skill');
         const items = input.items as { path: string; on_conflict?: string }[];
         if (items.some(item => !item || typeof item.path !== 'string' || item.path.length > 1000 || item.path && item.path.split('/').some(part => !part || part.startsWith('.') || /[\\\x00-\x20]/.test(part)) || !['fail', 'skip', 'rename', 'overwrite'].includes(item.on_conflict ?? 'fail')) || new Set(items.map(item => item.path)).size !== items.length) throw new ResourceError('选择的目录或冲突选项无效，不能重复选择');
-        // One request shares immutable tree/blob responses; no background import queue is needed.
+        // One batch shares its tree and raw files, including injected source fetchers.
         const cache = new Map<string, Promise<Buffer>>();
         const cached: SkillFetch = url => { if (!cache.has(url)) cache.set(url, (fetcher ?? fetchSkillSource)(url)); return cache.get(url)!; };
         let total = 0;

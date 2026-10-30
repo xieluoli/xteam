@@ -17,7 +17,7 @@ pnpm start
 
 打开 `http://localhost:3100`，使用刚创建的账号登录。密码至少 12 位，管理员命令交互输入。没有自助注册或邮件验证码。
 
-- [操作与部署](docs/operations.md)：配置、账号、备份恢复、容器及回滚。
+- [操作与部署](docs/operations.md)：配置、账号、备份恢复、容器及回滚；Skill 来源可选服务端 `XTEAM_GITHUB_TOKEN` 配置见[配额说明](docs/operations.md#skill-来源与-github-配额)。
 - [Release升级](docs/upgrades.md)：页面与命令行入口、首次启用和回退。
 - [MCP 接入](docs/mcp.md)：令牌、客户端示例、工具及权限边界。
 - [功能与验收](docs/scope.md)：已批准范围与使用闭环。

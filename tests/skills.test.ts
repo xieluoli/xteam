@@ -19,18 +19,18 @@ async function fixture() {
         const callback = onFetch; onFetch = undefined; callback?.();
         if (upstream === 'offline') throw new Error('upstream offline');
         const parsed = new URL(url);
-        assert.equal(parsed.hostname, 'api.github.com');
-        if (parsed.pathname === '/repos/acme/tools') return Buffer.from(JSON.stringify({ default_branch: 'main' }));
-        if (parsed.pathname === '/repos/acme/tools/git/trees/main') return Buffer.from(JSON.stringify({ truncated: false, tree: [
+        assert(['api.github.com', 'raw.githubusercontent.com'].includes(parsed.hostname));
+        if (parsed.pathname === '/repos/acme/tools') return Buffer.from(JSON.stringify({ private: false, default_branch: 'main' }));
+        if (parsed.pathname === '/repos/acme/tools/git/trees/main') return Buffer.from(JSON.stringify({ sha: 'a'.repeat(40), truncated: false, tree: [
             { path: 'skills/review/SKILL.md', type: 'blob', sha: 'main' },
             { path: 'skills/review/references/check.md', type: 'blob', sha: 'reference' },
             { path: 'skills/review/scripts/demo.js', type: 'blob', sha: 'script' },
             { path: 'skills/review/.env', type: 'blob', sha: 'secret' },
             { path: 'skills/review/LICENSE', type: 'blob', sha: 'license' },
         ] }));
-        if (parsed.pathname.startsWith('/repos/acme/tools/git/blobs/')) {
-            const content = parsed.pathname.endsWith('/main') ? `---\nname: review\ndescription: ${upstream}\nallowed-tools: [Read, Bash]\ncustom:\n  keep: true\n---\n# Review\n${upstream}` : parsed.pathname.endsWith('/reference') ? '# Check\nText reference' : 'globalThis.__unsafe = true';
-            return Buffer.from(JSON.stringify({ encoding: 'base64', content: Buffer.from(content).toString('base64') }));
+        if (parsed.hostname === 'raw.githubusercontent.com') {
+            const content = parsed.pathname.endsWith('/SKILL.md') ? `---\nname: review\ndescription: ${upstream}\nallowed-tools: [Read, Bash]\ncustom:\n  keep: true\n---\n# Review\n${upstream}` : parsed.pathname.endsWith('/references/check.md') ? '# Check\nText reference' : 'globalThis.__unsafe = true';
+            return Buffer.from(content);
         }
         throw new Error('Unexpected URL: ' + url);
     };
