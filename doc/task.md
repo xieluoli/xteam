@@ -70,6 +70,8 @@ XTEAM 保存团队项目与任务的关键上下文，让任意设备上的外�
 - 文档同步采用独立分支/PR，不夹带尚未授权发布的产品改动，不触发VPS部署。起手和回写步骤见[跨设备接续](handoff.md)。
 - 首次共享：[文档PR #12](https://github.com/xieluoli/xteam/pull/12)，分支codex/2026-10-30-shared-docs；最终head CI、合入状态及merge SHA以该PR和远端main实际回读为准。本次不更新生产版本。
 
-- 当前复盘与次日候选共享：[PR #17](https://github.com/xieluoli/xteam/pull/17)。文档版本与产品线上SHA分开核对，最终head CI和merge状态以该PR实际字段为准。
+- 上午复盘与原次日候选共享：[PR #17](https://github.com/xieluoli/xteam/pull/17)。文档版本与产品线上SHA分开核对，最终head CI和merge状态以该PR实际字段为准。
 
 - 本日产品交付记录与迁移备注共享：[PR #19](https://github.com/xieluoli/xteam/pull/19)。最终head CI与合入状态以PR实时字段为准；线上产品继续为`641c75d9acbca78475a38efa3158aa682ce15171`，纯文档提交不部署。
+
+- 夜间实际复盘与试跑结束：[PR #20](https://github.com/xieluoli/xteam/pull/20)；五份批准文档，最终head CI及合入状态以PR实际字段核验，本机保存精确文档merge游标。两条调度已暂停，线上产品版本保持不变。
