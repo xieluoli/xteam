@@ -65,3 +65,5 @@ XTEAM 保存团队项目与任务的关键上下文，让任意设备上的外�
 - 2026-10-30用户追加授权：doc/及按日记录可提交远端仓库，供其他设备agent接续并回写进度；替代旧记录及旧调度提示中的“doc不入Git”。运行证据、备份、数据、凭据及个人memory仍不入Git，历史.local路径仅为原设备证据索引。
 - 文档同步采用独立分支/PR，不夹带尚未授权发布的产品改动，不触发VPS部署。起手和回写步骤见[跨设备接续](handoff.md)。
 - 首次共享：[文档PR #12](https://github.com/xieluoli/xteam/pull/12)，分支codex/2026-10-30-shared-docs；最终head CI、合入状态及merge SHA以该PR和远端main实际回读为准。本次不更新生产版本。
+
+- 当前复盘与次日候选共享：[PR #17](https://github.com/xieluoli/xteam/pull/17)。文档版本与产品线上SHA分开核对，最终head CI和merge状态以该PR实际字段为准。
