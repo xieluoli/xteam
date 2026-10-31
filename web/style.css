@@ -77,8 +77,9 @@ label[data-slot=label] { display: flex; flex-direction: column; align-items: str
 .project-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 12px; color: var(--muted-foreground); }
 .todo-panel, .project-resources { min-width: 0; }
 .todo-panel h2, .project-resources h2 { font-size: 16px; margin: 0; }
-.todo-toolbar { margin-top: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.todo-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 .todo-toolbar > [data-slot] { width: 140px; }
+.todo-toolbar > input { flex: 1; min-width: 140px; }
 .project-resources { padding-left: 28px; border-left: 1px solid var(--border); }
 .project-identity { margin-top: 24px; font-size: 12px; }
 .project-identity h2 { font-size: 14px; }

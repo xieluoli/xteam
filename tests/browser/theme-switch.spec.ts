@@ -62,6 +62,8 @@ test('theme switches immediately, survives reload and preserves login input', as
     const dialog = page.getByRole('dialog');
     await expect(dialog).toHaveCSS('background-color', 'oklch(0.1418 0.0662 295.805)');
     await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: '放弃修改', exact: true }).click();
+    await expect(page.locator('[data-slot="dialog-content"]')).toHaveCount(0);
     await expect(page.getByRole('combobox', { name: '界面主题' })).toHaveCount(0);
     await page.getByRole('link', { name: '设置', exact: true }).click();
     await page.getByRole('combobox', { name: '界面主题' }).click();
