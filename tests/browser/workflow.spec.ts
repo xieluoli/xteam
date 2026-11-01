@@ -34,7 +34,8 @@ test('member creates reusable resources, project context and a completed result 
     await expect(page.getByRole('checkbox', { name: '发布验收' })).toBeChecked();
     await page.reload();
     await expect(page.getByRole('checkbox', { name: '发布验收' })).toBeChecked();
-    await expect(page.getByText('结果：https://example.com/done')).toBeVisible();
+    await page.getByRole('link', { name: '发布验收', exact: true }).click();
+    await expect(page.getByTestId('todo-description')).toHaveText('结果：https://example.com/done');
     await page.getByRole('link', { name: 'MCP 接入', exact: true }).click();
     await page.getByLabel('令牌名称').fill('浏览器测试');
     await page.getByRole('button', { name: '创建令牌' }).click();

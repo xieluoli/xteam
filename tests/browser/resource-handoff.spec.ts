@@ -146,6 +146,30 @@ for (const width of [320, 390]) test(`Skill current file copy clears stale feedb
     await page.request.delete('/api/skills/' + skill.skill.id, { headers });
 });
 
+test('Skill files with the same basename copy the selected full path and literal content', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const headers = await login(page);
+    const imported = await (await page.request.post('/api/skills/import', { headers, data: { url: 'https://github.com/example/single', on_conflict: 'rename' } })).json();
+    const id = imported.skill.id;
+    const files = [
+        { path: 'references/shared.md', content: '参考目录\n<script>window.__sameNameExecuted=true</script>' },
+        { path: 'scripts/shared.md', content: '脚本目录仅文本\n不同文件的完成结果' },
+    ];
+    try {
+        for (const file of files) expect((await page.request.put('/api/skills/' + id + '/files', { headers, data: file })).ok()).toBe(true);
+        await page.goto('/#skill/' + id);
+        await page.getByRole('tab', { name: /文件/ }).click();
+        for (const file of [...files, files[0]]) {
+            await page.getByRole('button', { name: file.path, exact: true }).click();
+            await expect(page.getByRole('status')).toHaveCount(0);
+            await page.getByRole('button', { name: '复制当前文件', exact: true }).click();
+            expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(file.content);
+            await expect(page.getByRole('status')).toContainText(file.path);
+        }
+        expect(await page.evaluate(() => (window as { __sameNameExecuted?: boolean }).__sameNameExecuted)).toBeUndefined();
+    } finally { await page.request.delete('/api/skills/' + id, { headers }); }
+});
+
 for (const kind of ['项目', 'Todo', '链接', 'Agent 模板']) test(`${kind} drafts prompt only after real edits and preserve cancelled or failed saves`, async ({ page }) => {
     const headers = await login(page), value = await project(page, headers);
     if (kind === 'Agent 模板') await page.goto('/#agents');
