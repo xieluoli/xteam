@@ -99,9 +99,18 @@ label[data-slot=label] { display: flex; flex-direction: column; align-items: str
 .link-list a, .link-list small, .link-list code { display: block; margin: 6px 0; overflow-wrap: anywhere; word-break: break-word; }
 .link-list small, .token-list small { font-size: 11px; color: var(--muted-foreground); }
 .link-list .actions { justify-content: end; }
-.todo-list li { display: flex; gap: 12px; }
+.todo-list { display: grid; gap: 12px; margin-top: 16px; }
+.todo-list li { position: relative; isolation: isolate; display: flex; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius); }
+.todo-list li:hover { background: var(--muted); }
+.todo-card-link { color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+.todo-card-link::after { content: ''; position: absolute; inset: 0; border-radius: var(--radius); }
+.todo-card-link:focus-visible { outline: none; }
+.todo-card-link:focus-visible::after { outline: 2px solid var(--ring); outline-offset: 2px; }
+.todo-list .todo-check, .todo-list .actions, .todo-list .action-feedback { position: relative; z-index: 1; }
+.todo-detail, .todo-detail h1 { min-width: 0; overflow-wrap: anywhere; }
+.todo-detail-status { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.todo-description { margin-top: 24px; line-height: 1.8; }
 .todo-body { flex: 1; min-width: 0; }
-.todo-body p { font-size: 13px; color: var(--muted-foreground); line-height: 1.8; }
 .todo-body strong { overflow-wrap: anywhere; }
 .completed strong { color: var(--muted-foreground); text-decoration: line-through; }
 .token-panel { margin-bottom: 24px; }
@@ -139,7 +148,7 @@ pre { font: 12px/1.8 var(--font-mono); background: var(--muted); border-radius: 
     .content { padding: 24px 16px; }
     .page-heading { align-items: start; gap: 12px; }
     .page-heading h1 { font-size: 24px; }
-    .project-overview .page-heading { flex-direction: column; }
+    .project-overview .page-heading, .todo-detail .page-heading { flex-direction: column; }
     .list-toolbar { align-items: stretch; flex-wrap: wrap; }
     .search { width: 100%; }
     .inline-form { flex-direction: column; align-items: stretch; }

@@ -59,7 +59,9 @@ test('explicit refresh displays a real external MCP update', async ({ page }) =>
     const project = await createProject(page, headers);
     const todo = await (await page.request.post('/api/todos', { headers, data: { project_id: project.id, title: '外部处理', description: '尚未回写' } })).json();
     await page.goto(`/#project/${project.id}`);
-    await expect(page.getByText('尚未回写', { exact: true })).toBeVisible();
+    await page.getByRole('link', { name: '外部处理', exact: true }).click();
+    await expect(page.getByTestId('todo-description')).toHaveText('尚未回写');
+    await page.getByRole('button', { name: '返回 Todo 列表', exact: true }).click();
     const token = await (await page.request.post('/api/tokens', { headers, data: { name: 'context-browser-test' } })).json();
     const client = new Client({ name: 'context-browser-test', version: '1' });
     try {
@@ -68,7 +70,8 @@ test('explicit refresh displays a real external MCP update', async ({ page }) =>
         expect(result.isError).not.toBe(true);
         await expect(page.getByRole('button', { name: '刷新项目', exact: true })).toBeVisible();
         await page.getByRole('button', { name: '刷新项目', exact: true }).click();
-        await expect(page.getByText('已验证，下一步交付', { exact: true })).toBeVisible();
+        await page.getByRole('link', { name: '外部处理', exact: true }).click();
+        await expect(page.getByTestId('todo-description')).toHaveText('已验证，下一步交付');
         await expect(page.getByRole('checkbox', { name: '外部处理', exact: true })).toBeChecked();
     } finally {
         await client.close();

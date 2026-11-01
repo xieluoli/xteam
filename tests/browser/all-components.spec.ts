@@ -81,7 +81,9 @@ test('desktop pages share the Sidebar and existing project, link, Todo, template
     await page.getByRole('button', { name: '编辑 / 记录结果' }).click();
     await page.getByLabel('完成结果', { exact: true }).fill('已更新的结果');
     await page.getByRole('button', { name: '保存', exact: true }).click();
-    await expect(page.getByText('已更新的结果', { exact: true })).toBeVisible();
+    await page.getByRole('link', { name: '统一组件待办', exact: true }).click();
+    await expect(page.getByTestId('todo-description')).toHaveText('已更新的结果');
+    await page.getByRole('button', { name: '返回 Todo 列表', exact: true }).click();
     await page.getByRole('button', { name: '更多项目操作' }).click();
     await page.getByRole('menuitem', { name: '删除项目', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
