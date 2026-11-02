@@ -45,7 +45,7 @@ test('sidebar update entry checks Release, confirms a pinned upgrade and recover
         await page.getByRole('combobox', { name: '界面主题' }).click();
         await page.getByRole('option', { name: width === 390 ? 'cyberpunk' : 'Japan Blues', exact: true }).click();
         await expect(page.getByRole('listbox')).toHaveCount(0);
-        for (const button of await updates.getByRole('button').all()) expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+        for (const button of await updates.getByRole('button').all()) expect((await button.boundingBox())!.height).toBeCloseTo((width === 390 ? 4 : 3.52) * 9, 1);
         await page.screenshot({ path: '.local/updates-' + width + '.png', fullPage: true, animations: 'disabled' });
     }
 });

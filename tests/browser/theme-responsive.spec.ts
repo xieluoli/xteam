@@ -34,7 +34,7 @@ for (const theme of ['Japan Blues', 'cyberpunk']) test(`${theme} preserves proje
         await page.setViewportSize({ width, height: 900 });
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
         const more = page.getByRole('button', { name: '更多项目操作' });
-        expect((await more.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+        await expect.poll(async () => (await more.boundingBox())!.height).toBeCloseTo((theme === 'cyberpunk' ? 4 : 3.52) * 9, 1);
         await more.click();
         const menu = page.getByRole('menu');
         await expect(menu).toHaveCSS('background-color', theme === 'cyberpunk' ? 'oklch(0.1418 0.0662 295.805)' : 'oklch(1 0 0)');
@@ -78,7 +78,7 @@ for (const theme of ['Japan Blues', 'cyberpunk']) test(`${theme} preserves proje
         expect(labelBox.x).toBeCloseTo(headingBox.x, 0);
         expect(labelBox.x + labelBox.width).toBeLessThan(selector.x);
         expect(selector.x + selector.width).toBeCloseTo(settingsBox.x + settingsBox.width, 0);
-        expect(selector.height).toBeGreaterThanOrEqual(44);
+        expect(selector.height).toBeCloseTo((expectedTheme === 'cyberpunk' ? 4 : 3.52) * 9, 1);
         expect((await settings.locator('.theme-choice').boundingBox())!.height).toBeGreaterThanOrEqual(64);
         await page.screenshot({ path: `.local/settings-${expectedTheme}-${width}.png`, fullPage: true });
     }

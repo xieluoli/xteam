@@ -133,3 +133,21 @@
 - 当前决策提示：UPG-001首次启用受宿主安装/认证、升级管理员邮箱、适用正式Release未确认阻塞；DEC-001会话/心跳/Token采集方案待决定，未获实施授权；DEC-002的11月7日以后续期为未来决策，不阻塞本轮授权内工作。三项下载补验属于验证缺口，不冒称待用户决策。
 - 验证/共享：两条原生自动化更新/view回读通过，原提示全文及名称/时间/模型/环境等字段比对通过；文档相对链接与git diff --check通过，pnpm test 48/48、pnpm build成功、pnpm test:e2e 63/63。文档已推送至[PR #29](https://github.com/xieluoli/xteam/pull/29)，最终head CI与合入SHA以PR实际字段及平台回读为准；平台LOOP-001原ID已认领并回读，文档同步收尾后再按范围关闭。真实定时运行后的回复与桌面通知送达尚待观察，本次不以静态核验冒充通知已送达，也不提前创建今晚review。
 - 接续：本项仅修改三份共享doc及两条本机既有自动化，不涉及产品代码或VPS部署；文档合入后同步平台原ID结果。后续工作/复盘按[会话规则](../../workflow.md#会话回复与通知2026-11-02-用户要求)输出，并观察真实定时回复与客户端通知；OPS-MAC-001原调度验收边界继续保留。
+
+
+## 临时新增：DS-21 官方主题接入与组件比例规整
+
+- 2026-11-02 11:01 +08:00 用户明确要求今日优先梳理 tweakcn 官网接入，再整理设计系统。负责人 Mac mini / Codex，沿用工作会话01a19976-6595-7f00-ad30-a645a2d218fd；分支`codex/2026-11-02-design-system`，基线完整HEAD `ded4210eca29db2b334b2d4b503419a42fcacbd4`。当前认领/进行中，尚无本批交付。
+- 依据：官方主题是`registry:style`，通过`pnpm dlx shadcn@latest add https://tweakcn.com/r/themes/cmmhql9yf000404jshrdebgfj`导入components.json配置的CSS入口；当前React/Vite/Tailwind4无需Next.js。官方dry-run仅预告114个CSS变量，未增依赖。现有全局44px最小高及height:auto覆盖了Button尺寸、TabsTrigger高于TabsList；根14px还缩放全部rem尺寸。
+- 范围/优先级：用户明确优先的UI整理，沿用Japan Blues默认和cyberpunk可选设计；覆盖颜色/字体/圆角/阴影/spacing接入、Button主次/尺寸、Input/Select对齐、Tabs比例、布局间距与适用响应式。保留业务目录布局和纯文本语义，不自行换色或新增产品方向。
+- 分段与验证门（预计超过3文件，先拆分）：①先加真实页面几何回归并观察失败，再执行官方CLI导入及双主题适配（theme/themes/回归）；②收拢全局覆盖及页面间距、控件层级，每批最多3个实现文件，跑针对性主题/交互验证；③更新设计说明/当日记录，运行pnpm test、build、test:e2e及差异审阅，再PR/CI/main/既有VPS交付。
+- 验收：官方原始tokens可追溯；Button尺寸档位不被全局强制撑高，主次/危险/ghost沿用语义变体；Tabs触发器位于容器内且键盘可用；输入与默认按钮同高；布局使用主题间距；双主题桌面/390/320无横向溢出，长文本和弹层可用，focus/disabled保护保留。Japan Blues已知#oklch上游错误仅最小归一化，字体沿既有本地fallback。
+- 交付包含上线：TDD/full tests后按最终head CI合入main，VPS完整main SHA及真实域名桌面/390/320功能和截图验收齐全才completed=true。原始registry/diff/log/截图留本机，不上传私有证据。
+- 接续：上午五项功能安全批次已结束；TODO-004/CTX-003/SKFILE-002下载字节补验仍未完，因用户明确优先设计整理暂顺延，原ID和验收不变，设计批次后接续。UPG/DEC/OPS原阻塞保留。此项是当天新增，不扩成另一份20项计划。
+
+### DS-21 开发验证截点
+
+- 官方CLI 4.23.0已实际导入指定Japan Blues registry；React/Vite继续使用本地CSS，未新增依赖。保留cyberpunk原tokens，并最小修正上游card-foreground的`#oklch`语法。
+- 已按预先三段验证门完成主题入口、组件尺寸与布局间距；恢复16px根字号和完整Preflight，移除全局44px/height:auto覆盖，长资源名/文件树仅局部换行。主次按钮、Tabs、Markdown层级及双主题桌面/390/320回归已验证。
+- TDD先复现root14px、Tabs越界、固定间距/长名溢出，再修复；pnpm test 48/48、pnpm build通过、pnpm test:e2e 67/67、diff检查通过。首次全套的三项失败为旧44px断言与Markdown断言页签错误，已修正测试并重跑完整67项通过。
+- 当前仅开发通过，DS-21保持completed=false；代码尚未推送/合入/上线，本批交付继续等待最终head CI、main合入及真实域名验收。原始log/registry/截图仅存本机。
