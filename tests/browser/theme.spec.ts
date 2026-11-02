@@ -5,7 +5,7 @@ test('Japan Blues reaches login and editable controls, including focus, hover an
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#90a1b9');
     const login = page.getByRole('button', { name: '登录', exact: true });
     await expect(login).toHaveCSS('background-color', 'oklch(0.704 0.04 256.788)');
-    await expect(login).toHaveCSS('border-radius', '5px');
+    await expect(login).toHaveCSS('border-radius', '6px');
     await expect(login).toHaveCSS('box-shadow', 'none');
     const email = page.getByLabel('邮箱', { exact: true });
     await page.screenshot({ path: '.local/japan-blues-login.png', fullPage: true });
@@ -20,7 +20,7 @@ test('Japan Blues reaches login and editable controls, including focus, hover an
     await page.getByRole('button', { name: '新建项目' }).click();
     const modal = page.getByRole('dialog');
     await expect(modal).toHaveCSS('background-color', 'oklch(0.9818 0.0054 95.0986)');
-    await expect(modal).toHaveCSS('border-radius', '7px');
+    await expect(modal).toHaveCSS('border-radius', '8px');
     await expect(modal).not.toHaveCSS('box-shadow', 'none');
     await page.getByLabel('名称', { exact: true }).fill('主题控件验证');
     await page.getByRole('button', { name: '保存', exact: true }).click();
@@ -34,7 +34,7 @@ test('Japan Blues reaches login and editable controls, including focus, hover an
     await page.getByRole('button', { name: '主题控件验证', exact: true }).click();
     await page.getByRole('button', { name: '添加链接', exact: true }).click();
     const selector = page.getByRole('combobox', { name: '类别', exact: true });
-    await expect(selector).toHaveCSS('border-radius', '5px');
+    await expect(selector).toHaveCSS('border-radius', '6px');
     await expect(selector).toHaveCSS('border-color', 'oklch(0.922 0 0)');
     await page.screenshot({ path: '.local/japan-blues-controls.png', fullPage: true });
     await page.keyboard.press('Escape');
