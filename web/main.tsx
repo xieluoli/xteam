@@ -89,6 +89,8 @@ function App() {
     const [todoFilter, setTodoFilter] = useState('all');
     const [todoQuery, setTodoQuery] = useState('');
     const [todoSort, setTodoSort] = useState('updated');
+    const [linkQuery, setLinkQuery] = useState('');
+    const [linkCategory, setLinkCategory] = useState('all');
     const [tokens, setTokens] = useState<{
         id: string;
         name: string;
@@ -103,7 +105,9 @@ function App() {
     const [tokenPending, setTokenPending] = useState('');
     const focusNextPage = useRef(false);
     const newTokenRef = useRef<HTMLInputElement>(null);
-    useEffect(() => { setTodoFilter('all'); setTodoQuery(''); setTodoSort('updated'); setFeedback({}); setLastRefreshed(''); }, [projectId]);
+    const todoCopyRequest = useRef(0);
+    useEffect(() => { setTodoFilter('all'); setTodoQuery(''); setTodoSort('updated'); setLinkQuery(''); setLinkCategory('all'); setFeedback({}); setLastRefreshed(''); }, [projectId]);
+    useEffect(() => { todoCopyRequest.current++; setFeedback(current => { const next = { ...current }; delete next.todoContext; return next; }); }, [todoId, context]);
     useEffect(() => { if (!user) { setCurrentVersion(''); return; } let active = true; void fetch('/health').then(response => response.json()).then(value => { if (active && typeof value.version === 'string') setCurrentVersion(value.version); }).catch(() => {}); return () => { active = false; }; }, [user?.email]);
     useEffect(() => { const expire = () => { setUser(null); setContext(null); setItems([]); setTokens([]); setEditor(null); setEditorDirty(false); setDetail(null); setNewToken(''); csrf = ''; }; window.addEventListener('xteam-session-expired', expire); return () => window.removeEventListener('xteam-session-expired', expire); }, []);
     useEffect(() => { api('/me').then(value => { csrf = value.csrf; setUser(value.user); }).catch(() => { }).finally(() => setBooting(false)); }, []);
@@ -221,11 +225,13 @@ function App() {
             await refresh();
         } });
     }
-    async function copy(key: string, value: string, success = '已复制') { setNotice(''); setError(''); setFeedback(current => { const next = { ...current }; delete next[key]; return next; }); try {
+    async function copy(key: string, value: string, success = '已复制') { const request = key === 'todoContext' ? ++todoCopyRequest.current : 0; setNotice(''); setError(''); setFeedback(current => { const next = { ...current }; delete next[key]; return next; }); try {
         await navigator.clipboard.writeText(value);
+        if (key === 'todoContext' && request !== todoCopyRequest.current) return;
         setFeedback(current => ({ ...current, [key]: { message: success } }));
     }
     catch {
+        if (key === 'todoContext' && request !== todoCopyRequest.current) return;
         setFeedback(current => ({ ...current, [key]: { message: '复制失败，请使用下方文本手动复制。', failed: true, fallback: value } }));
     } }
     async function refreshProject() { setRefreshing(true); setFeedback(current => ({ ...current, refresh: { message: '正在刷新…' } })); try { await refresh(); setFeedback(current => ({ ...current, refresh: { message: `已刷新 ${new Date().toLocaleTimeString('zh-CN', { hour12: false })}` } })); } catch (error) { setFeedback(current => ({ ...current, refresh: { message: `刷新失败：${(error as Error).message}。已保留当前内容。`, failed: true } })); } finally { setRefreshing(false); } }
@@ -245,12 +251,21 @@ function App() {
     const visibleTodos = contextTodos.filter(todo => `${todo.title ?? ''}\n${todo.description ?? ''}`.toLocaleLowerCase().includes(todoQuery.trim().toLocaleLowerCase())).sort((first, second) =>
         (todoSort === 'updated' ? (second.updated_at ?? '').localeCompare(first.updated_at ?? '') : 0)
         || (first.title ?? '').localeCompare(second.title ?? '', 'zh-CN') || first.id.localeCompare(second.id));
+    const todoUrl = (id: string) => `${location.origin}${location.pathname}#project/${projectId}/todo/${id}`;
+    const todoText = context && currentTodo ? [
+        `# ${currentTodo.title}`, `Todo ID：${currentTodo.id}`, `详情 URL：${todoUrl(currentTodo.id)}`,
+        '## 项目', context.project.name, `项目 ID：${context.project.id}`,
+        '## 项目简介', context.project.description || '未填写',
+        '## Todo 状态', currentTodo.completed ? '已完成' : '未完成',
+        '## Todo 说明', currentTodo.description || '未填写',
+    ].join('\n\n') : '';
+    const visibleLinks = (context?.links ?? []).filter(link => (linkCategory === 'all' || link.category === linkCategory) && `${link.title ?? ''}\n${link.url ?? ''}`.toLocaleLowerCase().includes(linkQuery.trim().toLocaleLowerCase()));
     const contextText = context ? [
         `# ${context.project.name}`,
         `项目 ID：${context.project.id}`,
         '## 项目简介', context.project.description || '未填写',
         '## 关联链接', context.links.length ? context.links.map(link => `- ${link.title}：${link.url}`).join('\n') : '暂无链接',
-        '## Todo', contextTodos.length ? contextTodos.map(todo => `- [${todo.completed ? 'x' : ' '}] ${todo.title}${todo.description ? '\n' + todo.description.split('\n').map(line => '  ' + line).join('\n') : ''}`).join('\n') : '暂无 Todo',
+        '## Todo', contextTodos.length ? contextTodos.map(todo => `- [${todo.completed ? 'x' : ' '}] ${todo.title}\n  Todo ID：${todo.id}\n  详情 URL：${todoUrl(todo.id)}${todo.description ? '\n' + todo.description.split('\n').map(line => '  ' + line).join('\n') : ''}`).join('\n') : '暂无 Todo',
     ].join('\n\n') : '';
     return <SidebarProvider><a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>跳到主要内容</a><AppSidebar view={view} email={user.email} version={currentVersion} checkUpdates={async () => { if (await navigate('settings')) setUpdateCheckSignal(value => value + 1); }} navigate={navigate} password={() => setPasswordDialog(true)} logout={() => void act(async () => { await api('/logout', 'POST'); setUser(null); setNewToken(''); csrf = ''; })}/><SidebarInset className="min-w-0 bg-card"><header className="topbar"><SidebarTrigger aria-label="切换侧边栏"/><nav aria-label="当前位置" className="breadcrumb"><span>团队空间</span><span className="slash">/</span><a aria-label={view === 'settings' ? '返回设置' : '返回' + labels[view] + '列表'} href={'#' + view} onClick={event => { event.preventDefault(); navigate(view); }}>{labels[view]}</a>{projectId && <><span className="slash">/</span><a href={'#project/' + projectId} aria-current={todoId ? undefined : 'page'}>{currentProject?.id === projectId ? currentProject.name : '项目详情'}</a>{todoId && <><span className="slash">/</span><span aria-current="page">Todo</span></>}</>}</nav></header><div className="content" id="main-content" tabIndex={-1}>{error && <Alert variant="destructive"><AlertDescription>{error}<Button variant="ghost" size="sm" onClick={() => setError('')}>关闭提示</Button>{!projectId && <Button disabled={loading} onClick={() => setRefreshVersion(version => version + 1)}>重试</Button>}</AlertDescription></Alert>}{notice && !(view === 'projects' && projectId) && <Alert role="status"><AlertDescription>{notice}</AlertDescription></Alert>}
   {view === 'settings' && <section className="settings-page" aria-labelledby="settings-title"><div className="page-heading"><h1 id="settings-title" tabIndex={-1}>设置</h1></div><ThemeChoice/></section>}
@@ -270,9 +285,11 @@ function App() {
     {loading && currentProject?.id !== projectId ? <div className="loading-state" role="status"><p>正在读取项目…</p><div className="loading-line"/></div> : !currentProject || currentProject.id !== projectId ? <section><p>未能读取项目。</p><Button disabled={busy} onClick={() => setRefreshVersion(version => version + 1)}>重试</Button></section> : <>
       {todoId ? <section className="todo-detail">
         <Button variant="ghost" className="back" onClick={() => { location.hash = 'project/' + projectId; }}>返回 Todo 列表</Button>
+        <Button disabled={busy || loading || refreshing || Boolean(editor)} onClick={() => void refreshProject()}>{refreshing ? '刷新中…' : '刷新 Todo'}</Button><ActionFeedback value={feedback.refresh} testId="refresh-feedback" fallbackLabel="刷新结果"/>
         {currentTodo ? <>
-          <div className="page-heading"><h1 tabIndex={-1}>{currentTodo.title}</h1><div className="actions"><label className="todo-detail-status"><Checkbox aria-label={currentTodo.title} checked={currentTodo.completed} disabled={pendingTodoIds.includes(currentTodo.id)} onCheckedChange={checked => void toggleTodo(currentTodo, checked === true)}/><span>{currentTodo.completed ? '已完成' : '未完成'}</span></label><Button onClick={() => openEditor({ kind: 'todos', data: currentTodo })}>编辑 / 记录结果</Button><Button className="text-destructive" aria-label="删除 Todo" onClick={() => void remove('todos', currentTodo)}>删除</Button></div></div>
+          <div className="page-heading"><h1 tabIndex={-1}>{currentTodo.title}</h1><div className="actions"><label className="todo-detail-status"><Checkbox aria-label={currentTodo.title} checked={currentTodo.completed} disabled={pendingTodoIds.includes(currentTodo.id)} onCheckedChange={checked => void toggleTodo(currentTodo, checked === true)}/><span>{currentTodo.completed ? '已完成' : '未完成'}</span></label><Button onClick={() => void copy('todoContext', todoText, 'Todo 上下文已复制')}>复制 Todo 上下文</Button><Button onClick={() => downloadText(currentTodo.title ?? 'Todo', currentTodo.id, todoText, 'md')}>下载 Todo 上下文</Button><Button onClick={() => openEditor({ kind: 'todos', data: currentTodo })}>编辑 / 记录结果</Button><Button className="text-destructive" aria-label="删除 Todo" onClick={() => void remove('todos', currentTodo)}>删除</Button></div></div>
           <ActionFeedback value={feedback['todo:' + currentTodo.id]} testId={`todo-feedback-${currentTodo.id}`} fallbackLabel="Todo 状态"/>
+          <ActionFeedback value={feedback.todoContext} testId="todo-context-feedback" fallbackLabel="Todo 上下文手动复制"/>
           <div className="prewrap todo-description" data-testid="todo-description">{currentTodo.description || '暂无描述'}</div>
         </> : <><h1 tabIndex={-1}>Todo 详情</h1><p>Todo 不存在或已删除。</p></>}
       </section> : <>
@@ -286,7 +303,7 @@ function App() {
           <div className="todo-toolbar"><Choice label="Todo 完成状态" value={todoFilter} onChange={value => { setTodoFilter(value); setFeedback(current => { const next = { ...current }; delete next.context; return next; }); }} options={[{ value: 'all', label: '全部' }, { value: 'incomplete', label: '未完成' }, { value: 'completed', label: '已完成' }]}/><Input aria-label="搜索 Todo" placeholder="搜索 Todo…" value={todoQuery} onChange={event => setTodoQuery(event.target.value)}/><Choice label="Todo 排序" value={todoSort} onChange={setTodoSort} options={[{ value: 'updated', label: '最近更新' }, { value: 'title', label: '标题 A–Z' }]}/></div>
           {visibleTodos.length ? <ul className="todo-list">{visibleTodos.map(todo => <li key={todo.id} data-todo-id={todo.id} className={todo.completed ? 'completed' : ''}><label className="todo-check"><Checkbox aria-label={todo.title} checked={todo.completed} disabled={pendingTodoIds.includes(todo.id)} onCheckedChange={checked => void toggleTodo(todo, checked === true)}/></label><div className="todo-body"><strong><a className="todo-card-link" href={'#project/' + projectId + '/todo/' + todo.id}>{todo.title}</a></strong><div className="actions"><small className="muted">{todo.completed ? '已完成' : '未完成'}</small><Button variant="ghost" size="sm" onClick={() => openEditor({ kind: 'todos', data: todo })}>编辑 / 记录结果</Button><Button variant="ghost" size="sm" className="text-destructive" onClick={() => void remove('todos', todo)}>删除</Button></div><ActionFeedback value={feedback['todo:' + todo.id]} testId={`todo-feedback-${todo.id}`} fallbackLabel="Todo 状态"/></div></li>)}</ul> : <p className="muted inset">{todoQuery.trim() ? '没有匹配的 Todo。' : todoFilter === 'incomplete' ? '没有未完成的 Todo。' : todoFilter === 'completed' ? '没有已完成的 Todo。' : '添加下一步行动，完成后把结果留在这里。'}</p>}
         </section>
-        <aside className="project-resources" aria-label="项目资料"><section><div className="section-title"><h2>关联链接 <small>{context.links.length}</small></h2><Button onClick={() => { setCategory('other'); openEditor({ kind: 'links', data: { project_id: projectId } }); }}>添加链接</Button></div>{context.links.length ? <ul className="link-list">{context.links.map(link => <li key={link.id}><div className="link-summary"><a href={link.url} target="_blank" rel="noopener noreferrer">{link.title} ↗</a><small>{categories[link.category!]}</small><code>{link.url}</code><ActionFeedback value={feedback['link:' + link.id]} testId={`link-feedback-${link.id}`} fallbackLabel={`${link.title} 链接手动复制`}/></div><div className="actions"><Button variant="ghost" size="sm" aria-label={`复制链接 ${link.title}`} onClick={() => void copy('link:' + link.id, link.url!, '链接已复制')}>复制 URL</Button><Button variant="ghost" size="sm" onClick={() => { setCategory(link.category ?? 'other'); openEditor({ kind: 'links', data: link }); }}>编辑</Button><Button variant="ghost" size="sm" className="text-destructive" onClick={() => void remove('links', link)}>删除</Button></div></li>)}</ul> : <p className="muted inset">还没有链接，添加文档或代码仓库入口。</p>}<p className="footnote">仅保存地址；私有文档仍需原平台访问权限。</p></section><section className="project-identity"><h2>项目 ID</h2><p className="prewrap code-input">{currentProject.id}</p><Button variant="ghost" size="sm" onClick={() => void copy('projectId', currentProject.id, '项目 ID 已复制')}>复制 ID</Button><ActionFeedback value={feedback.projectId} testId="project-id-feedback" fallbackLabel="项目 ID 手动复制"/></section></aside>
+        <aside className="project-resources" aria-label="项目资料"><section><div className="section-title"><h2>关联链接 <small>{context.links.length}</small></h2><Button onClick={() => { setCategory('other'); openEditor({ kind: 'links', data: { project_id: projectId } }); }}>添加链接</Button></div><div className="todo-toolbar"><Input aria-label="搜索关联链接" placeholder="搜索链接…" value={linkQuery} onChange={event => setLinkQuery(event.target.value)}/><Choice label="链接类别" value={linkCategory} onChange={setLinkCategory} options={[{ value: 'all', label: '全部类别' }, ...Object.entries(categories).map(([value, label]) => ({ value, label }))]}/>{(linkQuery || linkCategory !== 'all') && <Button onClick={() => { setLinkQuery(''); setLinkCategory('all'); }}>清除链接筛选</Button>}</div>{visibleLinks.length ? <ul className="link-list">{visibleLinks.map(link => <li key={link.id}><div className="link-summary"><a href={link.url} target="_blank" rel="noopener noreferrer">{link.title} ↗</a><small>{categories[link.category!]}</small><code>{link.url}</code><ActionFeedback value={feedback['link:' + link.id]} testId={`link-feedback-${link.id}`} fallbackLabel={`${link.title} 链接手动复制`}/></div><div className="actions"><Button variant="ghost" size="sm" aria-label={`复制链接 ${link.title}`} onClick={() => void copy('link:' + link.id, link.url!, '链接已复制')}>复制 URL</Button><Button variant="ghost" size="sm" onClick={() => { setCategory(link.category ?? 'other'); openEditor({ kind: 'links', data: link }); }}>编辑</Button><Button variant="ghost" size="sm" className="text-destructive" onClick={() => void remove('links', link)}>删除</Button></div></li>)}</ul> : <p className="muted inset">{context.links.length ? '没有匹配的链接。' : '还没有链接，添加文档或代码仓库入口。'}</p>}<p className="footnote">仅保存地址；私有文档仍需原平台访问权限。</p></section><section className="project-identity"><h2>项目 ID</h2><p className="prewrap code-input">{currentProject.id}</p><Button variant="ghost" size="sm" onClick={() => void copy('projectId', currentProject.id, '项目 ID 已复制')}>复制 ID</Button><ActionFeedback value={feedback.projectId} testId="project-id-feedback" fallbackLabel="项目 ID 手动复制"/></section></aside>
       </div>
       </>}
     </>}
