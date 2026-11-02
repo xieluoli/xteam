@@ -32,7 +32,7 @@ XTEAM保存团队项目与任务的关键上下文，让任意设备上的外部
 
 ## 当前审阅游标与交接
 
-- 最近实际review：11月2日；已审commit cbd4d5c9beaf532069dfd1ea7324b38870384fcd，tree9a7c78a77a7d5e419b1aa7ab348334db39ad2948，截点后产品变化下次增量核验。本次文档共享最终head/CI/merge另按review收尾和远端回读；不把文档SHA当产品版本。
+- 最近实际review：11月2日；已审commit cbd4d5c9beaf532069dfd1ea7324b38870384fcd，tree9a7c78a77a7d5e419b1aa7ab348334db39ad2948，截点后产品变化下次增量核验。本次文档共享[PR #39](https://github.com/xieluoli/xteam/pull/39)的最终head/CI/merge按PR和远端回读；不把文档SHA当产品版本。
 - 当前复盘负责人Mac mini / Codex，会话01a19cf4-7c4c-7ce2-9afb-bd5572d96c2d；源码分支codex/2026-11-02-design-delivery未改，复盘doc经独立codex分支共享。明早先补复盘未完成的共享缺口再认领，不覆盖其他设备备注。
 - 本轮授权2026-11-01至11-07七个日历日，实际执行/复盘据实去重，漏跑不顺延。11月7日最终实际复盘后原生暂停xteam/xteam-2；到期复盘未成也不得11月8日产品执行。Mac mini唯一调度，MBP旧两条暂停，本轮未改模型/推理。
 - doc/daily随Git共享；原始日志/截图/diff、数据/备份、设备路径、凭据、运行配置及个人memory仅本机。任务平台只同步摘要与经git/gh核验的链接，保留旧UUID/其他设备说明；失败入pending，回读后才算成功。
