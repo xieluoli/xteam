@@ -51,7 +51,7 @@ test('Skill URL import, independent detail, properties, file tree and safe previ
     await expect(page.getByLabel('标签', { exact: true })).toHaveValue('Team, Review');
     await page.screenshot({ path: '.local/skill-overview.png', fullPage: true });
     await page.getByRole('link', { name: '返回 Skill 库', exact: true }).click();
-    await expect(page.getByRole('link', { name: 'review-local', exact: true })).toHaveAttribute('href', new URL(detailURL).hash);
+    await expect(page.getByRole('link', { name: 'review-local', exact: true })).toHaveAttribute('href', new URL(detailURL).hash.split('?')[0]);
     await page.goBack();
     await expect(page.getByRole('heading', { name: 'review-local', exact: true })).toBeVisible();
     await page.goForward();
