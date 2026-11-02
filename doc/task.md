@@ -1,6 +1,6 @@
 # XTEAM 任务入口
 
-更新：2026-11-02 DS-23设计系统整体走查已认领进行中，范围与分批验收见当日临时新增；DS-22项目整行点击、文字名称对齐及弱化纯图标已由PR #33合入并上线验收；此前DS-21官方tweakcn设计系统、五项新功能及下载补验保持完成。本轮实际产品执行2/7、实际复盘1/7。共享文档不等于产品、平台或线上同步，接手先按[跨设备接续](handoff.md)核对远端和原ID。
+更新：2026-11-02 DS-23设计系统整体走查已合入并上线验收，页面按钮包装与标题多余外框已移除，平台回读true；DS-22项目整行点击、文字名称对齐及弱化纯图标已由PR #33合入并上线验收；此前DS-21官方tweakcn设计系统、五项新功能及下载补验保持完成。本轮实际产品执行2/7、实际复盘1/7。共享文档不等于产品、平台或线上同步，接手先按[跨设备接续](handoff.md)核对远端和原ID。
 
 ## 北极星
 
@@ -15,6 +15,8 @@ XTEAM保存团队项目与任务的关键上下文，让任意设备上的外部
 
 ## 当前交付与验证
 
+- DS-23：[PR #35](https://github.com/xieluoli/xteam/pull/35)已合入上线；普通动作有底面、资源名/返回用原生文字链接，保留项目整行、弱化图标及键盘焦点。官方Button允许outline，移除的是页面包装；组件源码、主题、Tabs和依赖未改。19张稳定线上截图覆盖主要页面、双主题与窄屏；详见[当日验收](daily/2026-11-02/task.md#ds-23-上线验收与最终接续)。
+
 - DS-22：[PR #33](https://github.com/xieluoli/xteam/pull/33)已合入并上线验收，平台回读completed=true；项目整行可点击，名称普通文字与简介对齐，编辑/打开仅弱化图标。双主题1280/390/320及编辑隔离、整行各区域、键盘焦点/Enter通过，10张线上场景截图；详见[当日临时新增](daily/2026-11-02/task.md#临时新增ds-22-项目整行导航与弱化图标已上线验收)。
 
 - DS-21：[PR #30](https://github.com/xieluoli/xteam/pull/30)已合入并完成上线验收；指定tweakcn主题通过官方CLI导入本地CSS，恢复组件size/variant、Tabs与主题spacing，保留既有双主题。接入与尺寸约定见[设计系统](../DESIGN.md)，平台回读true。
@@ -22,15 +24,14 @@ XTEAM保存团队项目与任务的关键上下文，让任意设备上的外部
 - LOOP-001：已更新既有工作/复盘自动化，复盘回复简列次日事项，待决策阻塞在当前会话及最终回复中明确提醒；共享规则见[workflow](workflow.md#会话回复与通知2026-11-02-用户要求)，文档共享[PR #29](https://github.com/xieluoli/xteam/pull/29)，配置回读/文档同步状态见[当日临时新增](daily/2026-11-02/task.md#临时新增loop-001-会话输出与决策提醒)。实际定时回复与桌面通知送达待观察，不计新增产品执行或复盘日。
 - 11月2日五项历史验收已补真实390px证据并回写原ID完成：CTX-001/002、TODO-001/002、SKFILE-001；保留昨天有效桌面/320px、字节和操作结果，不计新增feat。
 - 五项新功能已由[PR #27](https://github.com/xieluoli/xteam/pull/27)合入并上线；TODO-005显式刷新、LINK-001链接筛选已完成验收。TODO-004单任务导出、CTX-003项目Todo稳定身份、SKFILE-002文件下载已补真实域名文件名及逐字节验收，三项回读true，详情见[当日task](daily/2026-11-02/task.md)。
-- 当前产品merge/VPS完整SHA `b876e5ce9b34b5b487fc2417567747ed1f9c6dcb`，真实域名health与页面版本匹配；本批test48/48、build、e2e69/69，两套最终head CI及镜像内test48/48通过。SQLite在线备份integrity=ok/600；bridge+xteam_default、xteam-rewrite别名、原端口/挂载/环境均保留，旧容器/镜像/数据卷保留，本次未实际回退。此前DS-21和七个下载场景验收见按日记录。
-- DS-22关闭后平台回读74项、70完成/4未完、27关联链接（最终交付文档PR随后单独登记），任务pending零。UPG、OPS、两项DEC继续按原ID保留；本批仅只读验收现有项目，编辑均取消，无业务资源或账号修改。
+- 当前产品merge/VPS完整SHA `3fc47caa65ea4ab35ce3ac8d362483c10a66b783`，真实域名health与页面版本匹配；本批test48/48、build、e2e73/73，两套最终head CI通过。SQLite在线备份integrity=ok/600；bridge+xteam_default、xteam-rewrite别名、原端口/挂载/环境均保留，旧容器/镜像/数据卷保留，本次未实际回退。
+- DS-23关闭后平台回读75项、71完成/4未完、29关联链接，task pending零；最终文档PR另登记。UPG、OPS、两项DEC继续按原ID保留。Agent/Skill线上为空，内容态仅临时测试库覆盖；本批未修改业务资源或账号。
 - 当日基础11项有依据（6项接续、5项新feat），20目标缺9项独立价值，不机械拆分或扩大范围。
 
 ## 活跃未完项
 
 |稳定ID|最新状态|下一步与范围|
 |---|---|---|
-|DS-23|进行中，false|移除页面按钮包装，统一导航/动作语义，双主题测试与上线验收|
 |UPG-001|首次启用阻塞，P0|宿主Node/gh、升级服务/socket、管理员邮箱及适用独立XTEAM正式Release未确认；不自行安装扩权|
 |DEC-001|待决定，false|会话/进度/心跳/Token采集及执行平台不自动实施|
 |DEC-002|本轮七天已批准，长期安排待决定|11月7日到期收尾，原试跑3/3另计|
@@ -54,4 +55,4 @@ SET-001、VERIFY-001、SKILL-001及此前已完成项保留原范围与语义；
 
 - 前日复盘与计划[PR #26](https://github.com/xieluoli/xteam/pull/26)已共享；今日产品[PR #27](https://github.com/xieluoli/xteam/pull/27)已合入上线。本批交付记录[PR #28](https://github.com/xieluoli/xteam/pull/28)仅文档，最终head CI、merge与远端包含关系用git/gh回读。
 
-当前负责人：Mac mini / Codex，工作会话`01a19976-6595-7f00-ad30-a645a2d218fd`；本批最终交付文档基线`b876e5ce9b34b5b487fc2417567747ed1f9c6dcb`，协调分支`codex/2026-11-02-delivery-record`，持久源码分支`codex/2026-11-02-design-delivery`。产品/VPS完整SHA同为`b876e5ce9b34b5b487fc2417567747ed1f9c6dcb`，五项新功能、DS-21及DS-22均完成原范围验收；最新文档合入信息按Git远端回读，纯文档不部署。白天追加需求仍在本工作会话接续，详细验证边界见11月2日task。
+当前负责人：Mac mini / Codex，工作会话`01a19976-6595-7f00-ad30-a645a2d218fd`；本批最终交付文档基线`3fc47caa65ea4ab35ce3ac8d362483c10a66b783`，协调分支`codex/2026-11-02-delivery-record`，持久源码分支`codex/2026-11-02-design-delivery`。产品/VPS完整SHA同为`3fc47caa65ea4ab35ce3ac8d362483c10a66b783`，五项新功能及DS-21/22/23均完成原范围验收；最新文档合入信息按Git远端回读，纯文档不部署。白天追加需求仍在本工作会话接续，详细验证边界见11月2日task。
