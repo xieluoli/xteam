@@ -1,0 +1,614 @@
+{
+  "projectId": "187ee6e7-1444-4c43-b7f4-7d76367663c9",
+  "format": "XT-0001",
+  "nextNumber": 77,
+  "migrationDate": "2026-11-02",
+  "tasks": [
+    {
+      "stableId": "XT-0001",
+      "legacyIds": [
+        "XT-001"
+      ],
+      "todoId": "0b7adfd3-4c5e-47fd-aa28-694e83d07036",
+      "title": "项目读取失败时结束加载并提供重试/返回"
+    },
+    {
+      "stableId": "XT-0002",
+      "legacyIds": [
+        "XT-002"
+      ],
+      "todoId": "6a21d310-9227-48cc-8a81-313ca5e6ad6a",
+      "title": "保存成功但列表刷新失败时避免重复提交"
+    },
+    {
+      "stableId": "XT-0003",
+      "legacyIds": [
+        "XT-003"
+      ],
+      "todoId": "4dbe244f-dc23-4f36-bb9d-b51a0ae90e43",
+      "title": "项目详情增加显式刷新入口"
+    },
+    {
+      "stableId": "XT-0004",
+      "legacyIds": [
+        "XT-004"
+      ],
+      "todoId": "a058c326-51fb-4d6d-8fa9-1a8b3b454dd0",
+      "title": "项目上下文复制为可读 Markdown 文本"
+    },
+    {
+      "stableId": "XT-0005",
+      "legacyIds": [
+        "XT-005"
+      ],
+      "todoId": "d5eb1d37-918b-44bb-8282-8c3000df15f3",
+      "title": "Todo 列表支持完成状态筛选，网页 API 与 MCP 一致"
+    },
+    {
+      "stableId": "XT-0006",
+      "legacyIds": [
+        "XT-006"
+      ],
+      "todoId": "588fc26f-afb5-44ce-a92b-d69c5a71f4e1",
+      "title": "项目 Todo 区增加全部/未完成/已完成筛选"
+    },
+    {
+      "stableId": "XT-0007",
+      "legacyIds": [
+        "XT-007"
+      ],
+      "todoId": "a4feb02c-1595-4d5a-b64a-f1021b87e4db",
+      "title": "MCP 项目上下文支持可选 Todo 完成状态筛选"
+    },
+    {
+      "stableId": "XT-0008",
+      "legacyIds": [
+        "XT-008"
+      ],
+      "todoId": "7d7f2c14-71f7-4c90-8493-023e18c5f3a9",
+      "title": "MCP Skill 元数据列表支持按标签筛选"
+    },
+    {
+      "stableId": "XT-0009",
+      "legacyIds": [
+        "XT-009"
+      ],
+      "todoId": "701068ea-62bd-4da0-a609-84aac2c89487",
+      "title": "复制失败后清除此前成功提示"
+    },
+    {
+      "stableId": "XT-0010",
+      "legacyIds": [
+        "XT-010"
+      ],
+      "todoId": "84e3f915-e40e-4864-82bb-29a31034cea6",
+      "title": "更新 MCP 接续操作示例及新增筛选参数"
+    },
+    {
+      "stableId": "XT-0011",
+      "legacyIds": [
+        "DS-01"
+      ],
+      "todoId": "6dc03991-607e-4de0-8b24-ab841cb9e126",
+      "title": "Japan Blues 与 cyberpunk 双主题切换和持久化"
+    },
+    {
+      "stableId": "XT-0012",
+      "legacyIds": [
+        "DS-02"
+      ],
+      "todoId": "d4ca686b-cfd1-4bff-83ef-ed119449b764",
+      "title": "统一字体与文字层级"
+    },
+    {
+      "stableId": "XT-0013",
+      "legacyIds": [
+        "DS-03"
+      ],
+      "todoId": "d2cb3c54-b291-4887-9aae-986fac3d5fcf",
+      "title": "统一语义变量、控件尺寸与布局密度"
+    },
+    {
+      "stableId": "XT-0014",
+      "legacyIds": [
+        "DS-04"
+      ],
+      "todoId": "a15d3511-8dba-4615-9d0a-2147621a2709",
+      "title": "项目名称搜索与项目信息时间排序"
+    },
+    {
+      "stableId": "XT-0015",
+      "legacyIds": [
+        "DS-05"
+      ],
+      "todoId": "8507c66f-24f2-4d22-9cd0-3f8179997fa3",
+      "title": "统一页面外壳、面包屑与移动导航"
+    },
+    {
+      "stableId": "XT-0016",
+      "legacyIds": [
+        "DS-06"
+      ],
+      "todoId": "c3f9cb59-35e5-469b-958b-305240de91ab",
+      "title": "项目列表改为便于扫描的行式目录"
+    },
+    {
+      "stableId": "XT-0017",
+      "legacyIds": [
+        "DS-07"
+      ],
+      "todoId": "689cc366-499d-4c85-bb4c-ed6038e676d1",
+      "title": "项目详情动作分级与主辅栏布局"
+    },
+    {
+      "stableId": "XT-0018",
+      "legacyIds": [
+        "DS-08"
+      ],
+      "todoId": "fb9ac94f-1272-4a5e-a3ba-b5789d96fa80",
+      "title": "Todo 主栏、筛选与结果编辑层级"
+    },
+    {
+      "stableId": "XT-0019",
+      "legacyIds": [
+        "DS-09"
+      ],
+      "todoId": "474efd9a-9351-4b1f-a779-6b5ac03ec610",
+      "title": "链接区条目、数量与空态"
+    },
+    {
+      "stableId": "XT-0020",
+      "legacyIds": [
+        "DS-10"
+      ],
+      "todoId": "a18083ff-9623-4505-ab76-07b312843169",
+      "title": "Agent 资源目录与正文阅读操作"
+    },
+    {
+      "stableId": "XT-0021",
+      "legacyIds": [
+        "DS-11"
+      ],
+      "todoId": "f940ac23-830d-485e-9397-adb581492b72",
+      "title": "统一 Skill 列表、工具栏与批量操作状态"
+    },
+    {
+      "stableId": "XT-0022",
+      "legacyIds": [
+        "DS-12"
+      ],
+      "todoId": "d74e29fd-7652-4920-b9cb-cbdf9d7c05a6",
+      "title": "统一 Skill 详情、文件选择与编辑布局"
+    },
+    {
+      "stableId": "XT-0023",
+      "legacyIds": [
+        "DS-13"
+      ],
+      "todoId": "c770bbe5-3105-4882-9af9-e28f4b86a5d1",
+      "title": "统一表单弹窗结构与忙碌保护"
+    },
+    {
+      "stableId": "XT-0024",
+      "legacyIds": [
+        "DS-14"
+      ],
+      "todoId": "7c2128ec-2e4f-4ff6-bc09-eff59bbd40df",
+      "title": "统一危险操作确认与取消焦点"
+    },
+    {
+      "stableId": "XT-0025",
+      "legacyIds": [
+        "DS-15"
+      ],
+      "todoId": "c8ab25b3-a9cb-4321-ace3-aedc983d923a",
+      "title": "统一加载、空态、失败与重试"
+    },
+    {
+      "stableId": "XT-0026",
+      "legacyIds": [
+        "DS-16"
+      ],
+      "todoId": "b6f69c6c-7b32-4eeb-9e00-070019f15d52",
+      "title": "复制和刷新操作的邻近反馈与手动替代"
+    },
+    {
+      "stableId": "XT-0027",
+      "legacyIds": [
+        "DS-17"
+      ],
+      "todoId": "6bef836f-31a4-4f28-addf-d7c10d768a9c",
+      "title": "整理 MCP 配置与令牌操作层级"
+    },
+    {
+      "stableId": "XT-0028",
+      "legacyIds": [
+        "DS-18"
+      ],
+      "todoId": "5c9fb7f8-ad26-47ee-be93-165b105fe58c",
+      "title": "统一响应式布局与窄屏导航"
+    },
+    {
+      "stableId": "XT-0029",
+      "legacyIds": [
+        "DS-19"
+      ],
+      "todoId": "6aa06a9c-9d03-4914-bec4-6a3941e7578a",
+      "title": "键盘操作、焦点、对比度与减少动效"
+    },
+    {
+      "stableId": "XT-0030",
+      "legacyIds": [
+        "DS-20"
+      ],
+      "todoId": "8368bdbc-dba9-4f3d-9cb2-37bc426d207f",
+      "title": "记录已落地设计规范并清理本次废弃样式"
+    },
+    {
+      "stableId": "XT-0031",
+      "legacyIds": [
+        "UX-021"
+      ],
+      "todoId": "b1d1aee7-0441-4d51-93b5-7b22c9f4e5fe",
+      "title": "关联链接增加复制 URL，复用现有剪贴板规则，不抓取正文"
+    },
+    {
+      "stableId": "XT-0032",
+      "legacyIds": [
+        "UX-022"
+      ],
+      "todoId": "0dc7029e-28a7-4267-b7d4-608fa63299ab",
+      "title": "统一链接行的信息层级与窄屏换行"
+    },
+    {
+      "stableId": "XT-0033",
+      "legacyIds": [
+        "UX-023"
+      ],
+      "todoId": "077ca029-62cf-42d1-9217-099c62948734",
+      "title": "把“添加链接”放入链接区标题操作位，空态与非空入口一致"
+    },
+    {
+      "stableId": "XT-0034",
+      "legacyIds": [
+        "UX-024"
+      ],
+      "todoId": "a9efdca3-c1f1-450e-8880-2df968a6f425",
+      "title": "项目 ID 复制使用项目 ID 区域的邻近反馈"
+    },
+    {
+      "stableId": "XT-0035",
+      "legacyIds": [
+        "UX-025"
+      ],
+      "todoId": "ebc0bc29-a1a8-42d8-b1b9-24bdcc76e0c7",
+      "title": "项目上下文复制失败提供真正可复制的纯文本替代"
+    },
+    {
+      "stableId": "XT-0036",
+      "legacyIds": [
+        "UX-026"
+      ],
+      "todoId": "bb02535f-cb7b-4fe1-9143-0abd1620eb7b",
+      "title": "刷新状态与时间反馈靠近刷新按钮"
+    },
+    {
+      "stableId": "XT-0037",
+      "legacyIds": [
+        "UX-027"
+      ],
+      "todoId": "c67703f0-407c-4d58-9097-4b2ff6b1ff3b",
+      "title": "Todo 完成切换增加单项 pending 状态"
+    },
+    {
+      "stableId": "XT-0038",
+      "legacyIds": [
+        "UX-028"
+      ],
+      "todoId": "f46e7b7b-e4e5-414e-afdc-5a5f8ef4f818",
+      "title": "Todo 完成成功/失败提供邻近、非仅颜色反馈"
+    },
+    {
+      "stableId": "XT-0039",
+      "legacyIds": [
+        "UX-029"
+      ],
+      "todoId": "af8e38ee-663d-4db0-82b3-13fe17801b31",
+      "title": "Todo 编辑器按状态明确“说明”与“完成结果”语义"
+    },
+    {
+      "stableId": "XT-0040",
+      "legacyIds": [
+        "UX-030"
+      ],
+      "todoId": "05cec4a2-74e1-4ba5-9d82-b8a23e4a787a",
+      "title": "Agent 列表动作改为明确资源名称"
+    },
+    {
+      "stableId": "XT-0041",
+      "legacyIds": [
+        "UX-031"
+      ],
+      "todoId": "5621062d-d233-4ca4-b1cf-46e7adee87ed",
+      "title": "Agent 正文复制增加邻近反馈与手动替代"
+    },
+    {
+      "stableId": "XT-0042",
+      "legacyIds": [
+        "UX-032"
+      ],
+      "todoId": "2afc5172-dbec-46e7-81fe-2bde0df4e96e",
+      "title": "Agent 列表数量和搜索空态使用专用文案"
+    },
+    {
+      "stableId": "XT-0043",
+      "legacyIds": [
+        "UX-033"
+      ],
+      "todoId": "2ec8269d-fc6a-4736-99a5-3142139094f4",
+      "title": "MCP 三个复制动作各自拥有邻近反馈"
+    },
+    {
+      "stableId": "XT-0044",
+      "legacyIds": [
+        "UX-034"
+      ],
+      "todoId": "eeda1e5a-f219-40a0-be53-fea2fc772161",
+      "title": "令牌区增加空态、创建时间和用途说明层级"
+    },
+    {
+      "stableId": "XT-0045",
+      "legacyIds": [
+        "UX-035"
+      ],
+      "todoId": "a1137db9-1470-4895-8ec3-0631e5dff5af",
+      "title": "令牌创建/撤销使用局部 pending、焦点与 aria-live"
+    },
+    {
+      "stableId": "XT-0046",
+      "legacyIds": [
+        "UX-036"
+      ],
+      "todoId": "3568d385-91aa-487e-8126-4fef89360db2",
+      "title": "MCP 配置代码块在手机可读且复制入口固定可达"
+    },
+    {
+      "stableId": "XT-0047",
+      "legacyIds": [
+        "UX-037"
+      ],
+      "todoId": "b6d8ae3e-d69a-4fad-a971-98b3db054538",
+      "title": "Skill 详情界面术语统一为中文"
+    },
+    {
+      "stableId": "XT-0048",
+      "legacyIds": [
+        "UX-038"
+      ],
+      "todoId": "88cef2d5-5ca6-42f3-b6e7-e316b222dd8f",
+      "title": "Skill 手机文件区明确当前文件与选择层级"
+    },
+    {
+      "stableId": "XT-0049",
+      "legacyIds": [
+        "UX-039"
+      ],
+      "todoId": "8f77b6db-23a1-44c1-9c9e-219d7fec0d5e",
+      "title": "表单弹窗使用与资源匹配的说明，并隔离表单错误"
+    },
+    {
+      "stableId": "XT-0050",
+      "legacyIds": [
+        "UX-040"
+      ],
+      "todoId": "8fb59ba6-226f-4262-afef-8747e0fadee0",
+      "title": "页面导航和移动抽屉统一焦点落点"
+    },
+    {
+      "stableId": "XT-0051",
+      "legacyIds": [
+        "SET-001"
+      ],
+      "todoId": "4bcf9260-44bb-4299-a3a7-c2f803975516",
+      "title": "设置页主题入口与限宽布局"
+    },
+    {
+      "stableId": "XT-0052",
+      "legacyIds": [
+        "UPG-001"
+      ],
+      "todoId": "6ac0b129-d6c6-4dc2-81ba-8569b2adc63f",
+      "title": "提供页面与命令行升级 GitHub 最新版入口"
+    },
+    {
+      "stableId": "XT-0053",
+      "legacyIds": [
+        "VERIFY-001"
+      ],
+      "todoId": "38c8c3c5-8d87-4889-9a78-3972173d73fa",
+      "title": "补齐最终版本登录后页面的线上截图验收"
+    },
+    {
+      "stableId": "XT-0054",
+      "legacyIds": [
+        "SKILL-001"
+      ],
+      "todoId": "efd2c2aa-fe2c-492a-b1aa-9d252c9836ea",
+      "title": "从一个 GitHub 仓库选择并导入多个 Skill"
+    },
+    {
+      "stableId": "XT-0055",
+      "legacyIds": [
+        "CTX-001"
+      ],
+      "todoId": "413ee45e-ae76-4879-90dd-84f939f1ced1",
+      "title": "下载项目上下文Markdown文件"
+    },
+    {
+      "stableId": "XT-0056",
+      "legacyIds": [
+        "CTX-002"
+      ],
+      "todoId": "1a465e31-abfd-4a84-bede-f749037a0d64",
+      "title": "按Todo状态复制项目上下文"
+    },
+    {
+      "stableId": "XT-0057",
+      "legacyIds": [
+        "TODO-001"
+      ],
+      "todoId": "d0c44973-511a-4f17-83b7-96562bd7991f",
+      "title": "在项目内搜索Todo标题与说明"
+    },
+    {
+      "stableId": "XT-0058",
+      "legacyIds": [
+        "TODO-002"
+      ],
+      "todoId": "24257a77-4cef-4c7b-8e9c-ff0b47f9973f",
+      "title": "按更新时间或标题排序项目Todo"
+    },
+    {
+      "stableId": "XT-0059",
+      "legacyIds": [
+        "AGENT-001"
+      ],
+      "todoId": "67d25ec4-0d2f-4b7d-bc3a-ca19c6220632",
+      "title": "用稳定URL打开Agent模板详情"
+    },
+    {
+      "stableId": "XT-0060",
+      "legacyIds": [
+        "AGENT-002"
+      ],
+      "todoId": "bee1ca15-c21f-4a17-acc8-f0806c9455b1",
+      "title": "下载Agent模板纯文本正文"
+    },
+    {
+      "stableId": "XT-0061",
+      "legacyIds": [
+        "SKFILE-001"
+      ],
+      "todoId": "1ecf5973-c4c5-41b0-8053-8c167aa1bef1",
+      "title": "复制Skill当前附属文本文件"
+    },
+    {
+      "stableId": "XT-0062",
+      "legacyIds": [
+        "DRAFT-001"
+      ],
+      "todoId": "666b39dc-d483-441e-b0fb-1dff1d87be5a",
+      "title": "保护资源表单未保存草稿"
+    },
+    {
+      "stableId": "XT-0063",
+      "legacyIds": [
+        "DEC-001"
+      ],
+      "todoId": "78aee976-f8a4-4701-88df-535e54271c6d",
+      "title": "明确外部 Agent 工作会话、进行中状态及 Token 采集方案"
+    },
+    {
+      "stableId": "XT-0064",
+      "legacyIds": [
+        "DEC-002"
+      ],
+      "todoId": "b77e2348-fa46-4851-b699-0056621f3e4f",
+      "title": "决定2026年11月7日后的自动化续期安排"
+    },
+    {
+      "stableId": "XT-0065",
+      "legacyIds": [
+        "OPS-MAC-001"
+      ],
+      "todoId": "8a8596f9-6b77-4002-b32a-c503a1fb40e2",
+      "title": "将每日工作与夜间复盘调度迁至 Mac mini"
+    },
+    {
+      "stableId": "XT-0066",
+      "legacyIds": [
+        "TODO-003"
+      ],
+      "todoId": "13eef57c-d64c-455a-94c9-213c3128d782",
+      "title": "Todo默认卡片列表与独立详情页"
+    },
+    {
+      "stableId": "XT-0067",
+      "legacyIds": [
+        "TODO-004"
+      ],
+      "todoId": "580cd31d-08a9-4ef1-a340-3609af78fce5",
+      "title": "复制与下载单个Todo交接上下文"
+    },
+    {
+      "stableId": "XT-0068",
+      "legacyIds": [
+        "CTX-003"
+      ],
+      "todoId": "8bd8a979-3ef2-4ddf-9ab8-868127e02e85",
+      "title": "项目导出补齐逐Todo稳定身份"
+    },
+    {
+      "stableId": "XT-0069",
+      "legacyIds": [
+        "SKFILE-002"
+      ],
+      "todoId": "f9357df8-e8ef-45be-bb27-ea78dda5f085",
+      "title": "下载当前Skill已保存文本文件"
+    },
+    {
+      "stableId": "XT-0070",
+      "legacyIds": [
+        "LINK-001"
+      ],
+      "todoId": "446c06d4-13fa-42df-bd12-1d1b2867e446",
+      "title": "项目关联链接搜索与类别组合筛选"
+    },
+    {
+      "stableId": "XT-0071",
+      "legacyIds": [
+        "TODO-005"
+      ],
+      "todoId": "971599df-b908-43f5-b155-b399dbdad554",
+      "title": "Todo详情显式刷新外部回写结果"
+    },
+    {
+      "stableId": "XT-0072",
+      "legacyIds": [
+        "LOOP-001"
+      ],
+      "todoId": "eb5b1b2b-4e72-463e-9eb4-278dadff9eb8",
+      "title": "复盘回复列次日事项并提醒待决策阻塞"
+    },
+    {
+      "stableId": "XT-0073",
+      "legacyIds": [
+        "DS-21"
+      ],
+      "todoId": "d1a776aa-c2b7-4f8c-9309-91160d610842",
+      "title": "按官方tweakcn接入规整组件比例与间距"
+    },
+    {
+      "stableId": "XT-0074",
+      "legacyIds": [
+        "DS-22"
+      ],
+      "todoId": "7a662383-e09e-40cb-900a-1b2e0010066b",
+      "title": "项目整行可点击与纯图标操作"
+    },
+    {
+      "stableId": "XT-0075",
+      "legacyIds": [
+        "DS-23"
+      ],
+      "todoId": "b9ea0861-bd53-4bbd-959d-a96ae89b1b33",
+      "title": "整体走查设计系统并移除页面按钮包装"
+    },
+    {
+      "stableId": "XT-0076",
+      "legacyIds": [],
+      "todoId": "947c5273-344d-4adb-9f03-230db4c63bef",
+      "title": "统一任务编号并保留历史映射"
+    }
+  ]
+}
