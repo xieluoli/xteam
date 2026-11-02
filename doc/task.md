@@ -41,11 +41,11 @@ SET-001、VERIFY-001、SKILL-001及此前已完成项保留原范围与语义；
 
 ## 平台与文档同步
 
-- XTEAM项目187ee6e7-1444-4c43-b7f4-7d76367663c9是跨设备状态入口；先读合并其他设备备注后逐项回写/回读：71项、64完成/7未完、21链接，索引71项、task pending零（本日交付截点）；交付文档PR后新增关联链接另以平台回读为准。完成仅验收明确通过才true，其余含取消均false，保留详细状态与原因。
+- XTEAM项目187ee6e7-1444-4c43-b7f4-7d76367663c9是跨设备状态入口；先读合并其他设备备注后逐项回写/回读：71项、64完成/7未完、22链接，索引71项、task pending零（本日交付与文档PR登记截点）。完成仅验收明确通过才true，其余含取消均false，保留详细状态与原因。
 - 索引和pending仅本机保存；缺索引按项目+稳定ID重建，不按历史总数重复创建。GitHub链接经git/gh核验按URL去重；只同步任务摘要，不整体上传文档、本机路径、原始证据或凭据。
 - doc/及daily已获用户2026-10-30授权经分支/PR共享，替代“doc只本机”旧约定；docs/为正式产品说明。原始日志/图片/diff、数据库/备份、运行配置及个人memory仍仅本机私有。
 - Git/GitHub只用git/gh，中文conventional commit及[A/M/D/R/C]、指定邮箱、显式暂存批准doc路径，PR逐项短bullet/测试另列/body-file，最终head CI成功后按预期head合入并回读。文档不夹带源码或触发部署。
 
-- 前日复盘与计划[PR #26](https://github.com/xieluoli/xteam/pull/26)已共享；今日产品[PR #27](https://github.com/xieluoli/xteam/pull/27)已合入上线。本批交付记录另以纯文档PR共享，最终head CI、merge与远端包含关系用git/gh回读。
+- 前日复盘与计划[PR #26](https://github.com/xieluoli/xteam/pull/26)已共享；今日产品[PR #27](https://github.com/xieluoli/xteam/pull/27)已合入上线。本批交付记录[PR #28](https://github.com/xieluoli/xteam/pull/28)仅文档，最终head CI、merge与远端包含关系用git/gh回读。
 
 当前负责人：Mac mini / Codex，工作会话`01a19976-6595-7f00-ad30-a645a2d218fd`；基线`291102ba84f794c7cb51914fc04d5d31edf631b3`，分支`codex/2026-11-02-resource-handoff`。产品HEAD `dccbc5f4b52b5b7f8e5a77b63892e0bc8924acba`，本批五项均上线，两项完整验收、三项下载待补；详细批次、交付记录分支及验证边界见11月2日task。白天追加需求仍在本工作会话接续。
