@@ -137,7 +137,7 @@
 
 ## 临时新增：DS-21 官方主题接入与组件比例规整
 
-- 2026-11-02 11:01 +08:00 用户明确要求今日优先梳理 tweakcn 官网接入，再整理设计系统。负责人 Mac mini / Codex，沿用工作会话01a19976-6595-7f00-ad30-a645a2d218fd；分支`codex/2026-11-02-design-system`，基线完整HEAD `ded4210eca29db2b334b2d4b503419a42fcacbd4`。当前认领/进行中，尚无本批交付。
+- 2026-11-02 11:01 +08:00 用户明确要求今日优先梳理 tweakcn 官网接入，再整理设计系统。负责人 Mac mini / Codex，沿用工作会话01a19976-6595-7f00-ad30-a645a2d218fd；分支`codex/2026-11-02-design-system`，基线完整HEAD `ded4210eca29db2b334b2d4b503419a42fcacbd4`。起手认领进行中；最终交付及验收见下方截点。
 - 依据：官方主题是`registry:style`，通过`pnpm dlx shadcn@latest add https://tweakcn.com/r/themes/cmmhql9yf000404jshrdebgfj`导入components.json配置的CSS入口；当前React/Vite/Tailwind4无需Next.js。官方dry-run仅预告114个CSS变量，未增依赖。现有全局44px最小高及height:auto覆盖了Button尺寸、TabsTrigger高于TabsList；根14px还缩放全部rem尺寸。
 - 范围/优先级：用户明确优先的UI整理，沿用Japan Blues默认和cyberpunk可选设计；覆盖颜色/字体/圆角/阴影/spacing接入、Button主次/尺寸、Input/Select对齐、Tabs比例、布局间距与适用响应式。保留业务目录布局和纯文本语义，不自行换色或新增产品方向。
 - 分段与验证门（预计超过3文件，先拆分）：①先加真实页面几何回归并观察失败，再执行官方CLI导入及双主题适配（theme/themes/回归）；②收拢全局覆盖及页面间距、控件层级，每批最多3个实现文件，跑针对性主题/交互验证；③更新设计说明/当日记录，运行pnpm test、build、test:e2e及差异审阅，再PR/CI/main/既有VPS交付。
@@ -151,3 +151,15 @@
 - 已按预先三段验证门完成主题入口、组件尺寸与布局间距；恢复16px根字号和完整Preflight，移除全局44px/height:auto覆盖，长资源名/文件树仅局部换行。主次按钮、Tabs、Markdown层级及双主题桌面/390/320回归已验证。
 - TDD先复现root14px、Tabs越界、固定间距/长名溢出，再修复；pnpm test 48/48、pnpm build通过、pnpm test:e2e 67/67、diff检查通过。首次全套的三项失败为旧44px断言与Markdown断言页签错误，已修正测试并重跑完整67项通过。
 - 当前仅开发通过，DS-21保持completed=false；代码尚未推送/合入/上线，本批交付继续等待最终head CI、main合入及真实域名验收。原始log/registry/截图仅存本机。
+
+### DS-21 上线验收与交付截点
+
+- 负责人Mac mini / Codex，仍为同日本工作会话；本专项不另增执行日。产品[PR #30](https://github.com/xieluoli/xteam/pull/30)最终head `11df0342ecaffaf7228de79452acf189cc406245`，两套最终head CI成功，按预期head合入并回读MERGED、fetch确认main包含。产品merge及VPS精确SHA `a235d33ddaa18c1a36548a75e88cb3f60302916c`。
+- 既有实例已切换；镜像ID `sha256:c5ae058ef26d5e5763acd9860bcc30fcded40767f97beb4e276cf0dff0278c80`。切换前SQLite在线一致性备份integrity=ok、权限600，独立备份及旧容器/镜像保留；完整bridge+xteam_default、xteam-rewrite别名、端口及数据挂载均核对。未实际回退；无关服务、账号与业务数据未变。
+- 线上health.version精确匹配；4个线上JS/CSS与本地已测dist逐字节一致；镜像内服务端测试48/48。开发最终pnpm test48/48、build、e2e67/67保持上述实际结果，本纯文档批次不冒充重跑。
+- 有效登录态下真实域名验收：Japan Blues与cyberpunk，1280/390/320表单及文件Tabs/长文件名/Markdown，另双主题1280/320新建项目弹窗共19张截图，逐张检查原始画面和DOM几何，根字号16px，无横向溢出。Japan Blues默认按钮/Input/Select/TabsList约31.68px，cyberpunk36px；Tab触发器位于容器内，保存default、取消outline、关闭ghost。Select切换经真实UI及页面回读确认，打开态截图仅辅助。
+- 仅操作自建Skill验收样本，未保存新项目；完成后删除自己的Skill并list回读不存在，恢复Japan Blues及原浏览器视口。所有原始图片、registry、diff、测试、部署/清理记录只留本机私有证据，不上传。
+- DS-21已先读合并description并显式completed=true，回读通过；平台73项、66完成/7未完、24链接，task pending零，索引已更新。PR #30已attach并按核验URL去重登记。剩余仍为TODO-004/CTX-003/SKFILE-002、UPG-001、OPS-MAC-001、DEC-001/002，不随设计批次关闭。
+- 接续：优先原三项真实域名下载文件名/字节补验；UPG首次启用依赖与DEC决定按原阻塞保留。当前用户明确优先的设计系统专项已验收完成，不新增另一份全天计划。交付文档通过独立PR共享，纯文档不再部署；最终文档main SHA/工作区状态以合入后私有接续回读为准。白天不写review。
+
+- 本截点记录时间：2026-11-02T11:56:25.396280+08:00。
