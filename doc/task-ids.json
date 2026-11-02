@@ -1,7 +1,7 @@
 {
   "projectId": "187ee6e7-1444-4c43-b7f4-7d76367663c9",
   "format": "XT-0001",
-  "nextNumber": 77,
+  "nextNumber": 80,
   "migrationDate": "2026-11-02",
   "tasks": [
     {
@@ -609,6 +609,24 @@
       "legacyIds": [],
       "todoId": "947c5273-344d-4adb-9f03-230db4c63bef",
       "title": "统一任务编号并保留历史映射"
+    },
+    {
+      "stableId": "XT-0077",
+      "legacyIds": [],
+      "todoId": "cce3dd08-80be-41a9-a26d-451f4c340354",
+      "title": "Skill 当前文件深链定位"
+    },
+    {
+      "stableId": "XT-0078",
+      "legacyIds": [],
+      "todoId": "d6da1679-9535-4286-ab8c-542bedc1ef6e",
+      "title": "单独复制 Todo 详情链接"
+    },
+    {
+      "stableId": "XT-0079",
+      "legacyIds": [],
+      "todoId": "582a9e3d-3ee7-4128-a714-efa1c73d5a0f",
+      "title": "清除 Todo 组合筛选"
     }
   ]
 }
