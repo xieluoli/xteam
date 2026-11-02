@@ -20,7 +20,7 @@ test('member creates reusable resources, project context and a completed result 
     await page.getByLabel('名称', { exact: true }).fill('发布项目');
     await page.getByLabel('简介', { exact: true }).fill('团队最小闭环');
     await page.getByRole('button', { name: '保存', exact: true }).click();
-    await page.getByRole('button', { name: '发布项目', exact: true }).click();
+    await page.getByRole('link', { name: '进入项目 发布项目', exact: true }).click();
     await page.getByRole('button', { name: '添加链接', exact: true }).click();
     await page.getByLabel('标题', { exact: true }).fill('代码仓库');
     await page.getByLabel('URL', { exact: true }).fill('https://github.com/example/repo');

@@ -86,5 +86,5 @@ test('a save finishing after navigation cannot invalidate the destination list',
     await page.getByRole('dialog').getByRole('button', { name: '取消', exact: true }).click();
     releaseList();
     await expect(page.getByRole('button', { name: name + '-模板', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: name + '-项目', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: '进入项目 ' + name + '-项目', exact: true })).toHaveCount(0);
 });

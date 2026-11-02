@@ -15,6 +15,8 @@ XTEAM保存团队项目与任务的关键上下文，让任意设备上的外部
 
 ## 当前交付与验证
 
+- DS-22：用户追加项目整行可点击、名称普通文字对齐、编辑/打开弱化图标，已认领进行中，包含上线验收；计划与接续见[当日临时新增](daily/2026-11-02/task.md#临时新增ds-22-项目整行导航与弱化图标进行中)。本地test48/48、build及e2e69/69通过，待CI/main/VPS/真实域名验收；completed=false，原四项阻塞保留。
+
 - DS-21：[PR #30](https://github.com/xieluoli/xteam/pull/30)已合入并完成上线验收；指定tweakcn主题通过官方CLI导入本地CSS，恢复组件size/variant、Tabs与主题spacing，保留既有双主题。接入与尺寸约定见[设计系统](../DESIGN.md)，平台回读true。
 
 - LOOP-001：已更新既有工作/复盘自动化，复盘回复简列次日事项，待决策阻塞在当前会话及最终回复中明确提醒；共享规则见[workflow](workflow.md#会话回复与通知2026-11-02-用户要求)，文档共享[PR #29](https://github.com/xieluoli/xteam/pull/29)，配置回读/文档同步状态见[当日临时新增](daily/2026-11-02/task.md#临时新增loop-001-会话输出与决策提醒)。实际定时回复与桌面通知送达待观察，不计新增产品执行或复盘日。

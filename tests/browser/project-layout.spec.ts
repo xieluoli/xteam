@@ -17,7 +17,7 @@ test('project rows sort, keep search state, and refresh failures keep readable c
     await page.getByRole('option', { name: '名称 A–Z' }).click();
     await expect(page.locator('.resource-row .card-name')).toHaveText(['布局-A', '布局-B']);
     await expect(page.getByRole('textbox', { name: '按名称查找' })).toHaveValue('布局-');
-    await page.getByRole('button', { name: '布局-A', exact: true }).click();
+    await page.getByRole('link', { name: '进入项目 布局-A', exact: true }).click();
     await expect(page.getByLabel('当前位置')).toContainText('布局-A');
     await expect(page.getByTestId('last-refreshed')).toBeVisible();
     const timestamp = await page.getByTestId('last-refreshed').textContent();

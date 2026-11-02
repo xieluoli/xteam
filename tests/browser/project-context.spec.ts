@@ -51,7 +51,7 @@ test('a successful save with a failed refresh closes the editor and never create
     expect(list.filter((project: { name: string }) => project.name === name)).toHaveLength(1);
     await page.unroute('**/api/projects?*');
     await page.reload();
-    await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: `进入项目 ${name}`, exact: true })).toBeVisible();
 });
 
 test('explicit refresh displays a real external MCP update', async ({ page }) => {

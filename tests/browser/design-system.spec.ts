@@ -25,7 +25,7 @@ for (const theme of ['japan-blues', 'cyberpunk']) {
         expect(response.ok()).toBeTruthy();
         await page.reload();
         expect(await page.locator('.content').evaluate(el => parseFloat(getComputedStyle(el).paddingLeft))).toBeCloseTo(spacing * 8, 1);
-        const title = page.getByRole('button', { name, exact: true });
+        const title = page.locator('.card-name').filter({ hasText: name });
         for (const width of [1280, 390, 320]) {
             await page.setViewportSize({ width, height: 900 });
             expect(await title.evaluate(el => el.scrollHeight <= el.clientHeight + 1)).toBeTruthy();
@@ -34,7 +34,7 @@ for (const theme of ['japan-blues', 'cyberpunk']) {
         await page.setViewportSize({ width: 1280, height: 900 });
         const create = page.getByRole('button', { name: '新建项目', exact: true });
         await height(create, spacing * 9);
-        await height(page.getByRole('button', { name: `编辑项目 ${name}`, exact: true }), spacing * 8);
+        await height(page.getByRole('button', { name: `编辑项目 ${name}`, exact: true }), spacing * 9);
         await create.click();
         const dialog = page.getByRole('dialog');
         const close = dialog.getByRole('button', { name: '关闭', exact: true });

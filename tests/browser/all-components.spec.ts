@@ -60,9 +60,9 @@ test('desktop pages share the Sidebar and existing project, link, Todo, template
     await page.getByLabel('简介', { exact: true }).fill('不改变业务，仅统一 UI。');
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: '统一组件验收项目', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: '进入项目 统一组件验收项目', exact: true })).toBeVisible();
     await page.screenshot({ path: '.local/all-project-list.png', fullPage: true });
-    await page.getByRole('button', { name: '统一组件验收项目', exact: true }).click();
+    await page.getByRole('link', { name: '进入项目 统一组件验收项目', exact: true }).click();
     await page.getByRole('button', { name: '添加链接', exact: true }).click();
     await page.getByLabel('标题', { exact: true }).fill('统一组件仓库');
     await page.getByLabel('URL', { exact: true }).fill('https://github.com/example/ui');
