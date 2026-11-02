@@ -45,11 +45,13 @@ for (const theme of ['japan-blues', 'cyberpunk']) {
             }
             await page.setViewportSize({ width: 1280, height: 900 });
             for (const selector of ['.card-name', '.card-description', '.resource-time', null]) {
+                await link.scrollIntoViewIfNeeded();
                 const area = (await (selector ? row.locator(selector) : row).boundingBox())!;
-                await page.mouse.click(area.x + 2, area.y + 2);
+                const target = (await link.boundingBox())!;
+                await link.click({ position: { x: area.x - target.x + 2, y: area.y - target.y + 2 } });
                 await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
                 await expect(page).toHaveURL(new RegExp(`#project/${project.id}$`));
-                await page.getByRole('button', { name: '← 所有项目', exact: true }).click();
+                await page.getByRole('link', { name: '← 所有项目', exact: true }).click();
             }
             await row.getByRole('button', { name: `编辑项目 ${name}`, exact: true }).focus();
             await page.keyboard.press('Shift+Tab');
@@ -57,7 +59,7 @@ for (const theme of ['japan-blues', 'cyberpunk']) {
             expect(await link.evaluate(el => getComputedStyle(el).outlineStyle)).not.toBe('none');
             await page.keyboard.press('Enter');
             await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
-            await page.getByRole('button', { name: '← 所有项目', exact: true }).click();
+            await page.getByRole('link', { name: '← 所有项目', exact: true }).click();
             await row.getByRole('button', { name: `打开项目 ${name}`, exact: true }).click();
             await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
         } finally { await page.request.delete(`/api/projects/${project.id}`, { headers }); }

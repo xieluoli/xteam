@@ -31,6 +31,6 @@ test('project rows sort, keep search state, and refresh failures keep readable c
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('dialog').getByRole('button', { name: '取消', exact: true })).toHaveCount(1);
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: '← 所有项目', exact: true }).click();
+    await page.getByRole('link', { name: '← 所有项目', exact: true }).click();
     await expect(page.getByRole('combobox', { name: '项目排序' })).toContainText('名称 A–Z');
 });

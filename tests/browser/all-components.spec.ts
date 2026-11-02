@@ -17,7 +17,7 @@ test('shared sidebar supports mobile navigation and all editors use themed compo
     await editor.getByLabel('名称', { exact: true }).fill('全站组件模板');
     await editor.getByLabel('正文', { exact: true }).fill('# Text only');
     await editor.getByRole('button', { name: '保存', exact: true }).click();
-    await page.getByRole('button', { name: '全站组件模板', exact: true }).click();
+    await page.getByRole('link', { name: '全站组件模板', exact: true }).click();
     await page.getByRole('dialog').getByRole('button', { name: '删除 Agent 模板', exact: true }).click();
     const confirmation = page.getByRole('alertdialog');
     await expect(confirmation).toContainText('永久删除');
@@ -83,7 +83,7 @@ test('desktop pages share the Sidebar and existing project, link, Todo, template
     await page.getByRole('button', { name: '保存', exact: true }).click();
     await page.getByRole('link', { name: '统一组件待办', exact: true }).click();
     await expect(page.getByTestId('todo-description')).toHaveText('已更新的结果');
-    await page.getByRole('button', { name: '返回 Todo 列表', exact: true }).click();
+    await page.getByRole('link', { name: '返回 Todo 列表', exact: true }).click();
     await page.getByRole('button', { name: '更多项目操作' }).click();
     await page.getByRole('menuitem', { name: '删除项目', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
