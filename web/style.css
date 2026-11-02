@@ -48,6 +48,7 @@ label[data-slot=label] { display: flex; flex-direction: column; align-items: str
 .content > [role=alert], .content > [role=status] { margin-bottom: calc(var(--spacing) * 5); }
 .page-heading { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--spacing) * 5); margin-bottom: calc(var(--spacing) * 7); }
 .page-heading h1 { margin: 0 0 calc(var(--spacing) * 2); font-size: 28px; font-weight: 600; letter-spacing: -.6px; overflow-wrap: anywhere; }
+.content h1[tabindex="-1"]:focus { outline: none; }
 .page-heading p { margin-top: 0; }
 .list-toolbar { display: flex; justify-content: space-between; align-items: center; gap: calc(var(--spacing) * 4); margin-bottom: calc(var(--spacing) * 5); font-size: 12px; }
 .search { position: relative; width: min(340px,65%); }
@@ -66,13 +67,13 @@ label[data-slot=label] { display: flex; flex-direction: column; align-items: str
 .resource-time { font-size: 12px; color: var(--muted-foreground); }
 .resource-icon { display: inline-flex; color: var(--sidebar-primary); }
 .resource-icon svg { width: 20px; height: 20px; }
-.card-name { justify-content: start; white-space: normal; text-align: left; overflow-wrap: anywhere; max-width: 100%; font-size: 16px; padding-left: 0; }
+.card-name { overflow-wrap: anywhere; font-size: 16px; }
 .card-description { color: var(--muted-foreground); font-size: 13px; margin: 0; overflow-wrap: anywhere; }
 .empty { display: flex; flex-direction: column; align-items: center; padding: calc(var(--spacing) * 12) calc(var(--spacing) * 5); text-align: center; }
 .empty h2 { margin: calc(var(--spacing) * 3) 0 0; font-size: 18px; }
 .empty p { color: var(--muted-foreground); font-size: 13px; }
 .actions { display: flex; align-items: center; flex-wrap: wrap; gap: calc(var(--spacing) * 2); }
-.back { margin-bottom: calc(var(--spacing) * 4); }
+.back { display: inline-block; margin-bottom: calc(var(--spacing) * 4); }
 .intro { padding: calc(var(--spacing) * 6); margin-bottom: calc(var(--spacing) * 6); overflow-wrap: anywhere; gap: calc(var(--spacing) * 3); }
 .intro h2, .panel h2 { font-size: 16px; margin: 0; }
 .intro p { margin: 0; }
@@ -167,7 +168,6 @@ pre { font: 12px/1.8 var(--font-mono); background: var(--muted); border-radius: 
 
 /* Directory rows override Card's utility layout while retaining its theme surface. */
 @layer utilities {
-    .card-name { height: auto; min-height: calc(var(--spacing) * 9); white-space: normal; }
     .resource-row { display: grid; grid-template-columns: 24px minmax(0,1fr) 140px auto; align-items: center; gap: calc(var(--spacing) * 4); border: 0; border-radius: 0; border-bottom: 1px solid var(--border); box-shadow: none; padding: calc(var(--spacing) * 4) 0; }
     @media(max-width:900px) {
         .resource-row { grid-template-columns: 24px minmax(0,1fr) auto; }

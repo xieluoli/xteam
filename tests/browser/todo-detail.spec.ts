@@ -33,7 +33,7 @@ for (const width of [1280, 390, 320]) test(`Todo cards and full detail support k
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
         await page.reload();
         await expect(page.getByTestId('todo-description')).toHaveText(f.description);
-        await page.getByRole('button', { name: '返回 Todo 列表', exact: true }).click();
+        await page.getByRole('link', { name: '返回 Todo 列表', exact: true }).click();
         await expect(card).toBeVisible();
         await link.click();
         await page.goBack();
@@ -68,7 +68,7 @@ test('Todo card actions stay on list and detail edits, completion, deletion and 
         await expect(page.getByText('Todo 不存在或已删除。', { exact: true })).toBeVisible();
         await page.reload();
         await expect(page.getByText('Todo 不存在或已删除。', { exact: true })).toBeVisible();
-        await page.getByRole('button', { name: '返回 Todo 列表', exact: true }).click();
+        await page.getByRole('link', { name: '返回 Todo 列表', exact: true }).click();
         await expect(page.getByRole('button', { name: '添加 Todo', exact: true })).toBeVisible();
         await page.goto(f.list + '/todo/' + randomUUID());
         await expect(page.getByText('Todo 不存在或已删除。', { exact: true })).toBeVisible();
@@ -96,7 +96,7 @@ test('56 Todo cards search full hidden descriptions and preserve filters and sor
         await expect(page.locator('.todo-list > li')).toHaveCount(1);
         await page.getByRole('link', { name: '规模任务 41', exact: true }).click();
         await expect(page.getByTestId('todo-description')).toHaveText('唯一匹配接续证据');
-        await page.getByRole('button', { name: '返回 Todo 列表', exact: true }).click();
+        await page.getByRole('link', { name: '返回 Todo 列表', exact: true }).click();
         await expect(page.getByLabel('搜索 Todo', { exact: true })).toHaveValue('唯一匹配接续证据');
         await expect(page.getByRole('combobox', { name: 'Todo 完成状态', exact: true })).toContainText('未完成');
         await expect(page.getByRole('combobox', { name: 'Todo 排序', exact: true })).toContainText('标题 A–Z');

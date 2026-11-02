@@ -34,7 +34,7 @@ test('project read failures end loading and allow retry or return to the project
     await page.goto(`/#project/${randomUUID()}`);
     await expect(page.getByRole('alert')).toContainText('资源不存在或已删除');
     await expect(page.getByText('正在读取项目…', { exact: true })).toHaveCount(0);
-    await page.getByRole('button', { name: '← 所有项目', exact: true }).click();
+    await page.getByRole('link', { name: '← 所有项目', exact: true }).click();
     await expect(page.getByRole('heading', { name: '项目', exact: true })).toBeVisible();
 });
 
@@ -61,7 +61,7 @@ test('explicit refresh displays a real external MCP update', async ({ page }) =>
     await page.goto(`/#project/${project.id}`);
     await page.getByRole('link', { name: '外部处理', exact: true }).click();
     await expect(page.getByTestId('todo-description')).toHaveText('尚未回写');
-    await page.getByRole('button', { name: '返回 Todo 列表', exact: true }).click();
+    await page.getByRole('link', { name: '返回 Todo 列表', exact: true }).click();
     const token = await (await page.request.post('/api/tokens', { headers, data: { name: 'context-browser-test' } })).json();
     const client = new Client({ name: 'context-browser-test', version: '1' });
     try {

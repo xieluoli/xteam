@@ -11,7 +11,7 @@ test('member creates reusable resources, project context and a completed result 
         await page.getByLabel('名称', { exact: true }).fill('浏览器资源 ' + name);
         await page.getByLabel('正文', { exact: true }).fill('# 安全的团队指令');
         await page.getByRole('button', { name: '保存', exact: true }).click();
-        await page.getByRole('button', { name: '浏览器资源 ' + name, exact: true }).click();
+        await page.getByRole('link', { name: '浏览器资源 ' + name, exact: true }).click();
         await expect(page.getByText('# 安全的团队指令', { exact: true })).toBeVisible();
         await page.getByRole('button', { name: '关闭', exact: true }).click();
     }

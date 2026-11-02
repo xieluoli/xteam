@@ -90,7 +90,7 @@ test('Agent detail URL survives reload and history, exports literal text and rep
     const content = '<script>window.__ran=true</script>\r\n中文指令\n尾行\n';
     const agent = await (await page.request.post('/api/agents', { headers, data: { name: '模板 / 安全:' + randomUUID(), content } })).json();
     await page.goto('/#agents');
-    await page.getByRole('button', { name: agent.name, exact: true }).click();
+    await page.getByRole('link', { name: agent.name, exact: true }).click();
     await expect(page).toHaveURL(new RegExp('#agent/' + agent.id + '$'));
     await page.reload();
     await expect(page.getByRole('dialog', { name: 'Agent 模板详情' })).toBeVisible();
