@@ -204,7 +204,7 @@
 - 下一步：批准的两份交付doc经分支/PR、最终head CI、预期head合入后共享；纯文档不部署。暂停时释放自己协调锁，不整日持锁；23:50独立会话据实复盘，本会话不写review。
 
 
-## 临时新增：DS-23 设计系统整体走查（进行中）
+## 临时新增：DS-23 设计系统整体走查（已上线验收）
 
 - 依据/优先级：用户指出外层按钮不属于要求的设计系统，要求整体走查；当前安全批次已结束，本批接续，不增基础20项或执行日。
 - 范围：移除main/Skills页面对官方Button的额外包装，显式声明动作层级；返回及资源名称用文字导航，动作不用ghost文字；保留纯图标、文件树与Tab等有明确语义的组件。核对标题导航焦点外框，保留键盘焦点；不重选主题、不新增依赖。
@@ -218,3 +218,16 @@ DS-23分批细化（14:46）：先单独新增回归并记录失败；A仅main.t
 DS-23开发检查点（15:10）：main/style与Skill/设置已移除页面包装并显式选择Button variant/type；资源名/返回改文字链接，标题程序focus外框已清除，交互控件键盘焦点保留。新增4条回归先失败，测试定位/键盘输入方式纠正后项目相关13条、Agent/资源交接相关18条通过；Todo/UX相关10条通过。相关旧测试按实际link语义迁移。pnpm test48/48、build已通过，全量e2e进行中；尚未提交/合入/部署，DS-23保持false。官方Button本身允许outline，修正的是页面包装与语义，不修改官方组件、主题或Tabs。
 
 DS-23发布前检查点（15:19）：最终pnpm test48/48、build通过、pnpm test:e2e73/73。两次全量中先修正旧Agent名称button断言，再修正项目区域点击的裸屏幕坐标时序；最终改用链接定位器等待稳定后按相对区域点击，仍覆盖名称/简介/时间/留白，没有删减验收。新增4条双主题行为回归保留red与green证据。当前尚未合入/部署，平台75项、70完成/5未完，DS-23仍false，task pending零。下一步产品PR/最终head CI/main合入，精确SHA部署并真实域名验收。
+
+
+### DS-23 上线验收与最终接续
+
+- 验收截点：2026-11-02 15:51（Asia/Shanghai）；Mac mini / Codex，同工作会话01a19976-6595-7f00-ad30-a645a2d218fd接续，不增加实际执行日。本轮产品2/7、复盘1/7；本会话未写review，七日授权及到期暂停规则保持。
+- 产品[PR #35](https://github.com/xieluoli/xteam/pull/35)最终head `7ec8de355a7fde0f56a85052e14ccdace82e797a`，两套CI成功，按预期head合入且回读MERGED；fetch确认main包含完整merge `3fc47caa65ea4ab35ce3ac8d362483c10a66b783`。VPS只部署此已合main完整SHA，真实域名health及页面版本匹配。
+- 修正页面main/Skills两处Button包装、显式variant/type；普通动作有底面，Agent名称与返回使用原生文字链接，项目名称普通文字与简介对齐，整行导航及弱化图标保持。只去除h1程序focus外框，控件键盘焦点保留。官方Button本身允许outline，未修改官方组件源码、双主题、Tabs、依赖。
+- pnpm test48/48、build、pnpm test:e2e73/73通过；新增4条双主题回归先red后green。全量测试中修正旧Agent名称button语义断言和项目点击裸坐标时序，最终仍覆盖名称/简介/时间/留白导航与编辑隔离。
+- 真实域名已审阅19张稳定截图（另1张弹窗过渡态作废）：项目列表与编辑取消、项目详情、Todo详情、Agent空态及新建取消、Skill空态及导入取消、MCP动作、设置刷新。Japan Blues/cyberpunk各1280/390/320项目列表无横溢；Japan Blues另覆盖320px详情/Todo动作换行。实际Tab进入项目A链接、focus-visible=true、可见轮廓和Enter进入正确详情通过；标题程序焦点无多余外框。返回为原生链接，主次动作和关闭图标沿既有variant/size。
+- 边界：生产Agent/Skill内容态为空，内容态通过临时测试库回归；未声称生产全态或完整无障碍合规。线上本轮项目导航用键盘及图标验收，各鼠标区域依赖本批全量e2e及前批DS-22实际线上结果，不冒称重测。项目详情关联链接列较窄/长URL换行属于既有布局，本批未重新设计。设置实例仍未启用升级服务，未触发真实升级、改token或账号。主题Japan Blues及浏览器原尺寸已恢复；无业务资源新增/删除/保存。
+- SQLite在线一致性备份integrity=ok、权限600且本次独立命名；旧容器 `xteam-rewrite-before-3fc47caa65ea`、旧镜像及卷保留。新镜像ID `sha256:95cd2b6c35b4f30cfb0a7412af0dbd4603f5c55fa872fba3cb957c780246e50e`；bridge+xteam_default及xteam-rewrite别名、数据挂载、端口和环境保留，发布前后资源计数一致。本次未实际回退，回退只切应用不覆盖新数据库。
+- 平台DS-23先读合并description、显式completed=true并回读；75项、71完成/4未完、29链接，task pending零。UPG-001、OPS-MAC-001、DEC-001、DEC-002继续false，具体阻塞及所需决定保持前述。产品PR已去重关联；最终验收doc单独经PR/最终head CI/预期head合入共享，纯文档不重部署。
+- 协调checkout原有两份dirty文档逐字节确认已进入产品main后备份stash并快进，未丢弃或重复实现；源码持久worktree复用。原始截图、日志、diff、备份、manifest及完整审阅说明仅本机私有，不上传Git或整体同步平台。暂停释放自己的现有协调锁；白天追加仍在本工作会话接续，23:50由独立复盘会话据实记录。
