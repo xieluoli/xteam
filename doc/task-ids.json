@@ -1,7 +1,7 @@
 {
   "projectId": "187ee6e7-1444-4c43-b7f4-7d76367663c9",
   "format": "XT-0001",
-  "nextNumber": 80,
+  "nextNumber": 84,
   "migrationDate": "2026-11-02",
   "tasks": [
     {
@@ -627,6 +627,30 @@
       "legacyIds": [],
       "todoId": "582a9e3d-3ee7-4128-a714-efa1c73d5a0f",
       "title": "清除 Todo 组合筛选"
+    },
+    {
+      "stableId": "XT-0080",
+      "legacyIds": [],
+      "todoId": "3d1e7653-2ae2-4ee0-a52f-db5af97c64c1",
+      "title": "任务接续上下文包"
+    },
+    {
+      "stableId": "XT-0081",
+      "legacyIds": [],
+      "todoId": "f15687fd-e394-4636-b198-ba3893590ad3",
+      "title": "可确认的任务经验沉淀"
+    },
+    {
+      "stableId": "XT-0082",
+      "legacyIds": [],
+      "todoId": "30459276-adc4-4fd1-8459-cab0f5753143",
+      "title": "Skill 来源版本与刷新保护"
+    },
+    {
+      "stableId": "XT-0083",
+      "legacyIds": [],
+      "todoId": "e786e1cd-55a8-478d-8411-320b323c1885",
+      "title": "资源写回版本冲突保护"
     }
   ]
 }
