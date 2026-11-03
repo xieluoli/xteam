@@ -35,7 +35,7 @@ XTEAM保存团队项目与任务的关键上下文，让任意设备上的外部
 
 - 最近实际review：11月2日；已审commit cbd4d5c9beaf532069dfd1ea7324b38870384fcd，tree9a7c78a77a7d5e419b1aa7ab348334db39ad2948，截点后产品变化下次增量核验。本次文档共享[PR #39](https://github.com/xieluoli/xteam/pull/39)的最终head/CI/merge按PR和远端回读；不把文档SHA当产品版本。
 - 当前工作负责人Mac mini / Codex，会话01a19e95-88f2-71a2-8d48-37a5a5cf08ec；产品分支codex/2026-11-03-resource-links已推送/合入，收尾文档分支codex/2026-11-03-delivery-record基点47989a855b157ea0b82801dbb27a196987095cfd。文档共享最终状态按PR/远端回读，不能从文字推断未提交源码可拉取。
-- 本次计划由同一工作会话接续，分支codex/2026-11-03-context-plan，起点完整HEAD 818152fe8c5356f8cedbc7adeac2f3b38b9db375；只修改计划/编号，不启动产品代码或部署。顺序XT-0080 → XT-0083 → XT-0081 → XT-0082。检索建议2未加入，会话/心跳/Token仍保持XT-0063未决；需要新数据库结构等先给具体方案，未经确认不实施。
+- 本次计划由同一工作会话接续，计划共享[PR #42](https://github.com/xieluoli/xteam/pull/42)，分支codex/2026-11-03-context-plan，起点完整HEAD 818152fe8c5356f8cedbc7adeac2f3b38b9db375；只修改计划/编号，不启动产品代码或部署。顺序XT-0080 → XT-0083 → XT-0081 → XT-0082。检索建议2未加入，会话/心跳/Token仍保持XT-0063未决；需要新数据库结构等先给具体方案，未经确认不实施。
 - 最近review会话01a19cf4-7c4c-7ce2-9afb-bd5572d96c2d仅作历史游标；本日23:50独立复盘，白天需求在本工作会话接续。当前未完XT-0052/74/63/64为四项待决策，XT-0065为证据缺口，具体选项见当日task。收尾释放本会话锁，后续先fetch/核任务认领再继续。
 - 本轮授权2026-11-01至11-07七个日历日，实际执行/复盘据实去重，漏跑不顺延。11月7日最终实际复盘后原生暂停xteam/xteam-2；到期复盘未成也不得11月8日产品执行。Mac mini唯一调度，MBP旧两条暂停，本轮未改模型/推理。
 - doc/daily随Git共享；原始日志/截图/diff、数据/备份、设备路径、凭据、运行配置及个人memory仅本机。任务平台只同步摘要与经git/gh核验的链接，保留旧UUID/其他设备说明；失败入pending，回读后才算成功。
