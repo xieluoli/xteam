@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import { todoHandoffText } from '../shared/todo-handoff.js';
 export const resourceKinds = ['projects', 'agents', 'links', 'todos'] as const;
 export type ResourceKind = typeof resourceKinds[number];
 const name = z.string().trim().min(1, '名称不能为空').max(200);
@@ -49,23 +50,44 @@ export function resources(database: Database.Database) {
                 throw new ResourceError('不能将资源移动到其他项目');
         }
         const identifier = id ?? randomUUID();
-        const values = { ...data, id: identifier, updated_at: new Date().toISOString() };
+        const updatedAt = new Date(Math.max(Date.now(), existing ? Date.parse(String(existing.updated_at)) + 1 : 0)).toISOString();
+        const values = { ...data, id: identifier, updated_at: updatedAt };
         const columns = Object.keys(values);
         database.prepare(`INSERT INTO ${kind} (${columns.join(',')}) VALUES (${columns.map(() => '?').join(',')}) ON CONFLICT(id) DO UPDATE SET ${columns.filter(key => key !== 'id').map(key => `${key}=excluded.${key}`).join(',')}`).run(...Object.values(values).map(value => typeof value === 'boolean' ? Number(value) : value));
         return get(kind, identifier);
     }
-    function update(kind: ResourceKind, id: string, input: Record<string, unknown>) { return save(kind, { ...get(kind, id), ...input }, id); }
-    function remove(kind: ResourceKind, id: string) {
-        get(kind, id);
+    function update(kind: ResourceKind, id: string, input: Record<string, unknown>) {
+        const expected = z.string().min(1).max(100).optional().safeParse(input.expected_updated_at);
+        if (!expected.success) throw new ResourceError('expected_updated_at 必须为读取时的 updated_at 字符串');
+        return database.transaction(() => {
+            const existing = get(kind, id);
+            if (expected.data !== undefined && expected.data !== existing.updated_at)
+                throw new ResourceError('资源已被其他设备修改，请重新读取最新内容并合并后重试；当前草稿尚未保存。', 409);
+            return save(kind, { ...existing, ...input }, id);
+        }).immediate();
+    }
+    function remove(kind: ResourceKind, id: string, expectedUpdatedAt?: unknown) {
+        const expected = z.string().min(1).max(100).optional().safeParse(expectedUpdatedAt);
+        if (!expected.success) throw new ResourceError('expected_updated_at 必须为读取时的 updated_at 字符串');
         database.transaction(() => {
+            const existing = get(kind, id);
+            if (expected.data !== undefined && expected.data !== existing.updated_at)
+                throw new ResourceError('资源已被其他设备修改，请重新读取最新内容后确认删除。', 409);
             if (kind === 'projects') {
                 database.prepare('DELETE FROM links WHERE project_id=?').run(id);
                 database.prepare('DELETE FROM todos WHERE project_id=?').run(id);
             }
             database.prepare(`DELETE FROM ${kind} WHERE id=?`).run(id);
-        })();
+        }).immediate();
         return { ok: true };
     }
     const context = (id: string, completed?: unknown) => ({ project: get('projects', id), links: list('links', '', id), todos: list('todos', '', id, completed) });
-    return { get, list, save, update, remove, context };
+    function handoff(projectId: string, id: string, origin: string) {
+        const project = get('projects', projectId);
+        const todo = get('todos', id);
+        if (todo.project_id !== projectId) throw new ResourceError('Todo 不属于此项目', 404);
+        const links = list('links', '', projectId);
+        return { project, todo, links, text: todoHandoffText(project, todo, links, `${origin}/#project/${projectId}/todo/${id}`) };
+    }
+    return { get, list, save, update, remove, context, handoff };
 }

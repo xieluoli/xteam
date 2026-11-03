@@ -115,6 +115,7 @@ export function createApp(options: {
     });
     attachUpdates(app, options.upgrade);
     const service = resources(database);
+    app.get('/api/projects/:projectId/todos/:id/handoff', (request, response) => response.json(service.handoff(String(request.params.projectId), String(request.params.id), options.origin)));
     app.get('/api/projects/:id/context', (request, response) => response.json(service.context(String(request.params.id), request.query.completed)));
     const skillService = skills(database, options.skillFetch);
     app.post('/api/skills/discover', async (request, response) => { response.json(await skillService.discover(request.body)); });
@@ -133,7 +134,7 @@ export function createApp(options: {
         app.get(`/api/${kind}/:id`, (request, response) => response.json(service.get(kind, String(request.params.id))));
         app.post(`/api/${kind}`, (request, response) => response.status(201).json(service.save(kind, request.body)));
         app.patch(`/api/${kind}/:id`, (request, response) => response.json(service.update(kind, String(request.params.id), request.body)));
-        app.delete(`/api/${kind}/:id`, (request, response) => response.json(service.remove(kind, String(request.params.id))));
+        app.delete(`/api/${kind}/:id`, (request, response) => response.json(service.remove(kind, String(request.params.id), request.body?.expected_updated_at)));
     }
     app.get('/api/tokens', (_request, response) => response.json(database.prepare('SELECT id,name,created_at FROM tokens WHERE user_id=? ORDER BY created_at DESC').all(response.locals.member.id)));
     app.post('/api/tokens', (request, response) => {

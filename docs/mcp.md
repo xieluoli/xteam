@@ -19,7 +19,7 @@ MCP Inspector 选择 Streamable HTTP，填地址及 Authorization 请求头。�
 pnpm exec mcp-inspector --cli --config /安全目录/mcp.json --server xteam --method tools/list
 ```
 
-工具共 31 个：projects、agents、links、todos 分别提供 list 与 get/create/update/delete；另有 `get_project_context` 聚合项目简介、链接和 Todo。
+工具共 32 个：projects、agents、links、todos 分别提供 list 与 get/create/update/delete；另有 `get_project_context` 聚合项目简介、链接和 Todo，以及 `get_todo_handoff` 按 `project_id`、`id` 读取单项接续包（原文、稳定 ID、读取版本、详情地址和项目链接）。网页复制/下载与该工具使用同一纯文本格式。
 
 Skill 使用独立的同一共享服务（网页与 MCP 同规则）：
 - `list_skills` / `get_skill`：元数据查找与完整正文、来源、标签、附属文件读取。
@@ -52,7 +52,7 @@ Skill 使用独立的同一共享服务（网页与 MCP 同规则）：
 1. `list_projects`：`{"q":"项目名称"}`，找到稳定项目 ID。
 2. `get_project_context`：`{"id":"<项目ID>","completed":false}`，读取简介、链接及尚未完成的行动。
 3. `list_agents` 查找工作准则；`list_skills`：`{"q":"review","label":"研发"}`，按名称与实际已有标签找到方法，再用 `get_agent` / `get_skill` 的 `{"id":"<资源ID>"}` 读取正文及必要文本文件。
-4. 在外部完成工作后，`update_todo`：`{"id":"<Todo ID>","description":"已完成的内容、验证结果、交付链接与遗留问题","completed":true}`。`description` 会整体替换；补充进展时先读取并合并需要保留的既有说明，再回写新文本，省略 `completed` 可保留完成状态。
+4. 在外部完成工作后，`update_todo`：`{"id":"<Todo ID>","expected_updated_at":"<读取时的 updated_at>","description":"保留原说明并合并本次结果、证据和下一步","completed":true}`。`description` 会整体替换；补充进展时先读取并合并需要保留的既有说明，再回写新文本，省略 `completed` 可保留完成状态。
 5. `get_project_context`：`{"id":"<项目ID>","completed":true}` 查看已完成结果。网页项目详情点击“刷新项目”可看到外部回写，无需重新登录。
 
 网页 Todo 区可选择全部、未完成或已完成；总计仍表示整个项目。点击“复制项目上下文”导出纯文本 Markdown，包含项目简介、稳定 ID、链接和全部 Todo 的状态及说明/结果，供外部客户端阅读；网页显示筛选不截断这份复制内容。复制不抓取链接正文，也不包含 MCP 令牌。
@@ -60,3 +60,11 @@ Skill 使用独立的同一共享服务（网页与 MCP 同规则）：
 当前 Todo 仍只有未完成/已完成；未提供工作会话、心跳或 Token 采集，也没有实时推送。刷新项目是显式读取操作。
 
 删除工具是永久操作，客户端应确认用户意图；项目删除连同其链接、Todo 删除。文档 URL 不代表有第三方访问权限。MCP 不执行模板、脚本、命令，也不访问服务器文件。
+
+## 多设备写回保护
+
+projects、agents、links、todos 的 update/delete 可传 `expected_updated_at`，值为最近一次 get 返回的 `updated_at`。服务在同一个写事务内比较并保存；版本不一致时 HTTP 返回 409，MCP 返回错误且不改数据。重新读取、人工合并后使用新版本重试，不能把旧正文直接重试覆盖。每次写入版本严格递增，即使时钟回拨也可识别旧版。省略条件仍兼容旧客户端，但不提供冲突保护。
+
+网页编辑、Todo状态切换与删除会携带读取版本；编辑冲突保留草稿，可“读取最新版本”核对并手工合并，再选择“已合并，使用最新版本”保存。删除后更新返回404，不会重建条目。项目的版本只表示项目本身，不表示子资源快照；Skill沿用独立服务规则。
+
+Todo编辑器“补充接续信息”只追加缺失的目标、已确认决定、约束、结果、证据、下一步文本标题，保留原文；未填写字段不会被视为已确认或已验证。内容和链接只作上下文，不执行或抓取。
