@@ -1,3 +1,4 @@
+import { appendHandoffTemplate, todoHandoffText } from '../shared/todo-handoff';
 import { createRoot } from 'react-dom/client';
 import { useEffect, useRef, useState, lazy, Suspense, type FormEvent } from 'react';
 import './theme.css';
@@ -45,7 +46,7 @@ async function api(path: string, method = 'GET', body?: unknown) {
     const value = await response.json();
     if (response.status === 401 && path !== '/login') window.dispatchEvent(new Event('xteam-session-expired'));
     if (!response.ok)
-        throw Object.assign(new Error(value.error ?? value.reason ?? '请求失败'), { data: value });
+        throw Object.assign(new Error(value.error ?? value.reason ?? '请求失败'), { data: value, status: response.status });
     return value;
 }
 function ActionFeedback({ value, testId, fallbackLabel }: { value?: Feedback; testId: string; fallbackLabel: string }) {
@@ -77,6 +78,8 @@ function App() {
     } | null>(null);
     const [editor, setEditor] = useState<Editor | null>(null);
     const editorForm = useRef<HTMLFormElement>(null);
+    const [editorConflict, setEditorConflict] = useState(false);
+    const [latestEntry, setLatestEntry] = useState<Entry | null>(null);
     const [editorDirty, setEditorDirty] = useState(false);
     const acceptedHash = useRef(location.hash);
     const checkingNavigation = useRef(false);
@@ -201,12 +204,48 @@ function App() {
     function openProject(id: string) { focusNextPage.current = true; setContext(null); setTodoId(''); setProjectId(id); setFeedback({}); location.hash = 'project/' + id; }
     function openAgent(id: string) { setError(''); setDetail(null); setAgentId(id); location.hash = 'agent/' + id; }
     function closeAgent() { setDetail(null); setAgentId(''); location.hash = 'agents'; }
-    function openEditor(value: Editor) { setError(''); setEditorDirty(false); if (value.kind === 'links') setCategory(value.data.category ?? 'other'); setEditor(value); }
-    function resetEditor() { setError(''); setEditor(null); setEditorDirty(false); }
+    function openEditor(value: Editor) { setError(''); setEditorConflict(false); setLatestEntry(null); setEditorDirty(false); if (value.kind === 'links') setCategory(value.data.category ?? 'other'); setEditor(value); }
+    function resetEditor() { setError(''); setEditorConflict(false); setLatestEntry(null); setEditor(null); setEditorDirty(false); }
     function updateEditorDirty() {
         if (!editor || !editorForm.current) return;
         const fields = [...new FormData(editorForm.current).entries()].filter(([name]) => name !== 'category');
         setEditorDirty(fields.some(([name, value]) => value !== (editor.data[name as keyof Entry] ?? '')) || (editor.kind === 'links' && category !== (editor.data.category ?? 'other')));
+    }
+    function saveEditor(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!editor) return;
+        const fields = Object.fromEntries(new FormData(event.currentTarget));
+        void act(async () => {
+            try {
+                await api('/' + editor.kind + (editor.data.id ? '/' + editor.data.id : ''), editor.data.id ? 'PATCH' : 'POST', { ...editor.data, ...fields, ...(editor.data.id ? { expected_updated_at: editor.data.updated_at } : {}) });
+            } catch (error) {
+                if ((error as { status?: number }).status === 409) { setEditorConflict(true); setLatestEntry(null); }
+                throw error;
+            }
+            resetEditor();
+            try { await refresh(); } catch (error) { throw new Error(`已保存，但刷新失败：${(error as Error).message}。请刷新查看。`); }
+        });
+    }
+    function readLatestEntry() {
+        if (!editor?.data.id) return;
+        void act(async () => { setLatestEntry(await api('/' + editor.kind + '/' + editor.data.id)); });
+    }
+    function useLatestEntry() {
+        if (!editor || !latestEntry) return;
+        setEditor({ ...editor, data: latestEntry });
+        setEditorConflict(false);
+        setLatestEntry(null);
+        setError('');
+        setEditorDirty(true);
+    }
+    function supplementHandoff() {
+        const field = editorForm.current?.elements.namedItem('description') as HTMLTextAreaElement | null;
+        if (!field) return;
+        const value = appendHandoffTemplate(field.value);
+        if (value.length > field.maxLength) { setError('补充后超过说明长度限制，请先整理内容。'); return; }
+        field.value = value;
+        updateEditorDirty();
+        field.focus();
     }
     async function closeEditor() {
         if (editorDirty && !await confirm({ title: '放弃未保存的修改？', message: '关闭后将丢失当前表单内容。', action: '放弃修改' })) return false;
@@ -217,7 +256,7 @@ function App() {
         const resource = kind === 'projects' ? '项目' : kind === 'links' ? '链接' : kind === 'todos' ? 'Todo' : 'Agent 模板';
         if (!await confirm({ title: `删除${resource}「${entry.name ?? entry.title}」？`, message: kind === 'projects' ? '永久删除此项目及其全部链接和 Todo？团队模板与 Skill 不受影响。' : '永久删除此条目？删除后无法恢复。', action: `删除${resource}`, destructive: true }))
             return;
-        await act(async () => { await api(`/${kind}/${entry.id}`, 'DELETE'); if (kind === 'projects')
+        await act(async () => { await api(`/${kind}/${entry.id}`, 'DELETE', { expected_updated_at: entry.updated_at }); if (kind === 'projects')
             navigate('projects');
         else {
             if (kind === 'agents') closeAgent(); else setDetail(null);
@@ -234,7 +273,7 @@ function App() {
         setFeedback(current => ({ ...current, [key]: { message: '复制失败，请使用下方文本手动复制。', failed: true, fallback: value } }));
     } }
     async function refreshProject() { setRefreshing(true); setFeedback(current => ({ ...current, refresh: { message: '正在刷新…' } })); try { await refresh(); setFeedback(current => ({ ...current, refresh: { message: `已刷新 ${new Date().toLocaleTimeString('zh-CN', { hour12: false })}` } })); } catch (error) { setFeedback(current => ({ ...current, refresh: { message: `刷新失败：${(error as Error).message}。已保留当前内容。`, failed: true } })); } finally { setRefreshing(false); } }
-    async function toggleTodo(todo: Entry, completed: boolean) { if (pendingTodoIds.includes(todo.id)) return; setPendingTodoIds(ids => [...ids, todo.id]); setFeedback(current => ({ ...current, ['todo:' + todo.id]: { message: '保存中…' } })); try { await api('/todos/' + todo.id, 'PATCH', { completed }); await refresh(); setFeedback(current => ({ ...current, ['todo:' + todo.id]: { message: '状态已保存' } })); } catch (error) { setFeedback(current => ({ ...current, ['todo:' + todo.id]: { message: `保存失败：${(error as Error).message}`, failed: true } })); } finally { setPendingTodoIds(ids => ids.filter(id => id !== todo.id)); } }
+    async function toggleTodo(todo: Entry, completed: boolean) { if (pendingTodoIds.includes(todo.id)) return; setPendingTodoIds(ids => [...ids, todo.id]); setFeedback(current => ({ ...current, ['todo:' + todo.id]: { message: '保存中…' } })); try { await api('/todos/' + todo.id, 'PATCH', { completed, expected_updated_at: todo.updated_at }); await refresh(); setFeedback(current => ({ ...current, ['todo:' + todo.id]: { message: '状态已保存' } })); } catch (error) { setFeedback(current => ({ ...current, ['todo:' + todo.id]: { message: `保存失败：${(error as Error).message}`, failed: true } })); } finally { setPendingTodoIds(ids => ids.filter(id => id !== todo.id)); } }
     async function createToken(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = event.currentTarget; const name = new FormData(form).get('name'); setTokenPending('create'); try { const value = await api('/tokens', 'POST', { name }); setNewToken(value.token); form.reset(); await refresh(); window.setTimeout(() => newTokenRef.current?.focus(), 0); } catch (error) { setFeedback(current => ({ ...current, tokenCreate: { message: (error as Error).message, failed: true } })); } finally { setTokenPending(''); } }
     async function revokeToken(token: { id: string; name: string }) { if (!await confirm({ title: `撤销令牌「${token.name}」？`, message: '撤销后，此令牌立即不能访问 MCP。继续？', action: '撤销令牌', destructive: true })) return; setTokenPending(token.id); try { await api('/tokens/' + token.id, 'DELETE'); setNewToken(''); await refresh(); setFeedback(current => ({ ...current, tokenList: { message: `已撤销 ${token.name}` } })); } catch (error) { setFeedback(current => ({ ...current, tokenList: { message: (error as Error).message, failed: true } })); } finally { setTokenPending(''); } }
     if (booting)
@@ -251,13 +290,7 @@ function App() {
         (todoSort === 'updated' ? (second.updated_at ?? '').localeCompare(first.updated_at ?? '') : 0)
         || (first.title ?? '').localeCompare(second.title ?? '', 'zh-CN') || first.id.localeCompare(second.id));
     const todoUrl = (id: string) => `${location.origin}${location.pathname}#project/${projectId}/todo/${id}`;
-    const todoText = context && currentTodo ? [
-        `# ${currentTodo.title}`, `Todo ID：${currentTodo.id}`, `详情 URL：${todoUrl(currentTodo.id)}`,
-        '## 项目', context.project.name, `项目 ID：${context.project.id}`,
-        '## 项目简介', context.project.description || '未填写',
-        '## Todo 状态', currentTodo.completed ? '已完成' : '未完成',
-        '## Todo 说明', currentTodo.description || '未填写',
-    ].join('\n\n') : '';
+    const todoText = context && currentTodo ? todoHandoffText(context.project, currentTodo, context.links, todoUrl(currentTodo.id)) : '';
     const visibleLinks = (context?.links ?? []).filter(link => (linkCategory === 'all' || link.category === linkCategory) && `${link.title ?? ''}\n${link.url ?? ''}`.toLocaleLowerCase().includes(linkQuery.trim().toLocaleLowerCase()));
     const contextText = context ? [
         `# ${context.project.name}`,
@@ -311,7 +344,7 @@ function App() {
   </>}
   {view === 'mcp' && <><div className="page-heading"><div><p className="eyebrow">CONNECT YOUR TOOLS</p><h1 tabIndex={-1}>MCP 接入</h1><p className="muted">让外部 AI 读取团队上下文，并把工作结果带回来。</p></div></div><Card className="intro"><h2>1. 连接地址</h2><code>{location.origin}/mcp</code><Button type="button" variant="outline" onClick={() => void copy('mcpAddress', location.origin + '/mcp', '连接地址已复制')}>复制地址</Button><ActionFeedback value={feedback.mcpAddress} testId="mcp-address-feedback" fallbackLabel="MCP 连接地址手动复制"/><p className="muted">Streamable HTTP · 使用个人令牌作为 Bearer 认证</p></Card><Card className="panel token-panel"><h2>2. 创建个人令牌</h2><p className="muted">令牌可读写全部团队业务资源。不要分享，泄露后立即撤销。</p><form className="inline-form" onSubmit={event => void createToken(event)}><Label>令牌名称<Input name="name" required maxLength={100} placeholder="例如：我的开发工具"/></Label><Button type="submit" variant="default" disabled={tokenPending === 'create'}>{tokenPending === 'create' ? '创建中…' : '创建令牌'}</Button></form><ActionFeedback value={feedback.tokenCreate} testId="token-create-feedback" fallbackLabel="令牌创建结果"/>{newToken && <div className="token-secret" aria-live="polite"><strong>仅展示这一次，请立即保存。</strong><Input ref={newTokenRef} aria-label="新令牌" readOnly value={newToken}/><Button type="button" variant="outline" onClick={() => void copy('mcpToken', newToken, '令牌已复制')}>复制令牌</Button><ActionFeedback value={feedback.mcpToken} testId="mcp-token-feedback" fallbackLabel="个人令牌手动复制"/><Button type="button" variant="outline" size="sm" onClick={() => setNewToken('')}>已保存，隐藏</Button></div>}{tokens.length ? <ul className="token-list">{tokens.map(token => <li key={token.id}><div><strong>{token.name}</strong><small>创建于 {new Date(token.created_at).toLocaleString('zh-CN', { hour12: false })}</small><small>撤销后使用此令牌的客户端会立即断开。</small></div><Button type="button" variant="outline" className="text-destructive" disabled={tokenPending === token.id} onClick={() => void revokeToken(token)}>{tokenPending === token.id ? '撤销中…' : '撤销'}</Button></li>)}</ul> : <p className="muted token-empty">尚未创建个人令牌。</p>}<ActionFeedback value={feedback.tokenList} testId="token-list-feedback" fallbackLabel="令牌操作结果"/></Card><Card className="intro mcp-config"><h2>3. 在客户端配置</h2><p>适用于支持自定义 Authorization 请求头的 Streamable HTTP 客户端。MCP Inspector 可直接选择 HTTP、填写地址及认证头进行测试。</p><pre>{JSON.stringify({ mcpServers: { xteam: { type: 'streamable-http', url: location.origin + '/mcp', headers: { Authorization: 'Bearer <你的个人令牌>' } } } }, null, 2)}</pre><Button type="button" variant="outline" onClick={() => void copy('mcpConfig', JSON.stringify({ mcpServers: { xteam: { type: 'streamable-http', url: location.origin + '/mcp', headers: { Authorization: 'Bearer <你的个人令牌>' } } } }, null, 2), '配置示例已复制')}>复制配置示例</Button><ActionFeedback value={feedback.mcpConfig} testId="mcp-config-feedback" fallbackLabel="MCP 配置示例手动复制"/><p className="footnote">不同客户端字段可能不同；本版不提供 OAuth 登录。可先调用 list_projects，再调用 get_project_context，工作结束后用 update_todo 回写说明和完成状态。</p></Card></>}
   </div></SidebarInset>
-  {editor && <AppDialog name="编辑条目" title={(editor.data.id ? '编辑' : '新建') + (editor.kind === 'links' ? '链接' : editor.kind === 'todos' ? ' Todo' : labels[editor.kind])} description={editor.kind === 'projects' ? `${editor.data.id ? '更新' : '创建'}项目背景，供团队与外部 Agent 接续工作。` : editor.kind === 'todos' ? `${editor.data.completed ? '记录完成结果' : '说明下一步行动'}，内容会进入项目上下文。` : editor.kind === 'links' ? '保存项目相关文档或代码入口，不会抓取链接正文。' : '保存可复制、可通过 MCP 读取的团队指令正文。'} busy={busy} close={closeEditor}><form ref={editorForm} onChange={updateEditorDirty} onSubmit={(event: FormEvent<HTMLFormElement>) => { event.preventDefault(); const form = new FormData(event.currentTarget); const fields = Object.fromEntries(form); void act(async () => { await api('/' + editor.kind + (editor.data.id ? '/' + editor.data.id : ''), editor.data.id ? 'PATCH' : 'POST', { ...editor.data, ...fields }); resetEditor(); try { await refresh(); } catch (error) { throw new Error(`已保存，但刷新失败：${(error as Error).message}。请刷新查看。`); } }); }}>{editor.kind === 'links' || editor.kind === 'todos' ? <Label>标题<Input name="title" defaultValue={editor.data.title} required maxLength={200} autoFocus/></Label> : <Label>名称<Input name="name" defaultValue={editor.data.name} required maxLength={200} autoFocus/></Label>}{editor.kind === 'links' ? <><Label>URL<Input name="url" type="url" required defaultValue={editor.data.url} maxLength={4000}/></Label><Label>类别<Choice label="类别" name="category" value={category} onChange={setCategory} options={Object.entries(categories).map(([value, label]) => ({ value, label }))}/></Label></> : <Label>{editor.kind === 'todos' ? editor.data.completed ? '完成结果' : '行动说明' : '简介'}<Textarea aria-label={editor.kind === 'todos' ? editor.data.completed ? '完成结果' : '行动说明' : '简介'} name="description" defaultValue={editor.data.description} rows={editor.kind === 'todos' ? 6 : 3} maxLength={50000}/></Label>}{editor.kind === 'agents' && <Label>正文<Textarea aria-label="正文" className="code-input" name="content" defaultValue={editor.data.content} rows={12} maxLength={100000}/></Label>}{error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}<footer className="modal-footer"><Button variant="outline" type="button" disabled={busy} onClick={closeEditor}>取消</Button><Button type="submit" variant="default" disabled={busy}>{busy ? '保存中…' : '保存'}</Button></footer></form></AppDialog>}
+  {editor && <AppDialog name="编辑条目" title={(editor.data.id ? '编辑' : '新建') + (editor.kind === 'links' ? '链接' : editor.kind === 'todos' ? ' Todo' : labels[editor.kind])} description={editor.kind === 'projects' ? `${editor.data.id ? '更新' : '创建'}项目背景，供团队与外部 Agent 接续工作。` : editor.kind === 'todos' ? `${editor.data.completed ? '记录完成结果' : '说明下一步行动'}，内容会进入项目上下文。` : editor.kind === 'links' ? '保存项目相关文档或代码入口，不会抓取链接正文。' : '保存可复制、可通过 MCP 读取的团队指令正文。'} busy={busy} close={closeEditor}><form ref={editorForm} onChange={updateEditorDirty} onSubmit={saveEditor}>{editor.kind === 'links' || editor.kind === 'todos' ? <Label>标题<Input name="title" defaultValue={editor.data.title} required maxLength={200} autoFocus/></Label> : <Label>名称<Input name="name" defaultValue={editor.data.name} required maxLength={200} autoFocus/></Label>}{editor.kind === 'links' ? <><Label>URL<Input name="url" type="url" required defaultValue={editor.data.url} maxLength={4000}/></Label><Label>类别<Choice label="类别" name="category" value={category} onChange={setCategory} options={Object.entries(categories).map(([value, label]) => ({ value, label }))}/></Label></> : <Label>{editor.kind === 'todos' ? editor.data.completed ? '完成结果' : '行动说明' : '简介'}<Textarea aria-label={editor.kind === 'todos' ? editor.data.completed ? '完成结果' : '行动说明' : '简介'} name="description" defaultValue={editor.data.description} rows={editor.kind === 'todos' ? 6 : 3} maxLength={50000}/></Label>}{editor.kind === 'todos' && <Button type="button" variant="outline" disabled={busy} onClick={supplementHandoff}>补充接续信息</Button>}{editor.kind === 'agents' && <Label>正文<Textarea aria-label="正文" className="code-input" name="content" defaultValue={editor.data.content} rows={12} maxLength={100000}/></Label>}{error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}{editorConflict && <section aria-label="合并最新内容"><Button type="button" variant="outline" disabled={busy} onClick={readLatestEntry}>读取最新版本</Button>{latestEntry && <><pre className="resource-content" data-testid="latest-resource">{[latestEntry.name ?? latestEntry.title, latestEntry.description, latestEntry.content, latestEntry.url, latestEntry.category, editor.kind === 'todos' ? latestEntry.completed ? '已完成' : '未完成' : ''].filter(Boolean).join('\n\n')}</pre><Button type="button" variant="outline" disabled={busy} onClick={useLatestEntry}>已合并，使用最新版本</Button></>}</section>}<footer className="modal-footer"><Button variant="outline" type="button" disabled={busy} onClick={closeEditor}>取消</Button><Button type="submit" variant="default" disabled={busy}>{busy ? '保存中…' : '保存'}</Button></footer></form></AppDialog>}
   {detail && <AppDialog name="Agent 模板详情" title={detail.name ?? 'Agent 模板详情'} description="查看并复制团队指令；内容只作为纯文本保存，不会执行。" wide busy={busy} close={closeAgent}><p className="prewrap muted">{detail.description}</p><pre className="resource-content">{detail.content || '暂无正文'}</pre><ActionFeedback value={feedback.agent} testId="agent-copy-feedback" fallbackLabel="Agent 正文手动复制"/><ActionFeedback value={feedback.agentLink} testId="agent-link-feedback" fallbackLabel="Agent 链接手动复制"/><footer className="modal-footer"><Button type="button" variant="outline" className="text-destructive" onClick={() => void remove(view as 'agents', detail)}>删除 Agent 模板</Button><Button type="button" variant="outline" onClick={() => { history.replaceState(null, '', '#agents'); acceptedHash.current = '#agents'; setAgentId(''); openEditor({ kind: 'agents', data: detail }); setDetail(null); }}>编辑 Agent 模板</Button><Button type="button" variant="outline" onClick={() => void copy('agentLink', new URL('#agent/' + detail.id, location.href).href, 'Agent 链接已复制')}>复制 Agent 链接</Button><Button type="button" variant="outline" disabled={!detail.content} onClick={() => downloadText(detail.name ?? 'Agent', detail.id, detail.content ?? '', 'md')}>下载 Agent 正文</Button><Button type="button" variant="default" disabled={!detail.content} onClick={() => void copy('agent', detail.content ?? '', 'Agent 正文已复制')}>复制 Agent 正文</Button></footer><small className="muted">仅保存文本，不执行或安装任何程序。</small></AppDialog>}
   {passwordDialog && <AppDialog name="修改密码" title="修改密码" description="保存后所有网页登录会话失效，需重新登录。" busy={busy} close={() => setPasswordDialog(false)}><form onSubmit={event => { event.preventDefault(); const fields = Object.fromEntries(new FormData(event.currentTarget)); void act(async () => { await api('/password', 'POST', fields); setPasswordDialog(false); setUser(null); setNotice('密码已更新，请重新登录'); }); }}><Label>当前密码<Input name="current" type="password" autoComplete="current-password" required/></Label><Label>新密码<Input name="password" type="password" autoComplete="new-password" minLength={12} maxLength={256} required/></Label><p className="footnote">至少 12 个字符。保存后所有网页登录会话失效，需重新登录。</p>{error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}<footer className="modal-footer"><Button variant="outline" type="button" disabled={busy} onClick={() => setPasswordDialog(false)}>取消</Button><Button type="submit" variant="default" disabled={busy}>保存密码</Button></footer></form></AppDialog>}
   </SidebarProvider>;

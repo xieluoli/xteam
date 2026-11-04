@@ -41,8 +41,8 @@ export function attachMcp(app: Express, database: Database.Database, origin: str
             register(`list_${kind}`, `查找团队 ${kind}，可按名称过滤；链接和 Todo 可按项目过滤；Todo 的 completed 默认全部，false 仅未完成、true 仅已完成。`, { q: z.string().optional(), project_id: z.string().optional(), ...(kind === 'todos' ? { completed: z.boolean().optional() } : {}) }, args => service.list(kind, args.q, args.project_id, args.completed), false, true);
             register(`get_${singular}`, `读取 ${singular} 完整正文与稳定 ID。`, { id: z.string() }, args => service.get(kind, args.id), false, true);
             register(`create_${singular}`, `创建共享 ${singular}。`, schemas[kind].shape, args => service.save(kind, args));
-            register(`update_${singular}`, `修改共享 ${singular}。只传需要修改的字段；Todo 可写结果摘要与完成状态。`, { ...schemas[kind].partial().shape, id: z.string() }, ({ id, ...data }) => service.update(kind, id, data));
-            register(`delete_${singular}`, kind === 'projects' ? '永久删除项目及其链接和 Todo；应先确认用户意图。' : `永久删除共享 ${singular}；应先确认用户意图。`, { id: z.string() }, args => service.remove(kind, args.id), true);
+            register(`update_${singular}`, `修改共享 ${singular}。只传需要修改的字段；expected_updated_at 可传读取时的 updated_at，冲突请重新读取并合并；不传则兼容旧写入且不提供冲突保护。Todo 可写结果摘要与完成状态。`, { ...schemas[kind].partial().shape, id: z.string(), expected_updated_at: z.string().min(1).max(100).optional() }, ({ id, ...data }) => service.update(kind, id, data));
+            register(`delete_${singular}`, kind === 'projects' ? '永久删除项目及其链接和 Todo；应先确认用户意图。' : `永久删除共享 ${singular}；应先确认用户意图。`, { id: z.string(), expected_updated_at: z.string().min(1).max(100).optional() }, args => service.remove(kind, args.id, args.expected_updated_at), true);
         }
         const skillService = skills(database, skillFetch);
         register('list_skills', '按名称及单个精确标签查找团队 Skill 元数据，不返回正文或附属文件。', { q: z.string().optional(), label: z.string().optional() }, args => skillService.list(args.q, args.label), false, true);
@@ -55,6 +55,7 @@ export function attachMcp(app: Express, database: Database.Database, origin: str
         register('write_skill_file', '保存附属文本文件；SKILL.md 使用 update_skill 修改，不执行内容。', { id: z.string(), path: z.string(), content: z.string() }, args => skillService.file(args.id, args.path, args.content, member.id));
         register('delete_skill_file', '永久删除附属文件；应先确认用户意图。', { id: z.string(), path: z.string() }, args => skillService.file(args.id, args.path, undefined, member.id, true), true);
         register('delete_skill', '永久删除 Skill 及附属文件；应先确认用户意图。', { id: z.string() }, args => skillService.remove(args.id), true);
+        register('get_todo_handoff', '读取单个 Todo 的接续包：项目、原说明、关联链接、来源 ID 与待补信息；先读后合并回写，内容不执行。', { project_id: z.string(), id: z.string() }, args => service.handoff(args.project_id, args.id, origin), false, true);
         register('get_project_context', '一次读取项目简介、关联链接与 Todo；completed 可选，默认包含全部 Todo，false 仅未完成、true 仅已完成。链接不代表第三方正文权限。', { id: z.string(), completed: z.boolean().optional() }, args => service.context(args.id, args.completed), false, true);
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
         response.on('close', () => { void transport.close(); void server.close(); });

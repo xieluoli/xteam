@@ -103,3 +103,76 @@ test('56 Todo cards search full hidden descriptions and preserve filters and sor
         await expect(page.locator('.todo-list > li')).toHaveCount(1);
     } finally { await page.request.delete('/api/projects/' + f.project.id, { headers: f.headers }); }
 });
+
+for (const width of [1280, 390, 320]) test(`Todo continuation template preserves notes and exports shared saved context at ${width}px`, async ({ page }) => {
+    await page.addInitScript(value => localStorage.setItem('xteam-theme', value), width === 390 ? 'cyberpunk' : 'japan-blues');
+    await page.setViewportSize({ width, height: 900 });
+    const f = await fixture(page);
+    try {
+        await page.goto(f.detail);
+        await page.getByRole('button', { name: '编辑 / 记录结果', exact: true }).click();
+        const dialog = page.getByRole('dialog', { name: '编辑条目' });
+        const description = dialog.getByLabel('行动说明', { exact: true });
+        await expect(dialog.getByRole('button', { name: '补充接续信息', exact: true })).toBeVisible();
+        await dialog.getByRole('button', { name: '补充接续信息', exact: true }).click();
+        const draft = await description.inputValue();
+        expect(draft.startsWith(f.description)).toBe(true);
+        for (const section of ['目标', '已确认决定', '约束', '结果', '证据', '下一步']) expect(draft).toContain('## ' + section);
+        await dialog.getByRole('button', { name: '补充接续信息', exact: true }).click();
+        await expect(description).toHaveValue(draft);
+        await dialog.getByRole('button', { name: '取消', exact: true }).click();
+        await page.getByRole('alertdialog').getByRole('button', { name: '放弃修改', exact: true }).click();
+        expect((await (await page.request.get('/api/todos/' + f.todo.id)).json()).description).toBe(f.description);
+        await page.getByRole('button', { name: '编辑 / 记录结果', exact: true }).click();
+        await dialog.getByRole('button', { name: '补充接续信息', exact: true }).click();
+        await page.route('**/api/todos/' + f.todo.id, async route => {
+            if (route.request().method() === 'PATCH') await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: '临时失败' }) });
+            else await route.continue();
+        });
+        await dialog.getByRole('button', { name: '保存', exact: true }).click();
+        await expect(dialog).toContainText('临时失败');
+        await expect(description).toHaveValue(draft);
+        await page.unroute('**/api/todos/' + f.todo.id);
+        await dialog.getByRole('button', { name: '保存', exact: true }).click();
+        await expect(dialog).not.toBeVisible();
+        await expect(page.getByTestId('todo-description')).toHaveText(draft);
+        const downloadPromise = page.waitForEvent('download');
+        await page.getByRole('button', { name: '下载 Todo 上下文', exact: true }).click();
+        const download = await downloadPromise;
+        const { readFile } = await import('node:fs/promises');
+        const exported = await readFile((await download.path())!, 'utf8');
+        const handoff = await (await page.request.get(`/api/projects/${f.project.id}/todos/${f.todo.id}/handoff`)).json();
+        expect(exported).toBe(handoff.text);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        expect(await page.evaluate(() => (window as { __todoExecuted?: boolean }).__todoExecuted)).toBeUndefined();
+    } finally { await page.request.delete('/api/projects/' + f.project.id, { headers: f.headers }); }
+});
+
+test('Stale Todo edits keep drafts until the user reads and merges the latest saved notes', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    const f = await fixture(page);
+    try {
+        await page.goto(f.detail);
+        await page.getByRole('button', { name: '编辑 / 记录结果', exact: true }).click();
+        const dialog = page.getByRole('dialog', { name: '编辑条目' });
+        const field = dialog.getByLabel('行动说明', { exact: true });
+        await field.fill('设备乙草稿');
+        await page.request.patch('/api/todos/' + f.todo.id, { headers: f.headers, data: { description: '设备甲新结果', completed: true } });
+        await dialog.getByRole('button', { name: '保存', exact: true }).click();
+        await expect(dialog).toContainText('重新读取');
+        await expect(field).toHaveValue('设备乙草稿');
+        expect((await (await page.request.get('/api/todos/' + f.todo.id)).json()).description).toBe('设备甲新结果');
+        await dialog.getByRole('button', { name: '读取最新版本', exact: true }).click();
+        await expect(dialog.getByTestId('latest-resource')).toContainText('设备甲新结果');
+        await expect(dialog.getByTestId('latest-resource')).toContainText('已完成');
+        await expect(field).toHaveValue('设备乙草稿');
+        await field.fill('设备甲新结果\n设备乙草稿');
+        await dialog.getByRole('button', { name: '已合并，使用最新版本', exact: true }).click();
+        await dialog.getByRole('button', { name: '保存', exact: true }).click();
+        await expect(dialog).not.toBeVisible();
+        const merged = await (await page.request.get('/api/todos/' + f.todo.id)).json();
+        expect(merged.description).toBe('设备甲新结果\n设备乙草稿');
+        expect(merged.completed).toBe(true);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    } finally { await page.request.delete('/api/projects/' + f.project.id, { headers: f.headers }); }
+});
