@@ -19,7 +19,7 @@ MCP Inspector 选择 Streamable HTTP，填地址及 Authorization 请求头。�
 pnpm exec mcp-inspector --cli --config /安全目录/mcp.json --server xteam --method tools/list
 ```
 
-工具共 32 个：projects、agents、links、todos 分别提供 list 与 get/create/update/delete；另有 `get_project_context` 聚合项目简介、链接和 Todo，以及 `get_todo_handoff` 按 `project_id`、`id` 读取单项接续包（原文、稳定 ID、读取版本、详情地址和项目链接）。网页复制/下载与该工具使用同一纯文本格式。
+工具共 35 个：projects、agents、links、todos 分别提供 list 与 get/create/update/delete；另有 `get_project_context` 聚合项目简介、链接和 Todo，以及 `get_todo_handoff` 按 `project_id`、`id` 读取单项接续包（原文、稳定 ID、读取版本、详情地址和项目链接）。网页复制/下载与该工具使用同一纯文本格式。
 
 Skill 使用独立的同一共享服务（网页与 MCP 同规则）：
 - `list_skills` / `get_skill`：元数据查找与完整正文、来源、标签、附属文件读取。
@@ -27,6 +27,7 @@ Skill 使用独立的同一共享服务（网页与 MCP 同规则）：
 - `discover_skills`：传 `url`，只读返回 `ref`、来源树 `sha` 和至多 20 个候选（名称、简介、相对目录 `path`、同名提示）；读取不入库。
 - `import_skills`：传原 `url`、发现的 `sha` 和 `items:[{"path":"skills/pmspec-review","on_conflict":"fail"}]`，一次选择 1–20 项；逐项返回 created/updated/skipped/conflict/failed，只重试未成功项。覆盖须明确同意，结果不返回大段正文，详情用 get_skill。
 - `update_skill`：局部修改名称、简介、正文、标签；名称/简介与 SKILL.md frontmatter 同步。
+- `preview_skill_source`：传 `id`，只读比较已保存内容与当前来源；返回 `local_updated_at`、本次 `source.tree_sha/ref/path/url` 和按路径排序的新增/移除/修改文本。`saved_revision` 为 null，表示历史基线未知，不推断差异由谁造成；不写库。读取期间本地内容变化报错。网页使用 `GET /api/skills/:id/source-preview`。
 - `refresh_skill`：按保存来源原位覆盖本地正文及文件，先确认；无来源或失败不清空数据。
 - `write_skill_file` / `delete_skill_file`：按相对 `path` 维护附属文本文件；主文件需用 update_skill。
 - `delete_skill`：删除 Skill 及附属文件，先确认。
@@ -68,3 +69,12 @@ projects、agents、links、todos 的 update/delete 可传 `expected_updated_at`
 网页编辑、Todo状态切换与删除会携带读取版本；编辑冲突保留草稿，可“读取最新版本”核对并手工合并，再选择“已合并，使用最新版本”保存。删除后更新返回404，不会重建条目。项目的版本只表示项目本身，不表示子资源快照；Skill沿用独立服务规则。
 
 Todo编辑器“补充接续信息”只追加缺失的目标、已确认决定、约束、结果、证据、下一步文本标题，保留原文；未填写字段不会被视为已确认或已验证。内容和链接只作上下文，不执行或抓取。
+
+
+## 任务经验
+
+`get_todo_experience` 传 `project_id`、`id`，读取原任务与经验历史。`record_todo_experience` 另传 `action`（`submit`、`confirm`、`revise`）和必填 `expected_updated_at`。首次提交和修订需 `experience`、`applicability`、`verification`；确认和修订必须有 `note`。已有经验不能再次首次提交，应明确修订；确认只接受待确认状态，修订重新进入待确认。
+
+每次动作在原 Todo 说明追加带来源项目/任务、时间、状态的 Markdown 文本，保留原文、历次记录与完成状态。不新增资源类型、表或自动规则；普通说明编辑仍可人工修改文本，因此“已确认”不代表不可篡改的审批或权限证明。记录格式不完整或来源不匹配时报错，避免把损坏记录当作空态。并发版本冲突拒绝写入，网页保留草稿并提供最新原文供手工核对。
+
+网页对应 `GET/POST /api/projects/:projectId/todos/:id/experience`，与 MCP 使用相同服务。仅持久化文本，不执行经验内容或调用模型。Skill 当前预览不建立持久化来源基线，现有刷新仍会覆盖本地内容，须先确认。

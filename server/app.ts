@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { openDatabase, hashToken, passwordHash, passwordMatches } from './store.js';
 import { resources, resourceKinds, ResourceError } from './resources.js';
 import { skills } from './skills.js';
+import { todoExperiences } from './todo-experience.js';
 import type { SkillFetch } from './skill-source.js';
 import { attachMcp } from './mcp.js';
 import { attachUpdates, type UpgradeOptions } from './updates.js';
@@ -115,6 +116,9 @@ export function createApp(options: {
     });
     attachUpdates(app, options.upgrade);
     const service = resources(database);
+    const experienceService = todoExperiences(database);
+    app.get('/api/projects/:projectId/todos/:id/experience', (request, response) => response.json(experienceService.get(String(request.params.projectId), String(request.params.id))));
+    app.post('/api/projects/:projectId/todos/:id/experience', (request, response) => response.json(experienceService.record(String(request.params.projectId), String(request.params.id), request.body)));
     app.get('/api/projects/:projectId/todos/:id/handoff', (request, response) => response.json(service.handoff(String(request.params.projectId), String(request.params.id), options.origin)));
     app.get('/api/projects/:id/context', (request, response) => response.json(service.context(String(request.params.id), request.query.completed)));
     const skillService = skills(database, options.skillFetch);
@@ -126,6 +130,7 @@ export function createApp(options: {
     app.get('/api/skills/:id', (request, response) => response.json(skillService.get(String(request.params.id))));
     app.patch('/api/skills/:id', (request, response) => response.json(skillService.update(String(request.params.id), request.body, response.locals.member.id)));
     app.delete('/api/skills/:id', (request, response) => response.json(skillService.remove(String(request.params.id))));
+    app.get('/api/skills/:id/source-preview', async (request, response) => response.json(await skillService.previewSource(String(request.params.id))));
     app.post('/api/skills/:id/refresh', async (request, response) => response.json(await skillService.refresh(String(request.params.id), response.locals.member.id)));
     app.put('/api/skills/:id/files', (request, response) => response.json(skillService.file(String(request.params.id), String(request.body.path ?? ''), request.body.content, response.locals.member.id)));
     app.delete('/api/skills/:id/files', (request, response) => response.json(skillService.file(String(request.params.id), String(request.body.path ?? ''), undefined, response.locals.member.id, true)));

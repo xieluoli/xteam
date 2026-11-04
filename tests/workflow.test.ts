@@ -129,3 +129,29 @@ test('real MCP client reads project context and writes results; revoked tokens s
         await context.close();
     }
 });
+
+test('HTTP and real MCP share explicit experience states, source scope and conditional writing', async () => {
+    const context = await fixture();
+    const client = new Client({ name: 'experience-regression', version: '1.0' });
+    try {
+        const request = await context.login();
+        const project = (await request('/api/projects', 'POST', { name: 'Experience' })).data;
+        const todo = (await request('/api/todos', 'POST', { project_id: project.id, title: 'Source', description: '保留原任务备注' })).data;
+        const path = `/api/projects/${project.id}/todos/${todo.id}/experience`;
+        const read = await request(path);
+        assert.equal(read.status, 200); assert.deepEqual(read.data.records, []);
+        const token = (await request('/api/tokens', 'POST', { name: 'temporary experience test' })).data;
+        await client.connect(new StreamableHTTPClientTransport(new URL(context.base + '/mcp'), { requestInit: { headers: { Authorization: 'Bearer ' + token.token } } }));
+        const result = await client.callTool({ name: 'record_todo_experience', arguments: { project_id: project.id, id: todo.id, action: 'submit', expected_updated_at: todo.updated_at, experience: '明确记录依据', applicability: '临时库回归', verification: '协议一致' } });
+        assert.notEqual(result.isError, true, JSON.stringify(result));
+        const submitted = JSON.parse((result.content as { text: string }[])[0].text);
+        assert.equal((await request(path)).data.records[0].status, '待确认');
+        const confirmed = await request(path, 'POST', { action: 'confirm', note: '人工核对验证结果', expected_updated_at: submitted.updated_at });
+        assert.equal(confirmed.status, 200);
+        const mcpRead = await client.callTool({ name: 'get_todo_experience', arguments: { project_id: project.id, id: todo.id } });
+        assert.deepEqual(JSON.parse((mcpRead.content as { text: string }[])[0].text), (await request(path)).data);
+        assert.equal((await request(path, 'POST', { action: 'confirm', note: '旧版本', expected_updated_at: submitted.updated_at })).status, 409);
+        assert.equal((await request(`/api/projects/not-this-project/todos/${todo.id}/experience`)).status, 404);
+        assert.equal((await request('/api/todos/' + todo.id)).data.completed, false);
+    } finally { await client.close(); await context.close(); }
+});

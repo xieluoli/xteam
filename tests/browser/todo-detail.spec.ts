@@ -176,3 +176,49 @@ test('Stale Todo edits keep drafts until the user reads and merges the latest sa
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     } finally { await page.request.delete('/api/projects/' + f.project.id, { headers: f.headers }); }
 });
+
+test('Explicit experience submission, confirmation and revision preserve source history and drafts at 320px', async ({ page }) => {
+    const f = await fixture(page);
+    try {
+        await page.setViewportSize({ width: 320, height: 900 });
+        await page.goto(f.detail);
+        const region = page.getByRole('region', { name: '任务经验', exact: true });
+        await expect(region).toContainText('尚未提交经验');
+        await region.getByRole('button', { name: '提交经验', exact: true }).click();
+        let dialog = page.getByRole('dialog', { name: '提交经验', exact: true });
+        await dialog.getByLabel('经验', { exact: true }).fill('<script>经验只作文本</script>');
+        await dialog.getByLabel('适用条件', { exact: true }).fill('SQLite 条件写入');
+        await dialog.getByLabel('验证结果', { exact: true }).fill('独立客户端测试通过');
+        await page.evaluate(() => { location.hash = '#projects'; });
+        await expect(page.getByRole('alertdialog')).toBeVisible();
+        await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click();
+        await expect(page.getByRole('alertdialog')).not.toBeVisible();
+        await expect(dialog.getByLabel('经验', { exact: true })).toHaveValue('<script>经验只作文本</script>');
+        await page.route('**/experience', route => route.request().method() === 'POST' ? route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ error: '资源已被其他设备修改，请重新读取并合并' }) }) : route.continue());
+        await dialog.getByRole('button', { name: '提交待确认', exact: true }).click();
+        await expect(dialog).toContainText('其他设备修改');
+        await expect(dialog.getByLabel('经验', { exact: true })).toHaveValue('<script>经验只作文本</script>');
+        await page.unroute('**/experience');
+        await dialog.getByRole('button', { name: '提交待确认', exact: true }).click();
+        await expect(region).toContainText('待确认');
+        await expect(region).toContainText('已有经验，新增结论请修订');
+        await region.getByRole('button', { name: '确认经验', exact: true }).click();
+        dialog = page.getByRole('dialog', { name: '确认经验', exact: true });
+        await dialog.getByLabel('确认说明', { exact: true }).fill('已核对测试证据与适用条件');
+        await dialog.getByRole('button', { name: '确认并保留记录', exact: true }).click();
+        await expect(region).toContainText('已确认');
+        await region.getByRole('button', { name: '修订经验', exact: true }).click();
+        dialog = page.getByRole('dialog', { name: '修订经验', exact: true });
+        await dialog.getByLabel('经验', { exact: true }).fill('补充跨设备边界');
+        await dialog.getByLabel('修订说明', { exact: true }).fill('新增验证边界');
+        await dialog.getByRole('button', { name: '保存修订，重新待确认', exact: true }).click();
+        await expect(region.getByTestId('experience-status')).toHaveText('待确认');
+        await expect(region).toContainText('3 条记录');
+        await expect(page.getByTestId('todo-description')).toContainText(f.description);
+        await expect(page.getByTestId('todo-description')).toContainText('已核对测试证据与适用条件');
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        expect(await page.evaluate(() => (window as { __todoExecuted?: boolean }).__todoExecuted)).toBeUndefined();
+        await page.reload();
+        await expect(region.getByTestId('experience-status')).toHaveText('待确认');
+    } finally { await page.request.delete('/api/projects/' + f.project.id, { headers: f.headers }); }
+});

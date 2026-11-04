@@ -5,6 +5,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { resources, resourceKinds, schemas } from './resources.js';
 import { skills } from './skills.js';
+import { todoExperiences, experienceSchema } from './todo-experience.js';
 import type { SkillFetch } from './skill-source.js';
 import { hashToken } from './store.js';
 export function attachMcp(app: Express, database: Database.Database, origin: string, skillFetch?: SkillFetch) {
@@ -51,10 +52,14 @@ export function attachMcp(app: Express, database: Database.Database, origin: str
         register('discover_skills', '只读发现 URL 下的 Skill 候选与来源树快照，不执行或导入内容。', { url: z.string() }, args => skillService.discover(args), false, true);
         register('import_skills', '选择来源树快照内的 1–20 个目录批量导入，逐项返回结果；覆盖需用户明确同意，只重试未成功项。', { url: z.string(), sha: z.string().regex(/^[a-f0-9]{40}$/), items: z.array(z.object({ path: z.string().max(1000), on_conflict: z.enum(['fail', 'overwrite', 'rename', 'skip']).optional() })).min(1).max(20) }, args => skillService.importMany(args, member.id));
         register('update_skill', '修改名称、简介、正文或标签，属性与 frontmatter 同步。', { id: z.string(), name: z.string().optional(), description: z.string().optional(), content: z.string().optional(), labels: z.array(z.string()).optional() }, ({ id, ...data }) => skillService.update(id, data, member.id));
+        register('preview_skill_source', '只读比较已保存 Skill 与当前来源的文本差异，返回来源树快照；不覆盖本地内容，旧来源修订未知。', { id: z.string() }, args => skillService.previewSource(args.id), false, true);
         register('refresh_skill', '从保存的来源覆盖本地正文及文件；应先确认用户意图。失败保留旧内容。', { id: z.string() }, args => skillService.refresh(args.id, member.id), true);
         register('write_skill_file', '保存附属文本文件；SKILL.md 使用 update_skill 修改，不执行内容。', { id: z.string(), path: z.string(), content: z.string() }, args => skillService.file(args.id, args.path, args.content, member.id));
         register('delete_skill_file', '永久删除附属文件；应先确认用户意图。', { id: z.string(), path: z.string() }, args => skillService.file(args.id, args.path, undefined, member.id, true), true);
         register('delete_skill', '永久删除 Skill 及附属文件；应先确认用户意图。', { id: z.string() }, args => skillService.remove(args.id), true);
+        const experienceService = todoExperiences(database);
+        register('get_todo_experience', '读取任务原文与经验历史；待确认和已确认均为文本记录，不自动成为团队规则。', { project_id: z.string(), id: z.string() }, args => experienceService.get(args.project_id, args.id), false, true);
+        register('record_todo_experience', '在原任务说明追加经验、明确确认或修订记录，保留来源和历史；必须先读取 expected_updated_at，冲突后人工合并。', { project_id: z.string(), id: z.string(), ...experienceSchema.shape }, args => experienceService.record(args.project_id, args.id, args));
         register('get_todo_handoff', '读取单个 Todo 的接续包：项目、原说明、关联链接、来源 ID 与待补信息；先读后合并回写，内容不执行。', { project_id: z.string(), id: z.string() }, args => service.handoff(args.project_id, args.id, origin), false, true);
         register('get_project_context', '一次读取项目简介、关联链接与 Todo；completed 可选，默认包含全部 Todo，false 仅未完成、true 仅已完成。链接不代表第三方正文权限。', { id: z.string(), completed: z.boolean().optional() }, args => service.context(args.id, args.completed), false, true);
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
