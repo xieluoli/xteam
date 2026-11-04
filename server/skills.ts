@@ -113,6 +113,20 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
         }
         return { sha: input.sha, results };
     }
+    async function previewSource(id: string) {
+        const original = get(id);
+        if (!original.source_url) throw new ResourceError('此 Skill 没有可读取的 URL 来源', 422);
+        const bundle = await downloadSkill(original.source_url, fetcher);
+        const fields = contentFields(bundle.content, bundle.fallbackName);
+        bundle.content = setProperties(bundle.content, fields.name, fields.description);
+        if (JSON.stringify(get(id)) !== JSON.stringify(original)) throw new ResourceError('Skill 在读取期间已修改，请重新读取来源差异', 409);
+        const local = new Map([['SKILL.md', original.content], ...original.files.map(file => [file.path, file.content] as const)]);
+        const upstream = new Map([['SKILL.md', bundle.content], ...bundle.files.map(file => [file.path, file.content] as const)]);
+        const changes = [...new Set([...local.keys(), ...upstream.keys()])].sort().filter(path => local.get(path) !== upstream.get(path)).map(path => ({
+            path, kind: !local.has(path) ? 'added' : !upstream.has(path) ? 'removed' : 'modified', before: local.get(path) ?? null, after: upstream.get(path) ?? null,
+        }));
+        return { id, local_updated_at: original.updated_at, saved_revision: null, source: bundle.source, changes };
+    }
     async function refresh(id: string, member: string) {
         const original = get(id);
         if (!original.source_url) throw new ResourceError('此 Skill 没有可更新的 URL 来源，请重新导入', 422);
@@ -133,5 +147,5 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
         return persist({ ...skill, files, updated_at: new Date().toISOString(), updated_by: member });
     }
     function remove(id: string) { get(id); database.transaction(() => { database.prepare('DELETE FROM skill_files WHERE skill_id=?').run(id); database.prepare('DELETE FROM skills WHERE id=?').run(id); })(); return { ok: true }; }
-    return { get, list, update, importUrl, discover, importMany, refresh, file, remove };
+    return { get, list, update, importUrl, discover, importMany, previewSource, refresh, file, remove };
 }

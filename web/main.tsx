@@ -7,6 +7,7 @@ import './style.css';
 import './themes.css';
 import { ThemeChoice } from './components/theme-choice';
 import { SystemUpdates } from './system-updates';
+import { TodoExperience } from './todo-experience';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
@@ -55,6 +56,7 @@ function ActionFeedback({ value, testId, fallbackLabel }: { value?: Feedback; te
 }
 function App() {
     const confirm = useConfirmation();
+    const [experienceDirty, setExperienceDirty] = useState(false);
     const [category, setCategory] = useState("other");
     const [user, setUser] = useState<{
         email: string;
@@ -146,7 +148,7 @@ function App() {
         const sync = async () => {
             const target = location.hash;
             if (checkingNavigation.current) return;
-            if (editorDirty) {
+            if (editorDirty || experienceDirty) {
                 history.replaceState(null, '', acceptedHash.current || location.pathname + location.search);
                 checkingNavigation.current = true;
                 const discard = await confirm({ title: '放弃未保存的修改？', message: '离开后将丢失当前表单内容。', action: '放弃修改' });
@@ -167,13 +169,13 @@ function App() {
         };
         window.addEventListener('hashchange', sync);
         return () => window.removeEventListener('hashchange', sync);
-    }, [editorDirty, confirm]);
+    }, [editorDirty, experienceDirty, confirm]);
     useEffect(() => {
-        if (!editorDirty) return;
+        if (!editorDirty && !experienceDirty) return;
         const prevent = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
         window.addEventListener('beforeunload', prevent);
         return () => window.removeEventListener('beforeunload', prevent);
-    }, [editorDirty]);
+    }, [editorDirty, experienceDirty]);
     useEffect(() => { updateEditorDirty(); }, [category]);
     useEffect(() => { if (!focusNextPage.current || loading) return; const timer = window.setTimeout(() => { document.querySelector<HTMLElement>('#main-content h1')?.focus(); focusNextPage.current = false; }, 0); return () => window.clearTimeout(timer); }, [view, projectId, todoId, loading, updateCheckSignal]);
     async function refresh() {
@@ -325,6 +327,7 @@ function App() {
           <ActionFeedback value={feedback.todoContext} testId="todo-context-feedback" fallbackLabel="Todo 上下文手动复制"/>
           <ActionFeedback value={feedback.todoLink} testId="todo-link-feedback" fallbackLabel="Todo 链接手动复制"/>
           <div className="prewrap todo-description" data-testid="todo-description">{currentTodo.description || '暂无描述'}</div>
+          <TodoExperience key={currentTodo.id} todo={currentTodo} api={api} onDirty={setExperienceDirty} onSaved={saved => setContext(value => value ? { ...value, todos: value.todos.map(item => item.id === saved.id ? { ...item, ...saved } : item) } : value)}/>
         </> : <><h1 tabIndex={-1}>Todo 详情</h1><p>Todo 不存在或已删除。</p></>}
       </section> : <>
       <section className="project-overview">

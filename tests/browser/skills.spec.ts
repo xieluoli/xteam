@@ -127,3 +127,30 @@ test('row menu opens a new tab and single source update and deletion work from d
     await expect(popup.getByRole('link', { name: 'single', exact: true })).toHaveCount(0);
     await popup.close();
 });
+
+test('source difference preview is read only and preserves an unsaved draft on narrow and desktop screens', async ({ page }) => {
+    await login(page);
+    await importSkill(page, 'single');
+    await page.getByRole('link', { name: 'single', exact: true }).click();
+    await page.getByLabel('简介', { exact: true }).fill('unsaved local draft');
+    for (const width of [1280, 390, 320]) {
+        await page.setViewportSize({ width, height: 850 });
+        await page.getByRole('button', { name: '查看来源差异', exact: true }).click();
+        const dialog = page.getByRole('dialog', { name: '来源差异', exact: true });
+        await expect(dialog).toContainText('保存时的来源修订未知');
+        await expect(dialog).toContainText('已保存内容与本次来源一致');
+        await expect(dialog).toContainText('a'.repeat(40));
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        await dialog.getByRole('button', { name: '关闭', exact: true }).click();
+        await expect(page.getByLabel('简介', { exact: true })).toHaveValue('unsaved local draft');
+    }
+    await page.setViewportSize({ width: 1280, height: 850 });
+    await page.getByRole('button', { name: '保存属性', exact: true }).click();
+    await page.getByRole('button', { name: '查看来源差异', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: '来源差异', exact: true });
+    await expect(dialog).toContainText('SKILL.md');
+    await expect(dialog).toContainText('unsaved local draft');
+    expect(await page.evaluate(() => (globalThis as { __skillExecuted?: boolean }).__skillExecuted)).toBeUndefined();
+    await dialog.getByRole('button', { name: '关闭', exact: true }).click();
+    await expect(page.getByLabel('简介', { exact: true })).toHaveValue('unsaved local draft');
+});

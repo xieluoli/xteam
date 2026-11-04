@@ -158,5 +158,5 @@ export async function downloadSkill(input: string, fetcher: SkillFetch = fetchSk
     }
     if (!content.trim()) throw new ResourceError('SKILL.md 正文为空或不是 UTF-8 文本');
     const sourceUrl = selection && !isSkills ? `https://github.com/${source.owner}/${repo}/tree/${encodeURIComponent(ref)}${directory ? '/' + directory.replace(/\/$/, '') : ''}` : url.href.replace(/\/$/, '');
-    return { content, files: files.sort((left, right) => left.path.localeCompare(right.path)), source_url: sourceUrl, source_type: isSkills ? 'skills.sh' : 'GitHub', fallbackName: directory.split('/').filter(Boolean).at(-1) || repo };
+    return { source: { tree_sha: source.sha, ref, path: directory.replace(/\/$/, ''), url: sourceUrl }, content, files: files.sort((left, right) => left.path.localeCompare(right.path)), source_url: sourceUrl, source_type: isSkills ? 'skills.sh' : 'GitHub', fallbackName: directory.split('/').filter(Boolean).at(-1) || repo };
 }

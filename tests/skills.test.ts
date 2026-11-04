@@ -182,6 +182,9 @@ test('real MCP imports URL bundles and shares property, file and source refresh 
         await call('update_skill', { id: imported.skill.id, labels: ['MCP'] });
         const file = await call('write_skill_file', { id: imported.skill.id, path: 'notes.md', content: '# Note' });
         assert.equal(file.files.length, 3);
+        const preview = await call('preview_skill_source', { id: imported.skill.id });
+        assert.deepEqual(preview, (await context.request(`/api/skills/${imported.skill.id}/source-preview`)).data);
+        assert.equal(tools.tools.find(tool => tool.name === 'preview_skill_source')?.annotations?.readOnlyHint, true);
         context.setUpstream('mcp-refreshed');
         const refreshed = await call('refresh_skill', { id: imported.skill.id });
         assert.equal(refreshed.description, 'mcp-refreshed');
@@ -243,4 +246,44 @@ test('opening a pre-feature database adds Skill metadata without rewriting saved
         const second = openDatabase(path); second.close();
         assert.equal((database.prepare('SELECT count(*) AS count FROM skills').get() as { count: number }).count, 1);
     } finally { database.close(); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('Source preview compares normalized text without saving a revision or changing local files', async () => {
+    const context = await fixture();
+    try {
+        const skill = (await context.request('/api/skills/import', 'POST', { url: source })).data.skill;
+        const endpoint = `/api/skills/${skill.id}/source-preview`;
+        const unchanged = await context.request(endpoint);
+        assert.equal(unchanged.status, 200);
+        assert.equal(unchanged.data.saved_revision, null);
+        assert.equal(unchanged.data.source.tree_sha, 'a'.repeat(40));
+        assert.equal(unchanged.data.source.path, 'skills/review');
+        assert.deepEqual(unchanged.data.changes, []);
+        await context.request(`/api/skills/${skill.id}/files`, 'PUT', { path: '参考/中文 空格.md', content: '<script>text only</script>' });
+        await context.request(`/api/skills/${skill.id}/files`, 'DELETE', { path: 'scripts/demo.js' });
+        context.setUpstream('changed');
+        const before = (await context.request('/api/skills/' + skill.id)).data;
+        const preview = (await context.request(endpoint)).data;
+        assert.equal(preview.local_updated_at, before.updated_at);
+        assert.deepEqual(preview.changes.map((file: { path: string; kind: string }) => [file.path, file.kind]), [
+            ['SKILL.md', 'modified'], ['scripts/demo.js', 'added'], ['参考/中文 空格.md', 'removed'],
+        ]);
+        assert.equal(preview.changes.find((file: { path: string }) => file.path.startsWith('参考')).before, '<script>text only</script>');
+        assert.deepEqual((await context.request('/api/skills/' + skill.id)).data, before);
+        context.setUpstream('offline');
+        assert.equal((await context.request(endpoint)).status, 502);
+        assert.deepEqual((await context.request('/api/skills/' + skill.id)).data, before);
+        assert.equal((await context.request(`/api/skills/${context.legacyId}/source-preview`)).status, 422);
+        assert.equal((await context.request('/api/skills/missing/source-preview')).status, 404);
+    } finally { await context.close(); }
+});
+
+test('Source preview rejects concurrent local editing rather than returning an outdated comparison', async () => {
+    const context = await fixture();
+    try {
+        const skill = (await context.request('/api/skills/import', 'POST', { url: source })).data.skill;
+        context.onNextFetch(() => context.database.prepare('UPDATE skills SET content=? WHERE id=?').run('# concurrent local edit', skill.id));
+        assert.equal((await context.request(`/api/skills/${skill.id}/source-preview`)).status, 409);
+        assert.equal((await context.request('/api/skills/' + skill.id)).data.content, '# concurrent local edit');
+    } finally { await context.close(); }
 });
