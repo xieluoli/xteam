@@ -12,6 +12,8 @@
 
 ## 当前产品与发布
 
+2026-11-05用户确认Release从当日起每周四一次；首期[v2026.11.05](https://github.com/xieluoli/xteam/releases/tag/v2026.11.05)已正式发布并回读Latest，tag固定3b644028414d4970a7efbc9a3e43fc27956842c3，main CI成功。Release不等于部署；首次升级其他授权仍待决定。周规则见[workflow](workflow.md#正式-release-周期2026-11-05-用户确认)，详细结果见当日“临时新增”；11月12日是否执行仍依赖11月7日后的续期。
+
 [PR44](https://github.com/xieluoli/xteam/pull/44)接续包/条件写回、[PR45](https://github.com/xieluoli/xteam/pull/45)经验确认/只读差异均已合入上线，白天真实域名SDK通过。夜间57/57服务、build、85/85浏览器通过；23:56只读公网health与目标镜像精确ee3e858931b4629bd95eea2c0382043537003d53。最新备份598016字节、integrity ok/0600，完整bridge+xteam_default与回退资源存在，未实际回退。四项有效业务截图0张，缺登录态；0082基线/安全刷新未实现，不从上线或SDK通过推断全项完成。
 
 [PR46](https://github.com/xieluoli/xteam/pull/46)最终head b6588313bc19118d4a713733331c6e0673bf3f00，merge27b04a0a0abf226234e6219763b00cdb70dbf9b5，最终两组CI成功；纯文档main不要求重部署。历史0077–79等已完成范围保留，0074原PR33交付保留但重开待决定，完整历史按daily查阅。
@@ -20,7 +22,7 @@
 
 | 原ID | 状态 | 下一步/限制 |
 | --- | --- | --- |
-| XT-0052 | P0首次升级启用阻塞false | 决定Node24/gh私有认证、service/socket、管理员及正式Release；建议先隔离演练，不擅自安装扩权 |
+| XT-0052 | P0首次升级启用阻塞false | 正式Release已发布；仍需决定Node24/gh私有认证、service/socket及管理员；建议先隔离演练，不擅自安装扩权 |
 | XT-0074 | P1重开原因待决定false | 确认误重开恢复完成或给新复现/验收，不盲改/关单 |
 | XT-0080 | P1接续包已发布，网页待验false | 合法登录态后补桌面/390/320px复制下载、身份/模板/草稿等原验收 |
 | XT-0083 | P1写回保护已发布，网页待验false | 补冲突保留草稿、读最新人工合并及取消/关闭等真实场景 |
