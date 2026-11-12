@@ -6,6 +6,7 @@ async function login(page: any) {
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();
     await expect(page.getByRole('heading', { name: '组织知识', exact: true })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: '选择 Skill', exact: true })).toContainText('选择 Skill');
 }
 
 test('Wiki homepage supports SOP → local Skill → Agent binding → portable workflow', async ({ page }) => {
@@ -28,6 +29,13 @@ test('Wiki homepage supports SOP → local Skill → Agent binding → portable 
     await page.getByRole('dialog').getByLabel('适用场景').fill('需求评审前使用');
     await page.getByRole('dialog').getByRole('button', { name: '保存', exact: true }).click();
     await expect(page.getByRole('status')).toContainText('已保存 Skill');
+    const sopUrl = page.url();
+    await page.getByRole('link', { name: 'Skill 库', exact: true }).click();
+    await page.getByRole('link', { name: 'review-' + suffix, exact: true }).click();
+    await expect(page.getByRole('link', { name: '查看来源 SOP（版本 1）', exact: true })).toBeVisible();
+    await page.goto(sopUrl);
+    await page.getByRole('combobox', { name: '选择 Skill', exact: true }).click();
+    await page.getByRole('option', { name: 'review-' + suffix, exact: true }).click();
     await page.getByRole('button', { name: '新建 Agent', exact: true }).click();
     await page.getByRole('dialog').getByLabel('名称', { exact: true }).fill('产品经理-' + suffix);
     await page.getByRole('dialog').getByLabel('Agent 指令').fill('遵守团队评审方法');
