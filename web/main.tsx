@@ -20,6 +20,7 @@ import { AppSidebar } from './components/app-sidebar';
 import { AppDialog, Choice, ConfirmationProvider, useConfirmation } from './components/app-ui';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './components/ui/dropdown-menu';
 import { FolderKanban, Bot, Search, ArrowUpRight, Pencil, Layers } from 'lucide-react';
+const Knowledge = lazy(() => import('./knowledge.js').then(module => ({ default: module.Knowledge })));
 const Skills = lazy(() => import('./skills.js').then(module => ({ default: module.Skills })));
 type Entry = {
     id: string;
@@ -33,13 +34,13 @@ type Entry = {
     completed?: boolean;
     updated_at?: string;
 };
-type View = 'projects' | 'agents' | 'skills' | 'mcp' | 'settings';
+type View = 'knowledge' | 'projects' | 'agents' | 'skills' | 'mcp' | 'settings';
 type Editor = {
-    kind: Exclude<View, 'mcp' | 'skills' | 'settings'> | 'links' | 'todos';
+    kind: Exclude<View, 'knowledge' | 'mcp' | 'skills' | 'settings'> | 'links' | 'todos';
     data: Partial<Entry>;
 };
 type Feedback = { message: string; failed?: boolean; fallback?: string };
-const labels = { projects: '项目', agents: 'Agent 模板', skills: 'Skill 库', mcp: 'MCP 接入', settings: '设置' };
+const labels = { knowledge: '组织知识', projects: '项目', agents: 'Agent 模板', skills: 'Skill 库', mcp: 'MCP 接入', settings: '设置' };
 const categories: Record<string, string> = { github: 'GitHub', gitee: 'Gitee', dingtalk: '钉钉', feishu: '飞书', other: '其他' };
 let csrf = '';
 async function api(path: string, method = 'GET', body?: unknown) {
@@ -57,6 +58,9 @@ function ActionFeedback({ value, testId, fallbackLabel }: { value?: Feedback; te
 function App() {
     const confirm = useConfirmation();
     const [experienceDirty, setExperienceDirty] = useState(false);
+    const [wikiDirty, setWikiDirty] = useState(false);
+    const [legacyTodos, setLegacyTodos] = useState(true);
+    const [wikiRoute, setWikiRoute] = useState(location.hash);
     const [category, setCategory] = useState("other");
     const [user, setUser] = useState<{
         email: string;
@@ -65,7 +69,7 @@ function App() {
     const [currentVersion, setCurrentVersion] = useState('');
     const [updateCheckSignal, setUpdateCheckSignal] = useState(0);
     const [error, setError] = useState('');
-    const [view, setView] = useState<View>(location.hash === '#settings' ? 'settings' : location.hash.startsWith('#skill') ? 'skills' : location.hash.startsWith('#agent') ? 'agents' : 'projects');
+    const [view, setView] = useState<View>(location.hash === '#settings' ? 'settings' : location.hash === '#mcp' ? 'mcp' : location.hash.startsWith('#skill') ? 'skills' : location.hash.startsWith('#agent') ? 'agents' : location.hash.startsWith('#project') ? 'projects' : 'knowledge');
     const [projectId, setProjectId] = useState<string | null>(location.hash.startsWith('#project/') ? location.hash.split('/')[1] : null);
     const [todoId, setTodoId] = useState(location.hash.startsWith('#project/') && location.hash.split('/')[2] === 'todo' ? location.hash.split('/')[3] || '' : '');
     const [items, setItems] = useState<Entry[]>([]);
@@ -112,6 +116,7 @@ function App() {
     const todoCopyRequest = useRef(0);
     useEffect(() => { setTodoFilter('all'); setTodoQuery(''); setTodoSort('updated'); setLinkQuery(''); setLinkCategory('all'); setFeedback({}); setLastRefreshed(''); }, [projectId]);
     useEffect(() => { todoCopyRequest.current++; setFeedback(current => { const next = { ...current }; delete next.todoContext; delete next.todoLink; return next; }); }, [todoId, context]);
+    useEffect(() => { if (user) void api('/me').then(v => setLegacyTodos(v.features?.legacy_todos !== false)).catch(() => {}); }, [user?.email]);
     useEffect(() => { if (!user) { setCurrentVersion(''); return; } let active = true; void fetch('/health').then(response => response.json()).then(value => { if (active && typeof value.version === 'string') setCurrentVersion(value.version); }).catch(() => {}); return () => { active = false; }; }, [user?.email]);
     useEffect(() => { const expire = () => { setUser(null); setContext(null); setItems([]); setTokens([]); setEditor(null); setEditorDirty(false); setDetail(null); setNewToken(''); csrf = ''; }; window.addEventListener('xteam-session-expired', expire); return () => window.removeEventListener('xteam-session-expired', expire); }, []);
     useEffect(() => { api('/me').then(value => { csrf = value.csrf; setUser(value.user); }).catch(() => { }).finally(() => setBooting(false)); }, []);
@@ -119,8 +124,8 @@ function App() {
         let active = true;
         const readVersion = ++contextRead.current.version;
         contextRead.current.projectId = user && view === 'projects' ? projectId : null;
-        if (view === 'settings') { setLoading(false); setError(''); }
-        if (!user || view === 'skills' || view === 'settings')
+        if (view === 'settings' || view === 'knowledge') { setLoading(false); setError(''); }
+        if (!user || view === 'skills' || view === 'settings' || view === 'knowledge')
             return;
         setLoading(true);
         setError('');
@@ -148,7 +153,7 @@ function App() {
         const sync = async () => {
             const target = location.hash;
             if (checkingNavigation.current) return;
-            if (editorDirty || experienceDirty) {
+            if (editorDirty || experienceDirty || wikiDirty) {
                 history.replaceState(null, '', acceptedHash.current || location.pathname + location.search);
                 checkingNavigation.current = true;
                 const discard = await confirm({ title: '放弃未保存的修改？', message: '离开后将丢失当前表单内容。', action: '放弃修改' });
@@ -165,17 +170,18 @@ function App() {
             if (target.startsWith('#agent/')) { setView('agents'); setProjectId(null); }
             else if (target.startsWith('#skill')) { setView('skills'); setProjectId(null); }
             else if (target.startsWith('#project/')) { setView('projects'); setProjectId(target.split('/')[1]); }
-            else if (['#projects', '#agents', '#mcp', '#settings', ''].includes(target)) { setView((target.slice(1) || 'projects') as View); setProjectId(null); }
+            else if (['#projects', '#agents', '#mcp', '#settings'].includes(target)) { setView(target.slice(1) as View); setProjectId(null); }
+            else if (!target || target === '#knowledge' || target.startsWith('#page/') || target.startsWith('#space/') || target.startsWith('#workflow')) { setView('knowledge'); setWikiRoute(target); setProjectId(null); }
         };
         window.addEventListener('hashchange', sync);
         return () => window.removeEventListener('hashchange', sync);
-    }, [editorDirty, experienceDirty, confirm]);
+    }, [editorDirty, experienceDirty, wikiDirty, confirm]);
     useEffect(() => {
-        if (!editorDirty && !experienceDirty) return;
+        if (!editorDirty && !experienceDirty && !wikiDirty) return;
         const prevent = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
         window.addEventListener('beforeunload', prevent);
         return () => window.removeEventListener('beforeunload', prevent);
-    }, [editorDirty, experienceDirty]);
+    }, [editorDirty, experienceDirty, wikiDirty]);
     useEffect(() => { updateEditorDirty(); }, [category]);
     useEffect(() => { if (!focusNextPage.current || loading) return; const timer = window.setTimeout(() => { document.querySelector<HTMLElement>('#main-content h1')?.focus(); focusNextPage.current = false; }, 0); return () => window.clearTimeout(timer); }, [view, projectId, todoId, loading, updateCheckSignal]);
     async function refresh() {
@@ -250,7 +256,8 @@ function App() {
         field.focus();
     }
     async function closeEditor() {
-        if (editorDirty && !await confirm({ title: '放弃未保存的修改？', message: '关闭后将丢失当前表单内容。', action: '放弃修改' })) return false;
+        if ((editorDirty || wikiDirty) && !await confirm({ title: '放弃未保存的修改？', message: '关闭后将丢失当前表单内容。', action: '放弃修改' })) return false;
+        setWikiDirty(false);
         resetEditor();
         return true;
     }
@@ -281,7 +288,7 @@ function App() {
     if (booting)
         return <main className="boot">正在打开团队空间…</main>;
     if (!user)
-        return <main className="login"><section className="login-story"><a className="brand" href="/"><Layers className="size-6"/>xteam</a><div><p className="eyebrow">A SMALL SPACE FOR BIG IDEAS</p><h1>团队上下文，<br />放在一起。</h1><p>项目、指令与行动清单。<br />留在一个简单、共享的空间里。</p></div><small>为人和 AI 准备的团队资源空间</small></section><section className="login-panel"><ThemeChoice/><form onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); void act(async () => { const value = await api('/login', 'POST', Object.fromEntries(form)); csrf = value.csrf; setUser(value.user); }); }}><p className="eyebrow">WELCOME BACK</p><h2>登录 XTEAM</h2><p className="muted">使用管理员为你开通的团队账号。</p><Label>邮箱<Input name="email" type="email" autoComplete="username" required autoFocus/></Label><Label>密码<Input name="password" type="password" autoComplete="current-password" required maxLength={256}/></Label>{error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}<Button type="submit" variant="default" disabled={busy}>{busy ? '登录中…' : '登录'}</Button><p className="footnote">仅限已开通账号 · 忘记密码请联系管理员</p></form></section></main>;
+        return <main className="login"><section className="login-story"><a className="brand" href="/"><Layers className="size-6"/>xteam</a><div><p className="eyebrow">A SMALL SPACE FOR BIG IDEAS</p><h1>团队上下文，<br />放在一起。</h1><p>知识、SOP 与团队方法。<br />留在一个简单、共享的空间里。</p></div><small>为人和 AI 准备的组织知识空间</small></section><section className="login-panel"><ThemeChoice/><form onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); void act(async () => { const value = await api('/login', 'POST', Object.fromEntries(form)); csrf = value.csrf; setUser(value.user); }); }}><p className="eyebrow">WELCOME BACK</p><h2>登录 XTEAM</h2><p className="muted">使用管理员为你开通的团队账号。</p><Label>邮箱<Input name="email" type="email" autoComplete="username" required autoFocus/></Label><Label>密码<Input name="password" type="password" autoComplete="current-password" required maxLength={256}/></Label>{error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}<Button type="submit" variant="default" disabled={busy}>{busy ? '登录中…' : '登录'}</Button><p className="footnote">仅限已开通账号 · 忘记密码请联系管理员</p></form></section></main>;
     const currentProject = context?.project;
     const currentTodo = context?.todos.find(todo => todo.id === todoId);
     const sortedItems = [...items].sort((first, second) => sort === 'name'
@@ -301,8 +308,9 @@ function App() {
         '## 关联链接', context.links.length ? context.links.map(link => `- ${link.title}：${link.url}`).join('\n') : '暂无链接',
         '## Todo', contextTodos.length ? contextTodos.map(todo => `- [${todo.completed ? 'x' : ' '}] ${todo.title}\n  Todo ID：${todo.id}\n  详情 URL：${todoUrl(todo.id)}${todo.description ? '\n' + todo.description.split('\n').map(line => '  ' + line).join('\n') : ''}`).join('\n') : '暂无 Todo',
     ].join('\n\n') : '';
-    return <SidebarProvider><a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>跳到主要内容</a><AppSidebar view={view} email={user.email} version={currentVersion} checkUpdates={async () => { if (await navigate('settings')) setUpdateCheckSignal(value => value + 1); }} navigate={navigate} password={() => setPasswordDialog(true)} logout={() => void act(async () => { await api('/logout', 'POST'); setUser(null); setNewToken(''); csrf = ''; })}/><SidebarInset className="min-w-0 bg-card"><header className="topbar"><SidebarTrigger aria-label="切换侧边栏"/><nav aria-label="当前位置" className="breadcrumb"><span>团队空间</span><span className="slash">/</span><a aria-label={view === 'settings' ? '返回设置' : '返回' + labels[view] + '列表'} href={'#' + view} onClick={event => { event.preventDefault(); navigate(view); }}>{labels[view]}</a>{projectId && <><span className="slash">/</span><a href={'#project/' + projectId} aria-current={todoId ? undefined : 'page'}>{currentProject?.id === projectId ? currentProject.name : '项目详情'}</a>{todoId && <><span className="slash">/</span><span aria-current="page">Todo</span></>}</>}</nav></header><div className="content" id="main-content" tabIndex={-1}>{error && <Alert variant="destructive"><AlertDescription>{error}<Button type="button" variant="outline" size="sm" onClick={() => setError('')}>关闭提示</Button>{!projectId && <Button type="button" variant="outline" disabled={loading} onClick={() => setRefreshVersion(version => version + 1)}>重试</Button>}</AlertDescription></Alert>}{notice && !(view === 'projects' && projectId) && <Alert role="status"><AlertDescription>{notice}</AlertDescription></Alert>}
+    return <SidebarProvider><a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); document.getElementById('main-content')?.focus(); }}>跳到主要内容</a><AppSidebar legacyProjects={legacyTodos} view={view} email={user.email} version={currentVersion} checkUpdates={async () => { if (await navigate('settings')) setUpdateCheckSignal(value => value + 1); }} navigate={navigate} password={() => setPasswordDialog(true)} logout={() => void act(async () => { await api('/logout', 'POST'); setUser(null); setNewToken(''); csrf = ''; })}/><SidebarInset className="min-w-0 bg-card"><header className="topbar"><SidebarTrigger aria-label="切换侧边栏"/><nav aria-label="当前位置" className="breadcrumb"><span>团队空间</span><span className="slash">/</span><a aria-label={view === 'settings' ? '返回设置' : '返回' + labels[view] + '列表'} href={'#' + view} onClick={event => { event.preventDefault(); navigate(view); }}>{labels[view]}</a>{projectId && <><span className="slash">/</span><a href={'#project/' + projectId} aria-current={todoId ? undefined : 'page'}>{currentProject?.id === projectId ? currentProject.name : '项目详情'}</a>{todoId && <><span className="slash">/</span><span aria-current="page">Todo</span></>}</>}</nav></header><div className="content" id="main-content" tabIndex={-1}>{error && <Alert variant="destructive"><AlertDescription>{error}<Button type="button" variant="outline" size="sm" onClick={() => setError('')}>关闭提示</Button>{!projectId && <Button type="button" variant="outline" disabled={loading} onClick={() => setRefreshVersion(version => version + 1)}>重试</Button>}</AlertDescription></Alert>}{notice && !(view === 'projects' && projectId) && <Alert role="status"><AlertDescription>{notice}</AlertDescription></Alert>}
   {view === 'settings' && <section className="settings-page" aria-labelledby="settings-title"><div className="page-heading"><h1 id="settings-title" tabIndex={-1}>设置</h1></div><ThemeChoice/></section>}
+  {view === 'knowledge' && <Suspense fallback={<p>正在打开组织知识…</p>}><Knowledge api={api} route={wikiRoute} onDirty={setWikiDirty}/></Suspense>}
   <SystemUpdates visible={view === 'settings'} currentVersion={currentVersion} checkSignal={updateCheckSignal} onVersion={setCurrentVersion} api={api}/>
   {view === 'skills' && <Suspense fallback={<p>正在打开 Skill 库…</p>}><Skills api={api}/></Suspense> }
   {(view === 'projects' || view === 'agents') && !projectId && <>
@@ -336,10 +344,10 @@ function App() {
         <p className="footnote">导出包括项目简介、全部关联链接和{todoFilter === 'all' ? '全部 Todo（含已完成任务及结果）' : todoFilter === 'completed' ? '已完成 Todo 及结果' : '未完成 Todo'}。</p><ActionFeedback value={feedback.context} testId="context-feedback" fallbackLabel="项目上下文手动复制"/><ActionFeedback value={feedback.refresh} testId="refresh-feedback" fallbackLabel="刷新结果"/>
       </section>
       <div className="project-grid">
-        <section className="todo-panel" aria-label="Todo"><div className="section-title"><h2>Todo <small>{context.todos.filter(todo => todo.completed).length}/{context.todos.length} 已完成</small></h2><Button type="button" variant="outline" onClick={() => openEditor({ kind: 'todos', data: { project_id: projectId, completed: false } })}>添加 Todo</Button></div>
+        {legacyTodos && <section className="todo-panel" aria-label="Todo"><div className="section-title"><h2>Todo <small>{context.todos.filter(todo => todo.completed).length}/{context.todos.length} 已完成</small></h2><Button type="button" variant="outline" onClick={() => openEditor({ kind: 'todos', data: { project_id: projectId, completed: false } })}>添加 Todo</Button></div>
           <div className="todo-toolbar"><Choice label="Todo 完成状态" value={todoFilter} onChange={value => { setTodoFilter(value); setFeedback(current => { const next = { ...current }; delete next.context; return next; }); }} options={[{ value: 'all', label: '全部' }, { value: 'incomplete', label: '未完成' }, { value: 'completed', label: '已完成' }]}/><Input aria-label="搜索 Todo" placeholder="搜索 Todo…" value={todoQuery} onChange={event => setTodoQuery(event.target.value)}/><Choice label="Todo 排序" value={todoSort} onChange={setTodoSort} options={[{ value: 'updated', label: '最近更新' }, { value: 'title', label: '标题 A–Z' }]}/>{(todoQuery || todoFilter !== 'all') && <Button type="button" variant="outline" onClick={() => { setTodoQuery(''); setTodoFilter('all'); setFeedback(current => { const next = { ...current }; delete next.context; return next; }); }}>清除 Todo 筛选</Button>}</div>
           {visibleTodos.length ? <ul className="todo-list">{visibleTodos.map(todo => <li key={todo.id} data-todo-id={todo.id} className={todo.completed ? 'completed' : ''}><label className="todo-check"><Checkbox aria-label={todo.title} checked={todo.completed} disabled={pendingTodoIds.includes(todo.id)} onCheckedChange={checked => void toggleTodo(todo, checked === true)}/></label><div className="todo-body"><strong><a className="todo-card-link" href={'#project/' + projectId + '/todo/' + todo.id}>{todo.title}</a></strong><div className="actions"><small className="muted">{todo.completed ? '已完成' : '未完成'}</small><Button type="button" variant="outline" size="sm" onClick={() => openEditor({ kind: 'todos', data: todo })}>编辑 / 记录结果</Button><Button type="button" variant="outline" size="sm" className="text-destructive" onClick={() => void remove('todos', todo)}>删除</Button></div><ActionFeedback value={feedback['todo:' + todo.id]} testId={`todo-feedback-${todo.id}`} fallbackLabel="Todo 状态"/></div></li>)}</ul> : <p className="muted inset">{todoQuery.trim() ? '没有匹配的 Todo。' : todoFilter === 'incomplete' ? '没有未完成的 Todo。' : todoFilter === 'completed' ? '没有已完成的 Todo。' : '添加下一步行动，完成后把结果留在这里。'}</p>}
-        </section>
+        </section>}
         <aside className="project-resources" aria-label="项目资料"><section><div className="section-title"><h2>关联链接 <small>{context.links.length}</small></h2><Button type="button" variant="outline" onClick={() => { setCategory('other'); openEditor({ kind: 'links', data: { project_id: projectId } }); }}>添加链接</Button></div><div className="todo-toolbar"><Input aria-label="搜索关联链接" placeholder="搜索链接…" value={linkQuery} onChange={event => setLinkQuery(event.target.value)}/><Choice label="链接类别" value={linkCategory} onChange={setLinkCategory} options={[{ value: 'all', label: '全部类别' }, ...Object.entries(categories).map(([value, label]) => ({ value, label }))]}/>{(linkQuery || linkCategory !== 'all') && <Button type="button" variant="outline" onClick={() => { setLinkQuery(''); setLinkCategory('all'); }}>清除链接筛选</Button>}</div>{visibleLinks.length ? <ul className="link-list">{visibleLinks.map(link => <li key={link.id}><div className="link-summary"><a href={link.url} target="_blank" rel="noopener noreferrer">{link.title} ↗</a><small>{categories[link.category!]}</small><code>{link.url}</code><ActionFeedback value={feedback['link:' + link.id]} testId={`link-feedback-${link.id}`} fallbackLabel={`${link.title} 链接手动复制`}/></div><div className="actions"><Button type="button" variant="outline" size="sm" aria-label={`复制链接 ${link.title}`} onClick={() => void copy('link:' + link.id, link.url!, '链接已复制')}>复制 URL</Button><Button type="button" variant="outline" size="sm" onClick={() => { setCategory(link.category ?? 'other'); openEditor({ kind: 'links', data: link }); }}>编辑</Button><Button type="button" variant="outline" size="sm" className="text-destructive" onClick={() => void remove('links', link)}>删除</Button></div></li>)}</ul> : <p className="muted inset">{context.links.length ? '没有匹配的链接。' : '还没有链接，添加文档或代码仓库入口。'}</p>}<p className="footnote">仅保存地址；私有文档仍需原平台访问权限。</p></section><section className="project-identity"><h2>项目 ID</h2><p className="prewrap code-input">{currentProject.id}</p><Button type="button" variant="outline" size="sm" onClick={() => void copy('projectId', currentProject.id, '项目 ID 已复制')}>复制 ID</Button><ActionFeedback value={feedback.projectId} testId="project-id-feedback" fallbackLabel="项目 ID 手动复制"/></section></aside>
       </div>
       </>}

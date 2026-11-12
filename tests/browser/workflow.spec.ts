@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 test('member creates reusable resources, project context and a completed result in the browser', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/#projects');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();
@@ -48,7 +48,7 @@ test('member creates reusable resources, project context and a completed result 
 });
 test('failed saves retain drafts and small screens retain account actions', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/#projects');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();
@@ -63,7 +63,7 @@ test('failed saves retain drafts and small screens retain account actions', asyn
     await expect(page.getByRole('dialog').getByRole('alert')).toContainText('保存失败测试');
 });
 test('editor keyboard escape cancels a draft without saving', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/#projects');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();

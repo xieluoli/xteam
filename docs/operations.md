@@ -12,6 +12,7 @@
 | `XTEAM_UPGRADE_SOCKET` | 未启用 | 宿主升级服务的 Unix socket，应用不访问 Docker socket |
 | `XTEAM_UPGRADE_ADMINS` | 无 | 可触发检查和升级的账号邮箱，逗号分隔 |
 | `XTEAM_GITHUB_TOKEN` | 无，匿名读取 | 可选的服务端公开仓库只读 Token，提高 GitHub API 配额；只发送到 `api.github.com` |
+| `XTEAM_TODOS_RETIRED` | 未启用 | 设为 `1` 后关闭旧 Todo 写入、隐藏旧项目导航；清理前仍须完整备份和归档 |
 
 单实例运行，数据目录权限限制为服务用户，磁盘/备份按敏感资料保护。应用有登录失败限速；代理后按连接地址计数，同一代理下共享额度。不要把不同公网来源反代到同一实例。会话有效期 7 天，写请求校验 Origin 与 CSRF。
 

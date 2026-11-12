@@ -1,8 +1,8 @@
 # XTEAM
 
-一个轻量的团队资源空间：项目简介与链接、简单 Todo、Agent 模板、Skill 文本库，以及供外部 AI 使用的 MCP 服务。
+企业自己的知识与组织能力空间：知识页面、SOP、本地 Skill、Agent 与工作流程，通过网页、CLI 和 MCP 访问，并可导出迁移。
 
-**一个团队，邮箱密码登录，网页与 MCP 共用数据。** 不运行 Agent，不读取服务器目录，不代取第三方私有文档。模板与 Skill 是可复制的 Markdown 文本，不是插件安装器。
+**一个企业内部团队，邮箱密码登录，三个入口共用数据。** SOP 可保存为 Skill 并绑定到工作流程或 Agent；绑定保留选定版本，不自动执行。既有项目、链接和来源 Skill 保留。
 
 ## 启动
 
@@ -18,6 +18,8 @@ pnpm start
 打开 `http://localhost:3100`，使用刚创建的账号登录。密码至少 12 位，管理员命令交互输入。没有自助注册或邮件验证码。
 
 - [操作与部署](docs/operations.md)：配置、账号、备份恢复、容器及回滚；Skill 来源可选服务端 `XTEAM_GITHUB_TOKEN` 配置见[配额说明](docs/operations.md#skill-来源与-github-配额)。
+- [组织知识与可复用能力](docs/wiki.md)：知识页面、SOP、Skill、工作流程与迁移边界。
+- [CLI](docs/cli.md)：终端知识维护、结构化输出、导出与旧任务迁移。
 - [Release升级](docs/upgrades.md)：页面与命令行入口、首次启用和回退。
 - [MCP 接入](docs/mcp.md)：令牌、客户端示例、工具及权限边界。
 - [功能与验收](docs/scope.md)：已批准范围与使用闭环。

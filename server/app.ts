@@ -8,6 +8,7 @@ import { todoExperiences } from './todo-experience.js';
 import type { SkillFetch } from './skill-source.js';
 import { attachMcp } from './mcp.js';
 import { attachUpdates, type UpgradeOptions } from './updates.js';
+import { attachKnowledgeHttp } from './knowledge-api.js';
 type Member = {
     id: string;
     email: string;
@@ -32,7 +33,7 @@ export function createApp(options: {
         response.set({ 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'self'; style-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" });
         next();
     });
-    app.use(express.json({ limit: '2mb' }));
+    app.use(express.json({ limit: '16mb' }));
     app.get('/health', (_request, response) => response.json({ ok: true, version: process.env.XTEAM_VERSION ?? 'development' }));
     const attempts = new Map<string, {
         count: number;
@@ -41,7 +42,7 @@ export function createApp(options: {
     const dummy = passwordHash(randomBytes(32).toString('hex'));
     app.use('/api', (request, response, next) => {
         response.set('Cache-Control', 'no-store');
-        if (!['GET', 'HEAD'].includes(request.method) && request.get('origin') !== options.origin) {
+        if ((!['GET', 'HEAD'].includes(request.method) && request.get('origin') !== options.origin && !(request.get('authorization')?.startsWith('Bearer ') && !request.get('origin'))) || (request.get('origin') && request.get('origin') !== options.origin)) {
             response.status(403).json({ error: '请求来源不受信任，请刷新后重试' });
             return;
         }
@@ -78,19 +79,24 @@ export function createApp(options: {
     });
     app.use('/api', (request, response, next) => {
         const token = request.headers.cookie?.split(';').map(value => value.trim()).find(value => value.startsWith('xteam_session='))?.slice(14);
-        const session = token ? database.prepare('SELECT users.id,users.email,users.password,sessions.csrf,sessions.hash FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.hash=? AND sessions.expires>? AND users.enabled=1').get(hashToken(token), Date.now()) as Session | undefined : undefined;
+        const bearer = request.get('authorization')?.match(/^Bearer ([^\s]+)$/)?.[1];
+        const session = (bearer ? database.prepare("SELECT users.id,users.email,users.password,'' AS csrf,tokens.hash FROM tokens JOIN users ON users.id=tokens.user_id WHERE tokens.hash=? AND users.enabled=1").get(hashToken(bearer)) : token ? database.prepare('SELECT users.id,users.email,users.password,sessions.csrf,sessions.hash FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.hash=? AND sessions.expires>? AND users.enabled=1').get(hashToken(token), Date.now()) : undefined) as Session | undefined;
         if (!session) {
             response.status(401).json({ error: '请先登录' });
             return;
         }
-        if (!['GET', 'HEAD'].includes(request.method) && request.get('x-csrf-token') !== session.csrf) {
+        if (bearer && ['/tokens', '/password', '/logout'].some(path => request.path === path || request.path.startsWith(path + '/'))) {
+            response.status(403).json({ error: '个人账号与令牌管理请使用网页登录会话' });
+            return;
+        }
+        if (!bearer && !['GET', 'HEAD'].includes(request.method) && request.get('x-csrf-token') !== session.csrf) {
             response.status(403).json({ error: '登录状态已变化，请刷新后重试' });
             return;
         }
         response.locals.member = session;
         next();
     });
-    app.get('/api/me', (_request, response) => { const user = response.locals.member as Session; response.json({ user: { id: user.id, email: user.email }, csrf: user.csrf }); });
+    app.get('/api/me', (_request, response) => { const user = response.locals.member as Session; response.json({ user: { id: user.id, email: user.email }, csrf: user.csrf, features: { legacy_todos: process.env.XTEAM_TODOS_RETIRED !== '1' } }); });
     app.post('/api/logout', (_request, response) => {
         database.prepare('DELETE FROM sessions WHERE hash=?').run((response.locals.member as Session).hash);
         response.clearCookie('xteam_session', { path: '/' });
@@ -115,6 +121,7 @@ export function createApp(options: {
         response.json({ ok: true });
     });
     attachUpdates(app, options.upgrade);
+    attachKnowledgeHttp(app, database);
     const service = resources(database);
     const experienceService = todoExperiences(database);
     app.get('/api/projects/:projectId/todos/:id/experience', (request, response) => response.json(experienceService.get(String(request.params.projectId), String(request.params.id))));

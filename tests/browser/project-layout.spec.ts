@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('project rows sort, keep search state, and refresh failures keep readable context', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/#projects');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();

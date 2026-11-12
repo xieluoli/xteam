@@ -39,6 +39,7 @@ export function resources(database: Database.Database) {
         return rows.map(normalize);
     }
     function save(kind: ResourceKind, input: unknown, id?: string) {
+        if (kind === 'todos' && process.env.XTEAM_TODOS_RETIRED === '1') throw new ResourceError('旧 Todo 已归档，当前版本使用知识页面与工作流程', 410);
         const existing = id ? get(kind, id) : undefined;
         const parsed = schemas[kind].safeParse(input);
         if (!parsed.success)
@@ -57,6 +58,7 @@ export function resources(database: Database.Database) {
         return get(kind, identifier);
     }
     function update(kind: ResourceKind, id: string, input: Record<string, unknown>) {
+        if (kind === 'todos' && process.env.XTEAM_TODOS_RETIRED === '1') throw new ResourceError('旧 Todo 已归档，当前版本使用知识页面与工作流程', 410);
         const expected = z.string().min(1).max(100).optional().safeParse(input.expected_updated_at);
         if (!expected.success) throw new ResourceError('expected_updated_at 必须为读取时的 updated_at 字符串');
         return database.transaction(() => {
@@ -67,6 +69,7 @@ export function resources(database: Database.Database) {
         }).immediate();
     }
     function remove(kind: ResourceKind, id: string, expectedUpdatedAt?: unknown) {
+        if (kind === 'todos' && process.env.XTEAM_TODOS_RETIRED === '1') throw new ResourceError('旧 Todo 已归档', 410);
         const expected = z.string().min(1).max(100).optional().safeParse(expectedUpdatedAt);
         if (!expected.success) throw new ResourceError('expected_updated_at 必须为读取时的 updated_at 字符串');
         database.transaction(() => {

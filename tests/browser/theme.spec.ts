@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('Japan Blues reaches login and editable controls, including focus, hover and disabled states', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/#projects');
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#90a1b9');
     const login = page.getByRole('button', { name: '登录', exact: true });
     await expect(login).toHaveCSS('background-color', 'oklch(0.704 0.04 256.788)');

@@ -8,6 +8,7 @@ import { skills } from './skills.js';
 import { todoExperiences, experienceSchema } from './todo-experience.js';
 import type { SkillFetch } from './skill-source.js';
 import { hashToken } from './store.js';
+import { registerKnowledgeMcp } from './knowledge-api.js';
 export function attachMcp(app: Express, database: Database.Database, origin: string, skillFetch?: SkillFetch) {
     app.all('/mcp', async (request, response) => {
         response.set('Cache-Control', 'no-store');
@@ -38,6 +39,7 @@ export function attachMcp(app: Express, database: Database.Database, origin: str
             });
         };
         for (const kind of resourceKinds) {
+            if (kind === 'todos' && process.env.XTEAM_TODOS_RETIRED === '1') continue;
             const singular = { projects: 'project', agents: 'agent', links: 'link', todos: 'todo' }[kind];
             register(`list_${kind}`, `查找团队 ${kind}，可按名称过滤；链接和 Todo 可按项目过滤；Todo 的 completed 默认全部，false 仅未完成、true 仅已完成。`, { q: z.string().optional(), project_id: z.string().optional(), ...(kind === 'todos' ? { completed: z.boolean().optional() } : {}) }, args => service.list(kind, args.q, args.project_id, args.completed), false, true);
             register(`get_${singular}`, `读取 ${singular} 完整正文与稳定 ID。`, { id: z.string() }, args => service.get(kind, args.id), false, true);
@@ -46,6 +48,7 @@ export function attachMcp(app: Express, database: Database.Database, origin: str
             register(`delete_${singular}`, kind === 'projects' ? '永久删除项目及其链接和 Todo；应先确认用户意图。' : `永久删除共享 ${singular}；应先确认用户意图。`, { id: z.string(), expected_updated_at: z.string().min(1).max(100).optional() }, args => service.remove(kind, args.id, args.expected_updated_at), true);
         }
         const skillService = skills(database, skillFetch);
+        registerKnowledgeMcp(register, database, member.id);
         register('list_skills', '按名称及单个精确标签查找团队 Skill 元数据，不返回正文或附属文件。', { q: z.string().optional(), label: z.string().optional() }, args => skillService.list(args.q, args.label), false, true);
         register('get_skill', '读取 Skill 正文、来源、标签及附属文本文件，不执行内容。', { id: z.string() }, args => skillService.get(args.id), false, true);
         register('import_skill', '从 GitHub 或 skills.sh URL 导入；同名默认冲突，覆盖需用户明确同意。', { url: z.string(), on_conflict: z.enum(['fail', 'overwrite', 'rename', 'skip']).optional() }, args => skillService.importUrl(args, member.id));

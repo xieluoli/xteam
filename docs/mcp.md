@@ -19,7 +19,9 @@ MCP Inspector 选择 Streamable HTTP，填地址及 Authorization 请求头。�
 pnpm exec mcp-inspector --cli --config /安全目录/mcp.json --server xteam --method tools/list
 ```
 
-工具共 35 个：projects、agents、links、todos 分别提供 list 与 get/create/update/delete；另有 `get_project_context` 聚合项目简介、链接和 Todo，以及 `get_todo_handoff` 按 `project_id`、`id` 读取单项接续包（原文、稳定 ID、读取版本、详情地址和项目链接）。网页复制/下载与该工具使用同一纯文本格式。
+原有工具中，projects、agents、links、todos 分别提供 list 与 get/create/update/delete；另有 `get_project_context` 聚合项目简介、链接和 Todo，以及 `get_todo_handoff` 按 `project_id`、`id` 读取单项接续包。开启旧任务退场配置后不注册 Todo 的通用维护工具。
+
+2026-11-12 新增知识与组织能力工具：`list_spaces`、`create_space`、`list_pages`、`get_page`、`create_page`、`update_page`、`search_knowledge`、`get_page_history`、`list_page_attachments`、`add_page_attachment`、`export_space`；以及 `create_skill_from_sop`、`bind_agent_skill`、`get_agent_context`、`list_workflows`、`create_workflow`、`get_workflow`、`update_workflow`、`get_workflow_context`。页面更新强制 `expected_version`，Skill 绑定强制读取时版本，工作流程保存选定快照。SOP、Skill、流程正文均不自动执行；接口与网页、CLI共用相同服务。详见[组织知识](wiki.md)。
 
 Skill 使用独立的同一共享服务（网页与 MCP 同规则）：
 - `list_skills` / `get_skill`：元数据查找与完整正文、来源、标签、附属文件读取。
