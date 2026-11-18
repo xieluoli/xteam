@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { migrateKnowledge } from './knowledge-schema.js';
 export const hashToken = (value: string) => createHash('sha256').update(value).digest('hex');
 export function passwordHash(password: string) {
     if (password.length < 12 || password.length > 256)
@@ -37,6 +38,7 @@ export function openDatabase(path: string) {
         if (!columns.has(column)) database.exec(`ALTER TABLE skills ADD COLUMN ${column} TEXT NOT NULL DEFAULT ''`);
     if (!columns.has('labels')) database.exec("ALTER TABLE skills ADD COLUMN labels TEXT NOT NULL DEFAULT '[]'");
     database.exec('CREATE TABLE IF NOT EXISTS skill_files (skill_id TEXT NOT NULL, path TEXT NOT NULL, content TEXT NOT NULL, PRIMARY KEY(skill_id,path))');
+    migrateKnowledge(database);
     return database;
 }
 export function provisionUser(database: Database.Database, email: string, password: string) {

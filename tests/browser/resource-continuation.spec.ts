@@ -5,7 +5,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 
 async function login(page: Page) {
-    await page.goto('/');
+    await page.goto('/#projects');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();

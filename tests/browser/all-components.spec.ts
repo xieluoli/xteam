@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('shared sidebar supports mobile navigation and all editors use themed components', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/#projects');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();
@@ -47,7 +47,7 @@ test('desktop pages share the Sidebar and existing project, link, Todo, template
         const custom = await page.locator('button:visible,input:visible,textarea:visible,select:visible').evaluateAll(elements => elements.filter(element => !element.hasAttribute('data-slot')).map(element => `${element.tagName}: ${element.getAttribute('aria-label') ?? element.textContent}`));
         expect(custom).toEqual([]);
     }
-    await page.goto('/');
+    await page.goto('/#projects');
     await auditControls();
     await page.screenshot({ path: '.local/all-login.png', fullPage: true });
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');

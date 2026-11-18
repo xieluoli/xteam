@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 
 test.setTimeout(30000);
 async function login(page: Page) {
-    await page.goto('/');
+    await page.goto('/#projects');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();

@@ -11,7 +11,7 @@ test('sidebar update entry checks Release, confirms a pinned upgrade and recover
         else if (route.request().url().endsWith('/upgrade')) { upgrades.push(route.request().postDataJSON()); version = sha; state = { ...state, phase: 'succeeded', available: false, message: '已升级到 v2.0.0，公网版本校验通过' }; await route.fulfill({ status: 202, json: { ...state, phase: 'upgrading' } }); }
         else await route.fulfill({ json: { enabled: true, canUpgrade: true, currentVersion: version, state } });
     });
-    await page.goto('/');
+    await page.goto('/#projects');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();
@@ -58,7 +58,7 @@ test('non-operator sees version but no upgrade action; updater errors offer stat
         if (offline) await route.fulfill({ status: 503, json: { error: '升级服务暂不可用' } });
         else await route.fulfill({ json: { enabled: true, canUpgrade: operator, currentVersion: 'a'.repeat(40), state: { phase: 'idle', message: '尚未检查更新' } } });
     });
-    await page.goto('/');
+    await page.goto('/#projects');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
     await page.getByRole('button', { name: '登录', exact: true }).click();

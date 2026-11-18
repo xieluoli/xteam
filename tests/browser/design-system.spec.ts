@@ -9,7 +9,7 @@ for (const theme of ['japan-blues', 'cyberpunk']) {
     const spacing = theme === 'japan-blues' ? 3.52 : 4;
     test(`${theme} retains official control sizes and button hierarchy`, async ({ page }) => {
         await page.addInitScript(value => localStorage.setItem('xteam-theme', value), theme);
-        await page.goto('/');
+        await page.goto('/#projects');
         expect(await page.locator('html').evaluate(el => getComputedStyle(el).fontSize)).toBe('16px');
         await height(page.getByRole('button', { name: '登录', exact: true }), spacing * 9);
         await height(page.getByLabel('邮箱', { exact: true }), spacing * 9);

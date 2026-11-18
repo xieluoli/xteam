@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { parseDocument, isMap } from 'yaml';
 import { ResourceError } from './resources.js';
 import { bundleLimit, discoverSkillSource, downloadSkill, fetchSkillSource, fileLimit, validFilePath, type SkillFetch, type SkillFile } from './skill-source.js';
-export type Skill = { id: string; name: string; description: string; content: string; source_url: string; source_type: string; created_at: string; created_by: string; updated_by: string; updated_at: string; created_by_email?: string; updated_by_email?: string; labels: string[]; files: SkillFile[] };
+export type Skill = { id: string; name: string; description: string; content: string; source_url: string; source_type: string; created_at: string; created_by: string; updated_by: string; updated_at: string; created_by_email?: string; updated_by_email?: string; source_page_id?: string; source_page_version?: number; labels: string[]; files: SkillFile[] };
 function frontmatter(content: string) {
     const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
     const document = parseDocument(match?.[1] ?? '{}');
@@ -28,7 +28,8 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
     function get(id: string): Skill {
         const row = database.prepare(`SELECT skills.*, creator.email AS created_by_email, editor.email AS updated_by_email FROM skills LEFT JOIN users creator ON creator.id=skills.created_by LEFT JOIN users editor ON editor.id=skills.updated_by WHERE skills.id=?`).get(id) as (Omit<Skill, 'labels' | 'files'> & { labels: string }) | undefined;
         if (!row) throw new ResourceError('Skill 不存在或已删除', 404);
-        return { ...row, labels: JSON.parse(row.labels), files: database.prepare('SELECT path,content FROM skill_files WHERE skill_id=? ORDER BY path').all(id) as SkillFile[] };
+        const source = database.prepare('SELECT page_id AS source_page_id,page_version AS source_page_version FROM knowledge_skill_sources WHERE skill_id=?').get(id) as { source_page_id: string; source_page_version: number } | undefined;
+        return { ...row, ...source, labels: JSON.parse(row.labels), files: database.prepare('SELECT path,content FROM skill_files WHERE skill_id=? ORDER BY path').all(id) as SkillFile[] };
     }
     function list(query = '', label?: unknown) {
         if (label !== undefined && (typeof label !== 'string' || !label.trim() || label.length > 100)) throw new ResourceError('label 需为 1–100 个字符的标签');
@@ -49,6 +50,13 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
         return get(skill.id);
     }
     function sameName(name: string, except = '') { return database.prepare('SELECT id,name FROM skills WHERE name=? COLLATE NOCASE AND id<>? LIMIT 1').get(name, except) as { id: string; name: string } | undefined; }
+    function createLocal(input: { name: string; description: string; content: string }, member: string) {
+        const content = setProperties(input.content, input.name.trim(), input.description);
+        const fields = contentFields(content, input.name, input.description);
+        if (sameName(fields.name)) throw new ResourceError('已有同名 Skill，请使用其他名称', 409);
+        const now = new Date().toISOString();
+        return persist({ id: randomUUID(), ...fields, content, labels: [], files: [], source_url: '', source_type: 'local', created_at: now, created_by: member, updated_by: member, updated_at: now });
+    }
     function update(id: string, input: Record<string, unknown>, member: string) {
         const skill = get(id);
         if (input.content !== undefined && typeof input.content !== 'string') throw new ResourceError('正文必须为文本');
@@ -65,7 +73,7 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
             if (!Array.isArray(input.labels) || input.labels.length > 30 || input.labels.some(label => typeof label !== 'string' || !label.trim() || label.length > 100)) throw new ResourceError('标签需为最多 30 个非空文本');
             labels = [...new Set(input.labels.map(label => label.trim()))];
         }
-        return persist({ ...skill, ...fields, content, labels, updated_by: member, updated_at: new Date().toISOString() });
+        return persist({ ...skill, ...fields, content, labels, updated_by: member, updated_at: new Date(Math.max(Date.now(), Date.parse(skill.updated_at) + 1)).toISOString() });
     }
     function importBundle(bundle: Awaited<ReturnType<typeof downloadSkill>>, strategy: unknown, member: string) {
         if (!['fail', 'overwrite', 'rename', 'skip'].includes(String(strategy))) throw new ResourceError('冲突选项无效');
@@ -147,5 +155,5 @@ export function skills(database: Database.Database, fetcher?: SkillFetch) {
         return persist({ ...skill, files, updated_at: new Date().toISOString(), updated_by: member });
     }
     function remove(id: string) { get(id); database.transaction(() => { database.prepare('DELETE FROM skill_files WHERE skill_id=?').run(id); database.prepare('DELETE FROM skills WHERE id=?').run(id); })(); return { ok: true }; }
-    return { get, list, update, importUrl, discover, importMany, previewSource, refresh, file, remove };
+    return { get, list, createLocal, update, importUrl, discover, importMany, previewSource, refresh, file, remove };
 }

@@ -4,10 +4,13 @@
   "private": true,
   "type": "module",
   "license": "MIT",
+  "bin": { "xteam": "bin/xteam.mjs" },
   "engines": {
     "node": ">=24"
   },
   "scripts": {
+    "cli": "node bin/xteam.mjs",
+    "archive:todos": "tsx scripts/archive-todos.ts",
     "dev": "tsx watch server/main.ts",
     "build": "tsc --noEmit && vite build",
     "start": "tsx server/main.ts",

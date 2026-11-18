@@ -8,7 +8,7 @@ test('settings navigation owns the authenticated theme control and survives dire
     const pendingProjects = new Promise<void>(resolve => { releaseProjects = resolve; });
     const projectsRequested = new Promise<void>(resolve => { markRequested = resolve; });
     await page.route('**/api/projects?*', async route => { markRequested(); await pendingProjects; await route.continue(); });
-    await page.goto('/');
+    await page.goto('/#projects');
     await expect(page.getByRole('combobox', { name: '界面主题' })).toBeVisible();
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
@@ -44,7 +44,7 @@ test('settings navigation owns the authenticated theme control and survives dire
 });
 
 test('theme switches immediately, survives reload and preserves login input', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/#projects');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'japan-blues');
     await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
     await page.getByRole('combobox', { name: '界面主题' }).click();
@@ -81,7 +81,7 @@ test('theme switches immediately, survives reload and preserves login input', as
 
 test('unknown and unavailable browser storage fall back to Japan Blues before startup', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('xteam-theme', 'unknown'));
-    await page.goto('/');
+    await page.goto('/#projects');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'japan-blues');
     await page.addInitScript(() => {
         Storage.prototype.getItem = () => { throw new Error('storage blocked'); };

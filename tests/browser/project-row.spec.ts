@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 for (const theme of ['japan-blues', 'cyberpunk']) {
     test(`${theme} project whole row navigates while icon actions stay independent`, async ({ page }) => {
         await page.addInitScript(value => localStorage.setItem('xteam-theme', value), theme);
-        await page.goto('/');
+        await page.goto('/#projects');
         await page.getByLabel('邮箱', { exact: true }).fill('browser@example.com');
         await page.getByLabel('密码', { exact: true }).fill('browser-test-password');
         await page.getByRole('button', { name: '登录', exact: true }).click();
